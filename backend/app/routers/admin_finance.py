@@ -151,13 +151,17 @@ def reports(date_from: str = Query(""), date_to: str = Query(""), db: Session = 
             amortized_revenue += row.amount / product.validity_days * overlap_days
     course_stats = defaultdict(lambda: {"sessions": 0, "cancelled": 0, "attendees": 0, "bookings": 0})
     teacher_stats = defaultdict(lambda: {"sessions": 0, "minutes": 0, "attendees": 0, "cancelled": 0})
+    course_names_en = {}
+    teacher_names_en = {}
     weekday = defaultdict(int)
     hour = defaultdict(int)
     for session in sessions:
         course_name = session.course.name
+        course_names_en[course_name] = session.course.name_en
         course_stats[course_name]["sessions"] += 1
         course_stats[course_name]["cancelled"] += int(session.status == "cancelled")
         teacher_name = session.teacher.name
+        teacher_names_en[teacher_name] = session.teacher.name_en
         teacher_stats[teacher_name]["sessions"] += 1
         teacher_stats[teacher_name]["minutes"] += minutes(session.end_time) - minutes(session.start_time)
         teacher_stats[teacher_name]["cancelled"] += int(session.status == "cancelled")
@@ -177,14 +181,14 @@ def reports(date_from: str = Query(""), date_to: str = Query(""), db: Session = 
         used_reservations = [row for row in reservations if row.room_id == room.id]
         used_minutes = sum(minutes(row.end_time) - minutes(row.start_time) for row in used_sessions) + sum(minutes(row.end_time) - minutes(row.start_time) for row in used_reservations)
         internal_minutes = sum(minutes(row.end_time) - minutes(row.start_time) for row in used_reservations if row.usage_type == "internal")
-        room_usage.append({"room_id": room.id, "room_name": room.name, "used_hours": round(used_minutes / 60, 1), "internal_hours": round(internal_minutes / 60, 1), "utilization": round(used_minutes / max(1, days * 12 * 60) * 100, 1)})
+        room_usage.append({"room_id": room.id, "room_name": room.name, "room_name_en": room.name_en, "used_hours": round(used_minutes / 60, 1), "internal_hours": round(internal_minutes / 60, 1), "utilization": round(used_minutes / max(1, days * 12 * 60) * 100, 1)})
     return {
         "range": {"from": start, "to": end},
         "summary": {"revenue": sum(revenue.values()), "sessions": len(sessions), "cancelled_sessions": len([row for row in sessions if row.status == "cancelled"]), "attendees": len([row for row in bookings if row.status in {"checked_in", "completed"}]), "booking_count": len([row for row in bookings if row.status != "cancelled"]), "cancelled_bookings": len([row for row in bookings if row.status == "cancelled"])},
         "amortized_revenue": round(amortized_revenue, 2),
         "revenue_by_category": [{"label": key, "value": round(value, 2)} for key, value in sorted(revenue.items())],
-        "course_stats": [{"label": key, **value} for key, value in sorted(course_stats.items(), key=lambda item: item[1]["attendees"], reverse=True)],
-        "teacher_stats": [{"label": key, **value, "hours": round(value["minutes"] / 60, 1)} for key, value in sorted(teacher_stats.items(), key=lambda item: item[1]["minutes"], reverse=True)],
+        "course_stats": [{"label": key, "label_en": course_names_en.get(key, ""), **value} for key, value in sorted(course_stats.items(), key=lambda item: item[1]["attendees"], reverse=True)],
+        "teacher_stats": [{"label": key, "label_en": teacher_names_en.get(key, ""), **value, "hours": round(value["minutes"] / 60, 1)} for key, value in sorted(teacher_stats.items(), key=lambda item: item[1]["minutes"], reverse=True)],
         "weekday": [{"label": key, "value": weekday.get(key, 0)} for key in range(7)],
         "hour": [{"label": key, "value": hour.get(key, 0)} for key in sorted(set(list(hour.keys()) + [f"{value:02d}" for value in range(8, 22)]))],
         "room_usage": room_usage,

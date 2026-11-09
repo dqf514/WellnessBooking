@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { Empty, Icon, Modal, Spinner } from "@/components/UI";
+import { Empty, Icon, LogoutConfirm, Modal, Spinner } from "@/components/UI";
 import { useLanguage } from "@/context/LanguageContext";
 import { apiFetch, downloadFile, getToken } from "@/lib/api";
 import { addDays, isoDate, money, shortDate, today, weekday, weekStart } from "@/lib/date";
+import { useSwipeNavigation } from "@/lib/useSwipeNavigation";
 import type { Booking, Bootstrap, CourseType, MemberMe, Product, Session } from "@/types";
 
 const types: Array<CourseType | "all"> = ["all", "group", "private", "assessment", "workshop", "training"];
@@ -37,6 +38,7 @@ export function PublicHome() {
   const [selected, setSelected] = useState<Session | null>(null);
   const [loginOpen, setLoginOpen] = useState(false);
   const [meOpen, setMeOpen] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
   const [meTab, setMeTab] = useState<"bookings" | "cards" | "orders">("bookings");
   const [me, setMe] = useState<MemberMe | null>(null);
   const [phone, setPhone] = useState("13900001001");
@@ -49,6 +51,7 @@ export function PublicHome() {
   const [error, setError] = useState("");
   const [pendingSession, setPendingSession] = useState<number | null>(null);
   const [pendingProduct, setPendingProduct] = useState<number | null>(null);
+  const scheduleSwipe = useSwipeNavigation(() => navigatePeriod(-1), () => navigatePeriod(1));
   const days = useMemo(() => {
     const start = weekStart(date);
     return Array.from({ length: 7 }, (_, index) => addDays(start, index));
@@ -99,6 +102,11 @@ export function PublicHome() {
     void loadMe();
   }, [loadMe, t]);
   useEffect(() => { void loadSessions(); }, [loadSessions]);
+  useEffect(() => {
+    if (!error && !message) return;
+    const timer = window.setTimeout(() => { setError(""); setMessage(""); }, 5000);
+    return () => window.clearTimeout(timer);
+  }, [error, message]);
   useEffect(() => {
     if (cooldown <= 0) return;
     const timer = window.setInterval(() => setCooldown((value) => Math.max(0, value - 1)), 1000);
@@ -154,6 +162,13 @@ export function PublicHome() {
     finally { setBusy(false); }
   }
 
+  function logout() {
+    localStorage.removeItem("wellness_member_token");
+    setMe(null);
+    setMeOpen(false);
+    setLogoutOpen(false);
+  }
+
   async function cancelBooking(booking: Booking) {
     if (!window.confirm(language === "zh" ? "确认取消这次预约？" : "Cancel this booking?")) return;
     setError("");
@@ -205,7 +220,7 @@ export function PublicHome() {
 
       <section className="intro-section" id="about"><p className="section-index">YINYU PHILOSOPHY</p><div><h2>{local("不追求更用力，\n而是更了解自己。", "Not more force.\nMore understanding.")}</h2><p>{local("我们把传统养生、现代运动与正念练习放在同一个日常里。小班教学，诚实建议，让每一次练习都有来处，也有归处。", "Traditional wellness, modern movement and mindfulness belong in the same everyday life. Small classes, honest guidance, and practice with purpose.")}</p></div></section>
 
-      <section className="schedule-section" id="schedule">
+      <section className="schedule-section" id="schedule" {...scheduleSwipe}>
         <div className="section-heading"><div><span className="eyebrow">MOVE WITH US</span><h2>{t("schedule")}</h2></div><p>{local("日 / 周 / 月课表 · 实时名额 · 课前可自主取消", "Day, week and month views · Live availability · Cancel before class")}</p></div>
         <div className="filter-bar">
           <div className="type-tabs" role="tablist" aria-label={local("课程类型", "Class types")}>{types.map((item) => <button key={item} type="button" role="tab" aria-selected={type === item} className={type === item ? "active" : ""} onClick={() => setType(item)}>{t(item)}</button>)}</div>
@@ -219,8 +234,7 @@ export function PublicHome() {
           <div className="capacity-legend" aria-label={local("席位状态图例", "Availability legend")}><span className="capacity-available"><i/>{local("余位充足", "Available")}</span><span className="capacity-limited"><i/>{local("席位紧张", "Few spots")}</span><span className="capacity-full"><i/>{local("已约满", "Full")}</span></div>
         </div>
         {view === "day" && <div className="date-strip">{days.map((day) => <button type="button" key={day} className={date === day ? "active" : ""} onClick={() => setDate(day)}><span>{weekday(day, language === "en")}</span><strong>{shortDate(day)}</strong>{day === today() && <small>{local("今天", "Today")}</small>}</button>)}</div>}
-        {error && <div className="public-notice error" role="alert">{error}<button type="button" onClick={() => setError("")} aria-label={t("close")}><Icon name="close" size={16}/></button></div>}
-        {message && <div className="public-notice" role="status">{message}<button type="button" onClick={() => setMessage("")} aria-label={t("close")}><Icon name="close" size={16}/></button></div>}
+        {(error || message) && <div className={`public-notice ${error ? "error" : ""}`} role={error ? "alert" : "status"} aria-live={error ? "assertive" : "polite"} aria-atomic="true"><span className="toast-icon"><Icon name={error ? "bell" : "check"} size={19}/></span><div className="toast-copy"><strong>{error ? local("操作未完成", "Action failed") : local("操作成功", "Success")}</strong><p>{error || message}</p></div><button type="button" onClick={() => { setError(""); setMessage(""); }} aria-label={t("close")}><Icon name="close" size={17}/></button></div>}
         {loading ? <Spinner/> : view === "day" ? sessions.length === 0 ? <Empty>{local("这一天暂未排课，看看其他日期吧。", "No classes on this day. Try another date.")}</Empty> : <div className="class-list">{sessions.map((session) => <article className={`class-row capacity-${seatStatus(session)} ${session.available === 0 ? "sold-out" : ""}`} key={session.id} style={{ "--course-color": session.course.color } as React.CSSProperties}>
           <div className="class-time"><strong>{session.start_time}</strong><span>{session.end_time}</span></div>
           <button className="class-main" type="button" onClick={() => setSelected(session)}><span className="class-category">{t(session.course.course_type)}</span><h3>{local(session.course.name, session.course.name_en)}</h3><p>{local(session.teacher.name, session.teacher.name_en)} · {local(session.room.name, session.room.name_en)}</p></button>
@@ -249,10 +263,11 @@ export function PublicHome() {
 
     {loginOpen && <Modal title={t("login")} onClose={() => { setLoginOpen(false); setPendingSession(null); setPendingProduct(null); }}><form className="auth-form" onSubmit={login}><p>{local("新会员验证手机号后会自动建立档案。演示会员可使用 13900001001。", "New members are registered automatically after phone verification. Demo member: 13900001001.")}</p><label>{t("phone")}<input required pattern="1[0-9]{10}" inputMode="numeric" value={phone} onChange={(event) => setPhone(event.target.value)}/></label><label>{t("name")}<input value={name} onChange={(event) => setName(event.target.value)} placeholder={local("新会员填写", "For new members")}/></label><label>{t("code")}<div className="code-input"><input required inputMode="numeric" maxLength={6} value={code} onChange={(event) => setCode(event.target.value)}/><button className="button button-outline" type="button" disabled={busy || cooldown > 0} onClick={() => void sendCode()}>{cooldown > 0 ? `${cooldown}s` : t("sendCode")}</button></div></label>{devCode && <p className="dev-code">{t("devCode")}: <strong>{devCode}</strong></p>}<button className="button button-primary button-full" disabled={busy} type="submit">{busy ? t("loading") : t("submit")}</button></form></Modal>}
 
-    {meOpen && <Modal title={`${local("你好", "Hello")}，${me?.member.name ?? ""}`} wide onClose={() => setMeOpen(false)}><div className="me-tabs"><button className={meTab === "bookings" ? "active" : ""} onClick={() => setMeTab("bookings")} type="button">{t("myBookings")}</button><button className={meTab === "cards" ? "active" : ""} onClick={() => setMeTab("cards")} type="button">{t("myCards")}</button><button className={meTab === "orders" ? "active" : ""} onClick={() => setMeTab("orders")} type="button">{t("myOrders")}</button><button className="logout-link" type="button" onClick={() => { localStorage.removeItem("wellness_member_token"); setMe(null); setMeOpen(false); }}>{t("logout")}</button></div>
+    {meOpen && <Modal title={`${local("你好", "Hello")}，${me?.member.name ?? ""}`} wide onClose={() => setMeOpen(false)}><div className="me-tabs"><button className={meTab === "bookings" ? "active" : ""} onClick={() => setMeTab("bookings")} type="button">{t("myBookings")}</button><button className={meTab === "cards" ? "active" : ""} onClick={() => setMeTab("cards")} type="button">{t("myCards")}</button><button className={meTab === "orders" ? "active" : ""} onClick={() => setMeTab("orders")} type="button">{t("myOrders")}</button><button className="logout-link" type="button" onClick={() => setLogoutOpen(true)}>{t("logout")}</button></div>
       {meTab === "bookings" && <div className="me-list">{!me?.bookings.length ? <Empty>{t("noBookings")}</Empty> : me.bookings.map((booking) => <article key={booking.id} className={booking.status === "cancelled" ? "muted" : ""}><div><span className={`status-dot status-${booking.status}`}/><h3>{local(booking.session!.course.name, booking.session!.course.name_en)}</h3><p>{booking.session!.session_date} · {booking.session!.start_time}–{booking.session!.end_time}</p><small>{local(booking.session!.teacher.name, booking.session!.teacher.name_en)} · {local(booking.session!.room.name, booking.session!.room.name_en)}</small></div><div><span className="booking-status">{statusLabel(booking.status)}</span>{booking.status === "booked" && <><button className="text-button" type="button" onClick={() => void downloadFile(`/api/public/bookings/${booking.id}/calendar.ics`, `booking-${booking.id}.ics`, "member")}>{t("addCalendar")}</button><button className="text-button danger" type="button" onClick={() => void cancelBooking(booking)}>{t("cancel")}</button></>}</div></article>)}</div>}
       {meTab === "cards" && <div className="member-card-grid">{!me?.cards.length ? <Empty>{t("noCards")}</Empty> : me.cards.map((card) => <article className="member-pass" key={card.id}><span>{card.card_no}</span><h3>{local(card.product_name, card.product_name_en)}</h3><strong>{card.remaining_sessions ?? t("unlimited")}<small>{card.remaining_sessions !== null ? ` ${t("sessions")}` : ""}</small></strong><p>{t("expires")} {card.expires_on}</p><div className="pass-benefits">{card.benefits.map((benefit) => <span key={benefit.course_type}>{t(benefit.course_type as CourseType)} {benefit.remaining ?? benefit.quantity}</span>)}</div></article>)}</div>}
       {meTab === "orders" && <div className="me-list">{me?.transactions.map((order) => <article key={order.id}><div><h3>{order.note}</h3><p>{order.occurred_at} · {order.status}</p>{order.redemption_code && <strong className="redeem-code">{order.redemption_code}</strong>}</div><strong>{money(order.amount)}</strong></article>)}</div>}
     </Modal>}
+    {logoutOpen && <LogoutConfirm title={t("logout")} description={local("退出后需要重新验证手机号，才能查看预约、会员卡与购卡记录。", "Sign in with your mobile number again to view your bookings, membership and orders.")} cancelLabel={local("取消", "Cancel")} confirmLabel={local("确认退出", "Sign out")} onClose={() => setLogoutOpen(false)} onConfirm={logout}/>}
   </div>;
 }

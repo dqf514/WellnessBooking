@@ -50,4 +50,4 @@ def booking_dict(row: Booking, include_session: bool = True) -> dict:
 
 
 def transaction_dict(row: Transaction) -> dict:
-    return {"id": row.id, "member_id": row.member_id, "member_name": row.member.name if row.member else "", "member_card_id": row.member_card_id, "product_id": row.product_id, "category": row.category, "kind": row.kind, "amount": row.amount, "payment_method": row.payment_method, "status": row.status, "occurred_at": dt(row.occurred_at), "note": row.note, "redemption_code": row.redemption_code, "redeemed_at": dt(row.redeemed_at)}
+    return {"id": row.id, "member_id": row.member_id, "member_name": row.member.name if row.member else "", "member_card_id": row.member_card_id, "product_id": row.product_id, "product_name": row.product.name if row.product else "", "product_name_en": row.product.name_en if row.product else "", "category": row.category, "kind": row.kind, "amount": row.amount, "payment_method": row.payment_method, "status": row.status, "occurred_at": dt(row.occurred_at), "note": row.note, "redemption_code": row.redemption_code, "redeemed_at": dt(row.redeemed_at)}

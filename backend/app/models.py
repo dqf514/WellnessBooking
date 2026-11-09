@@ -219,6 +219,7 @@ class Transaction(Base):
     redemption_code: Mapped[str | None] = mapped_column(String(30), unique=True, nullable=True)
     redeemed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     member: Mapped[Member | None] = relationship()
+    product: Mapped[CardProduct | None] = relationship()
 
 
 class AppSettings(Base):

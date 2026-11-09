@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useLanguage } from "@/context/LanguageContext";
 
 export function PageHeader({ eyebrow, title, description, actions }: { eyebrow?: string; title: string; description?: string; actions?: ReactNode }) {
   return <header className="page-header"><div>{eyebrow && <span className="eyebrow">{eyebrow}</span>}<h1>{title}</h1>{description && <p>{description}</p>}</div>{actions && <div className="page-actions">{actions}</div>}</header>;
@@ -9,5 +10,6 @@ export function Field({ label, children, hint, className = "" }: { label: string
 }
 
 export function Notice({ message, error = false }: { message: string; error?: boolean }) {
-  return <div className={`notice ${error ? "notice-error" : ""}`} role={error ? "alert" : "status"}>{message}</div>;
+  const { admin } = useLanguage();
+  return <div className={`notice ${error ? "notice-error" : ""}`} role={error ? "alert" : "status"}>{admin(message)}</div>;
 }

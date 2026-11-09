@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
+import { adminCopy } from "@/lib/adminTranslations";
+import { translateAdminMessage } from "@/lib/adminMessages";
 
 export type Language = "zh" | "en";
 const copy = {
@@ -7,12 +9,15 @@ const copy = {
 } as const;
 
 type CopyKey = keyof typeof copy.zh;
-const LanguageContext = createContext<{ language: Language; setLanguage: (value: Language) => void; t: (key: CopyKey) => string; local: (zh: string, en: string) => string }>({ language: "zh", setLanguage: () => {}, t: (key) => copy.zh[key], local: (zh) => zh });
+interface LanguageValue { language: Language; setLanguage: (value: Language) => void; t: (key: CopyKey) => string; local: (zh: string, en?: string) => string; admin: (zh: string, en?: string) => string }
+const LanguageContext = createContext<LanguageValue>({ language: "zh", setLanguage: () => {}, t: (key) => copy.zh[key], local: (zh) => zh, admin: (zh) => zh });
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>(() => localStorage.getItem("wellness_language") === "en" ? "en" : "zh");
   const setLanguage = (value: Language) => { localStorage.setItem("wellness_language", value); setLanguageState(value); };
-  return <LanguageContext.Provider value={{ language, setLanguage, t: (key) => copy[language][key], local: (zh, en) => language === "en" && en ? en : zh }}>{children}</LanguageContext.Provider>;
+  const local = (zh: string, en?: string) => language === "en" && en ? en : zh;
+  const admin = (zh: string, en?: string) => local(zh, en ?? adminCopy[zh] ?? translateAdminMessage(zh));
+  return <LanguageContext.Provider value={{ language, setLanguage, t: (key) => copy[language][key], local, admin }}>{children}</LanguageContext.Provider>;
 }
 
 export function useLanguage() { return useContext(LanguageContext); }
