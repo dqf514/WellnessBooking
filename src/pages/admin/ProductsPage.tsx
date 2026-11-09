@@ -1,0 +1,36 @@
+import { useEffect, useState, type FormEvent } from "react";
+import { Field, Notice, PageHeader } from "@/components/AdminUI";
+import { Badge, Icon, Modal, Spinner } from "@/components/UI";
+import { apiFetch } from "@/lib/api";
+import { money } from "@/lib/date";
+import type { Benefit, Product } from "@/types";
+
+interface ProductForm { name: string; name_en: string; category: string; price: number; validity_days: number; total_sessions: string; description: string; description_en: string; online_sale: boolean; active: boolean; benefits: Benefit[] }
+const blank: ProductForm = { name: "", name_en: "", category: "group", price: 380, validity_days: 30, total_sessions: "1", description: "", description_en: "", online_sale: true, active: true, benefits: [] };
+
+export function ProductsPage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<Product | null>(null);
+  const [form, setForm] = useState<ProductForm>(blank);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  async function load() { try { const result = await apiFetch<{ items: Product[] }>("/api/admin/products"); setProducts(result.items); } catch (err) { setError(err instanceof Error ? err.message : "加载失败"); } finally { setLoading(false); } }
+  useEffect(() => { void load(); }, []);
+  function openCreate() { setEditing(null); setForm(blank); setFormOpen(true); }
+  function openEdit(product: Product) { setEditing(product); setForm({ name: product.name, name_en: product.name_en, category: product.category, price: product.price, validity_days: product.validity_days, total_sessions: product.total_sessions === null ? "" : String(product.total_sessions), description: product.description, description_en: product.description_en, online_sale: product.online_sale, active: product.active, benefits: product.benefits }); setFormOpen(true); }
+  async function save(event: FormEvent) {
+    event.preventDefault(); setBusy(true); setError("");
+    const payload = { ...form, total_sessions: form.total_sessions ? Number(form.total_sessions) : null };
+    try { await apiFetch(editing ? `/api/admin/products/${editing.id}` : "/api/admin/products", { method: editing ? "PATCH" : "POST", json: payload }); setMessage(editing ? "产品已更新" : "产品已创建"); setFormOpen(false); await load(); }
+    catch (err) { setError(err instanceof Error ? err.message : "保存失败"); }
+    finally { setBusy(false); }
+  }
+  function addBenefit() { setForm({ ...form, benefits: [...form.benefits, { course_type: "group", quantity: 1 }] }); }
+
+  return <div><PageHeader eyebrow="PRICE & BENEFITS" title="卡课产品" description="次卡、周期卡、私教与组合套餐；购买时可按实际成交调整价格，套餐权益按项目扣次。" actions={<button className="button button-primary" type="button" onClick={openCreate}><Icon name="plus" size={18}/>新建产品</button>}/>{error && <Notice error message={error}/>} {message && <Notice message={message}/>} {loading ? <Spinner/> : <section className="product-admin-grid">{products.map((product) => <article className="product-admin-card" key={product.id}><header><Badge tone={product.active ? "green" : "neutral"}>{product.active ? "销售中" : "已停用"}</Badge><button className="text-button" type="button" onClick={() => openEdit(product)}>编辑</button></header><span className="eyebrow">{product.category}</span><h2>{product.name}</h2><p>{product.name_en}</p><strong className="product-admin-price">{money(product.price)}</strong><dl><div><dt>有效期</dt><dd>{product.validity_days} 天</dd></div><div><dt>总次数</dt><dd>{product.total_sessions ?? "不限次"}</dd></div><div><dt>线上申请</dt><dd>{product.online_sale && product.price <= 5000 ? "已开启" : "到店购买"}</dd></div></dl>{product.benefits.length > 0 && <div className="benefit-tags">{product.benefits.map((benefit) => <span key={benefit.course_type}>{benefit.course_type} × {benefit.quantity}</span>)}</div>}</article>)}</section>}
+    {formOpen && <Modal wide title={editing ? "编辑卡课产品" : "新建卡课产品"} onClose={() => setFormOpen(false)}><form className="form-grid two-columns" onSubmit={save}><Field label="中文名称"><input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })}/></Field><Field label="英文名称"><input value={form.name_en} onChange={(event) => setForm({ ...form, name_en: event.target.value })}/></Field><Field label="产品类别"><select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}><option value="group">团课</option><option value="private">私教</option><option value="assessment">评估</option><option value="workshop">工作坊</option><option value="training">培训</option><option value="package">组合套餐</option></select></Field><Field label="售价"><input required min={0} type="number" value={form.price} onChange={(event) => setForm({ ...form, price: Number(event.target.value) })}/></Field><Field label="有效天数"><input required min={1} type="number" value={form.validity_days} onChange={(event) => setForm({ ...form, validity_days: Number(event.target.value) })}/></Field><Field label="总次数" hint="留空表示周期内不限次"><input min={1} type="number" value={form.total_sessions} onChange={(event) => setForm({ ...form, total_sessions: event.target.value })}/></Field><Field label="中文说明" className="span-two"><textarea rows={2} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })}/></Field><Field label="英文说明" className="span-two"><textarea rows={2} value={form.description_en} onChange={(event) => setForm({ ...form, description_en: event.target.value })}/></Field><div className="span-two benefit-editor"><header><div><strong>套餐分项权益</strong><p>组合套餐可包含评估、团课、私教、工作坊等；单项卡无需添加。</p></div><button className="button button-outline button-small" type="button" onClick={addBenefit}><Icon name="plus" size={15}/>添加权益</button></header>{form.benefits.map((benefit, index) => <div key={index}><select aria-label={`权益 ${index + 1} 类别`} value={benefit.course_type} onChange={(event) => setForm({ ...form, benefits: form.benefits.map((item, idx) => idx === index ? { ...item, course_type: event.target.value } : item) })}><option value="group">团课</option><option value="private">私教</option><option value="assessment">评估</option><option value="workshop">工作坊</option><option value="training">培训</option></select><input aria-label={`权益 ${index + 1} 次数`} min={1} type="number" value={benefit.quantity} onChange={(event) => setForm({ ...form, benefits: form.benefits.map((item, idx) => idx === index ? { ...item, quantity: Number(event.target.value) } : item) })}/><button className="icon-button" aria-label="删除权益" type="button" onClick={() => setForm({ ...form, benefits: form.benefits.filter((_, idx) => idx !== index) })}><Icon name="close" size={16}/></button></div>)}</div><div className="toggle-row span-two"><label><input type="checkbox" checked={form.online_sale} onChange={(event) => setForm({ ...form, online_sale: event.target.checked })}/>允许 5000 元以内线上申请</label><label><input type="checkbox" checked={form.active} onChange={(event) => setForm({ ...form, active: event.target.checked })}/>启用产品</label></div><button className="button button-primary button-full span-two" disabled={busy} type="submit">{busy ? "保存中…" : "保存产品"}</button></form></Modal>}
+  </div>;
+}

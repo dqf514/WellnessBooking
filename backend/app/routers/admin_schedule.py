@@ -1,0 +1,282 @@
+from datetime import datetime
+
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
+from sqlalchemy import or_
+from sqlalchemy.orm import Session, joinedload
+
+from ..booking_service import create_booking, transition_booking
+from ..database import get_db
+from ..deps import require_admin, require_read, require_staff
+from ..log_util import audit
+from ..models import Booking, ClassSession, Course, Member, Room, RoomReservation, Teacher, User
+from ..serializers import booking_dict, course_dict, room_dict, session_dict, teacher_dict
+from ..sms_service import notify_booking
+from ..utils import add_days, clean_payload, minutes, overlaps, today, valid_date, valid_time
+
+router = APIRouter(prefix="/api/admin", tags=["admin-schedule"])
+SESSION_FIELDS = {"course_id", "teacher_id", "room_id", "session_date", "start_time", "end_time", "capacity", "status", "notes"}
+
+
+def _session_query(db: Session):
+    return db.query(ClassSession).options(joinedload(ClassSession.course), joinedload(ClassSession.teacher), joinedload(ClassSession.room), joinedload(ClassSession.bookings).joinedload(Booking.member))
+
+
+def _validate_session(db: Session, data: dict, exclude_id: int | None = None) -> None:
+    valid_date(str(data.get("session_date", "")), "上课日期")
+    valid_time(str(data.get("start_time", "")), "开始时间")
+    valid_time(str(data.get("end_time", "")), "结束时间")
+    if minutes(data["end_time"]) <= minutes(data["start_time"]):
+        raise HTTPException(400, "结束时间必须晚于开始时间")
+    if int(data.get("capacity", 0)) < 1:
+        raise HTTPException(400, "可约人数至少为 1")
+    if not db.get(Course, int(data.get("course_id", 0))) or not db.get(Teacher, int(data.get("teacher_id", 0))) or not db.get(Room, int(data.get("room_id", 0))):
+        raise HTTPException(400, "课程、教练或教室不存在")
+    conflicts = db.query(ClassSession).filter(ClassSession.session_date == data["session_date"], ClassSession.status == "scheduled", or_(ClassSession.room_id == data["room_id"], ClassSession.teacher_id == data["teacher_id"]))
+    if exclude_id:
+        conflicts = conflicts.filter(ClassSession.id != exclude_id)
+    for row in conflicts.all():
+        if overlaps(data["start_time"], data["end_time"], row.start_time, row.end_time):
+            reason = "教室" if row.room_id == data["room_id"] else "教练"
+            raise HTTPException(409, f"{reason}时间冲突：{row.course.name} {row.start_time}-{row.end_time}")
+    room_bookings = db.query(RoomReservation).filter(RoomReservation.room_id == data["room_id"], RoomReservation.reservation_date == data["session_date"], RoomReservation.status == "active").all()
+    for row in room_bookings:
+        if overlaps(data["start_time"], data["end_time"], row.start_time, row.end_time):
+            raise HTTPException(409, f"教室已被“{row.title}”占用")
+
+
+@router.get("/sessions")
+def list_sessions(date_from: str = Query(""), date_to: str = Query(""), detailed: bool = Query(False), course_type: str = Query(""), db: Session = Depends(get_db), _: User = Depends(require_read)):
+    start = valid_date(date_from or today())
+    end = valid_date(date_to or add_days(start, 6))
+    query = _session_query(db).filter(ClassSession.session_date >= start, ClassSession.session_date <= end)
+    if course_type:
+        query = query.join(Course).filter(Course.course_type == course_type)
+    rows = query.order_by(ClassSession.session_date, ClassSession.start_time).all()
+    return {"items": [session_dict(row, detailed=detailed) for row in rows]}
+
+
+@router.post("/sessions")
+def create_session(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+    data = clean_payload(payload, SESSION_FIELDS)
+    _validate_session(db, data)
+    row = ClassSession(**data)
+    db.add(row)
+    db.flush()
+    audit(db, user, "schedule", "create", "class_session", row.id, data)
+    db.commit()
+    db.refresh(row)
+    return session_dict(row, detailed=True)
+
+
+@router.patch("/sessions/{session_id}")
+def update_session(session_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+    row = db.get(ClassSession, session_id)
+    if not row:
+        raise HTTPException(404, "排课不存在")
+    current = {key: getattr(row, key) for key in SESSION_FIELDS}
+    current.update(clean_payload(payload, SESSION_FIELDS))
+    _validate_session(db, current, exclude_id=session_id)
+    for key, value in clean_payload(payload, SESSION_FIELDS).items():
+        setattr(row, key, value)
+    audit(db, user, "schedule", "update", "class_session", session_id, payload)
+    db.commit()
+    return session_dict(row, detailed=True)
+
+
+@router.delete("/sessions/{session_id}")
+def cancel_session(session_id: int, db: Session = Depends(get_db), user: User = Depends(require_staff)):
+    row = db.get(ClassSession, session_id)
+    if not row:
+        raise HTTPException(404, "排课不存在")
+    row.status = "cancelled"
+    affected = []
+    for booking in row.bookings:
+        if booking.status in {"booked", "checked_in"}:
+            transition_booking(db, booking, "cancel", user.username)
+            affected.append(booking)
+    audit(db, user, "schedule", "cancel", "class_session", session_id, {"cancelled_bookings": len(affected)})
+    db.commit()
+    for booking in affected:
+        notify_booking(db, booking, cancelled=True)
+    return {"ok": True, "cancelled_bookings": len(affected)}
+
+
+@router.post("/sessions/copy-week")
+def copy_week(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+    target = valid_date(str(payload.get("week_start", "")), "目标周日期")
+    source = add_days(target, -7)
+    rows = db.query(ClassSession).filter(ClassSession.session_date >= source, ClassSession.session_date <= add_days(source, 6), ClassSession.status == "scheduled").all()
+    created, skipped = 0, []
+    for source_row in rows:
+        data = {key: getattr(source_row, key) for key in SESSION_FIELDS}
+        data["session_date"] = add_days(source_row.session_date, 7)
+        data["status"] = "scheduled"
+        duplicate = db.query(ClassSession).filter(ClassSession.course_id == data["course_id"], ClassSession.teacher_id == data["teacher_id"], ClassSession.room_id == data["room_id"], ClassSession.session_date == data["session_date"], ClassSession.start_time == data["start_time"]).first()
+        if duplicate:
+            skipped.append(f"{data['session_date']} {data['start_time']} 已存在")
+            continue
+        try:
+            _validate_session(db, data)
+        except HTTPException as exc:
+            skipped.append(f"{data['session_date']} {data['start_time']}：{exc.detail}")
+            continue
+        db.add(ClassSession(**data))
+        created += 1
+    audit(db, user, "schedule", "copy_week", "class_session", detail={"source_week": source, "target_week": target, "created": created, "skipped": skipped})
+    db.commit()
+    return {"ok": True, "created": created, "skipped": skipped}
+
+
+@router.post("/sessions/{session_id}/bookings")
+def admin_create_booking(session_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+    session = db.get(ClassSession, session_id)
+    member = db.get(Member, int(payload.get("member_id", 0)))
+    if not session or not member:
+        raise HTTPException(404, "课程或会员不存在")
+    booking = create_booking(db, session=session, member=member, source="admin")
+    booking.notes = str(payload.get("notes", ""))
+    audit(db, user, "booking", "create", "booking", booking.id, {"session_id": session_id, "member_id": member.id})
+    db.commit()
+    notify_booking(db, booking)
+    return booking_dict(booking)
+
+
+@router.post("/bookings/{booking_id}/{action}")
+def booking_action(booking_id: int, action: str, db: Session = Depends(get_db), user: User = Depends(require_staff)):
+    booking = db.get(Booking, booking_id)
+    if not booking:
+        raise HTTPException(404, "预约不存在")
+    transition_booking(db, booking, action, user.username)
+    audit(db, user, "booking", action, "booking", booking_id, {"member_id": booking.member_id, "session_id": booking.session_id})
+    db.commit()
+    if action == "cancel":
+        notify_booking(db, booking, cancelled=True)
+    return booking_dict(booking)
+
+
+@router.get("/rooms/overview")
+def room_overview(date: str = Query(""), db: Session = Depends(get_db), _: User = Depends(require_read)):
+    day = valid_date(date or today())
+    rooms = db.query(Room).filter(Room.active.is_(True)).order_by(Room.id).all()
+    sessions = db.query(ClassSession).filter(ClassSession.session_date == day, ClassSession.status == "scheduled").order_by(ClassSession.start_time).all()
+    reservations = db.query(RoomReservation).filter(RoomReservation.reservation_date == day, RoomReservation.status == "active").all()
+    return {"date": day, "rooms": [{**room_dict(room), "sessions": [session_dict(row) for row in sessions if row.room_id == room.id], "reservations": [{"id": row.id, "title": row.title, "start_time": row.start_time, "end_time": row.end_time, "usage_type": row.usage_type, "notes": row.notes} for row in reservations if row.room_id == room.id]} for room in rooms]}
+
+
+@router.post("/room-reservations")
+def reserve_room(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+    room = db.get(Room, int(payload.get("room_id", 0)))
+    if not room:
+        raise HTTPException(404, "教室不存在")
+    day = valid_date(str(payload.get("reservation_date", "")), "预约日期")
+    start = valid_time(str(payload.get("start_time", "")), "开始时间")
+    end = valid_time(str(payload.get("end_time", "")), "结束时间")
+    if minutes(end) <= minutes(start):
+        raise HTTPException(400, "结束时间必须晚于开始时间")
+    repeat = max(1, min(52, int(payload.get("repeat_weeks", 1))))
+    title = str(payload.get("title", "")).strip()
+    if not title:
+        raise HTTPException(400, "预约用途不能为空")
+    created, skipped = 0, []
+    for index in range(repeat):
+        current_day = add_days(day, index * 7)
+        conflict = False
+        for row in db.query(ClassSession).filter(ClassSession.room_id == room.id, ClassSession.session_date == current_day, ClassSession.status == "scheduled").all():
+            if overlaps(start, end, row.start_time, row.end_time):
+                conflict = True
+                skipped.append(f"{current_day} 与课程 {row.course.name} 冲突")
+                break
+        for row in db.query(RoomReservation).filter(RoomReservation.room_id == room.id, RoomReservation.reservation_date == current_day, RoomReservation.status == "active").all():
+            if overlaps(start, end, row.start_time, row.end_time):
+                conflict = True
+                skipped.append(f"{current_day} 与预约 {row.title} 冲突")
+                break
+        if conflict:
+            continue
+        db.add(RoomReservation(room_id=room.id, title=title, reservation_date=current_day, start_time=start, end_time=end, usage_type=str(payload.get("usage_type", "internal")), notes=str(payload.get("notes", "")), created_by=user.username))
+        created += 1
+    audit(db, user, "room", "reserve", "room", room.id, {"created": created, "repeat_weeks": repeat, "skipped": skipped})
+    db.commit()
+    return {"ok": True, "created": created, "skipped": skipped}
+
+
+@router.delete("/room-reservations/{reservation_id}")
+def cancel_room_reservation(reservation_id: int, db: Session = Depends(get_db), user: User = Depends(require_staff)):
+    row = db.get(RoomReservation, reservation_id)
+    if not row:
+        raise HTTPException(404, "教室预约不存在")
+    row.status = "cancelled"
+    audit(db, user, "room", "cancel_reservation", "room_reservation", reservation_id)
+    db.commit()
+    return {"ok": True}
+
+
+@router.post("/courses")
+def create_course(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_admin)):
+    allowed = {"course_type", "name", "name_en", "description", "description_en", "duration_minutes", "price", "color", "image_url", "active"}
+    row = Course(**clean_payload(payload, allowed))
+    db.add(row)
+    db.flush()
+    audit(db, user, "catalog", "create", "course", row.id)
+    db.commit()
+    return course_dict(row)
+
+
+@router.patch("/courses/{course_id}")
+def update_course(course_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_admin)):
+    row = db.get(Course, course_id)
+    if not row:
+        raise HTTPException(404, "课程不存在")
+    allowed = {"course_type", "name", "name_en", "description", "description_en", "duration_minutes", "price", "color", "image_url", "active"}
+    for key, value in clean_payload(payload, allowed).items():
+        setattr(row, key, value)
+    audit(db, user, "catalog", "update", "course", course_id, payload)
+    db.commit()
+    return course_dict(row)
+
+
+@router.post("/rooms")
+def create_room(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_admin)):
+    allowed = {"name", "name_en", "capacity", "color", "active"}
+    row = Room(**clean_payload(payload, allowed))
+    db.add(row)
+    db.flush()
+    audit(db, user, "catalog", "create", "room", row.id)
+    db.commit()
+    return room_dict(row)
+
+
+@router.patch("/rooms/{room_id}")
+def update_room(room_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_admin)):
+    row = db.get(Room, room_id)
+    if not row:
+        raise HTTPException(404, "教室不存在")
+    for key, value in clean_payload(payload, {"name", "name_en", "capacity", "color", "active"}).items():
+        setattr(row, key, value)
+    audit(db, user, "catalog", "update", "room", room_id, payload)
+    db.commit()
+    return room_dict(row)
+
+
+@router.post("/teachers")
+def create_teacher(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_admin)):
+    allowed = {"user_id", "name", "name_en", "phone", "gender", "specialties", "specialties_en", "bio", "bio_en", "image_url", "visible", "active"}
+    row = Teacher(**clean_payload(payload, allowed))
+    db.add(row)
+    db.flush()
+    audit(db, user, "catalog", "create", "teacher", row.id)
+    db.commit()
+    return teacher_dict(row)
+
+
+@router.patch("/teachers/{teacher_id}")
+def update_teacher(teacher_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_admin)):
+    row = db.get(Teacher, teacher_id)
+    if not row:
+        raise HTTPException(404, "教练不存在")
+    allowed = {"user_id", "name", "name_en", "phone", "gender", "specialties", "specialties_en", "bio", "bio_en", "image_url", "visible", "active"}
+    for key, value in clean_payload(payload, allowed).items():
+        setattr(row, key, value)
+    audit(db, user, "catalog", "update", "teacher", teacher_id, payload)
+    db.commit()
+    return teacher_dict(row)
