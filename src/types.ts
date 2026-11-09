@@ -2,7 +2,7 @@ export type CourseType = "group" | "private" | "assessment" | "workshop" | "trai
 export type Role = "admin" | "finance" | "frontdesk" | "teacher" | "viewer";
 
 export interface User { id: number; username: string; full_name: string; phone: string; role: Role; active: boolean; created_at?: string }
-export interface Venue { name: string; name_en: string; address: string; address_en: string; phone: string; booking_cutoff_minutes: number }
+export interface Venue { name: string; name_en: string; address: string; address_en: string; phone: string; logo_url: string; favicon_url: string; booking_cutoff_minutes: number }
 export interface Course { id: number; course_type: CourseType; name: string; name_en: string; description: string; description_en: string; duration_minutes: number; price: number; color: string; image_url: string; active: boolean }
 export interface Teacher { id: number; user_id?: number; name: string; name_en: string; phone: string; gender: string; specialties: string; specialties_en: string; bio: string; bio_en: string; image_url: string; visible: boolean; active: boolean }
 export interface Room { id: number; name: string; name_en: string; capacity: number; color: string; active: boolean }

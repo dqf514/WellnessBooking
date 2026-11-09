@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -35,3 +35,24 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def ensure_schema():
+    with engine.begin() as connection:
+        additions = {
+            "app_settings": {"logo_url": "VARCHAR(600) DEFAULT ''", "favicon_url": "VARCHAR(600) DEFAULT ''"},
+            "class_sessions": {"reserved_count": "INTEGER DEFAULT 0"},
+            "member_cards": {"version": "INTEGER DEFAULT 0"},
+        }
+        for table, columns_to_add in additions.items():
+            existing = {column["name"] for column in inspect(connection).get_columns(table)}
+            for name, definition in columns_to_add.items():
+                if name not in existing:
+                    connection.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {definition}"))
+
+
+def ensure_booking_constraints():
+    if not DATABASE_URL.startswith("sqlite"):
+        return
+    with engine.begin() as connection:
+        connection.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ux_bookings_active_member_session ON bookings(session_id, member_id) WHERE status IN ('booked', 'checked_in', 'completed', 'no_show')"))

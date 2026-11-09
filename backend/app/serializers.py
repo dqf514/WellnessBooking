@@ -35,7 +35,7 @@ def card_dict(row: MemberCard) -> dict:
 
 
 def session_dict(row: ClassSession, detailed: bool = False) -> dict:
-    occupied = sum(1 for booking in row.bookings if booking.status in {"booked", "checked_in", "completed", "no_show"})
+    occupied = row.reserved_count
     data = {"id": row.id, "course_id": row.course_id, "teacher_id": row.teacher_id, "room_id": row.room_id, "session_date": row.session_date, "start_time": row.start_time, "end_time": row.end_time, "capacity": row.capacity, "status": row.status, "notes": row.notes, "booked_count": occupied, "available": max(0, row.capacity - occupied), "course": course_dict(row.course), "teacher": teacher_dict(row.teacher), "room": room_dict(row.room)}
     if detailed:
         data["bookings"] = [booking_dict(booking, include_session=False) for booking in sorted(row.bookings, key=lambda item: (item.status == "cancelled", item.booked_at), reverse=False)]

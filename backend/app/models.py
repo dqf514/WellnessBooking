@@ -97,6 +97,7 @@ class ClassSession(Base, TimestampMixin):
     capacity: Mapped[int] = mapped_column(Integer, default=1)
     status: Mapped[str] = mapped_column(String(20), default="scheduled", index=True)
     notes: Mapped[str] = mapped_column(Text, default="")
+    reserved_count: Mapped[int] = mapped_column(Integer, default=0)
 
     course: Mapped[Course] = relationship()
     teacher: Mapped[Teacher] = relationship()
@@ -137,6 +138,7 @@ class MemberCard(Base, TimestampMixin):
     status: Mapped[str] = mapped_column(String(20), default="active", index=True)
     frozen_until: Mapped[str] = mapped_column(String(10), default="")
     note: Mapped[str] = mapped_column(Text, default="")
+    version: Mapped[int] = mapped_column(Integer, default=0)
 
     member: Mapped[Member] = relationship(back_populates="cards")
     product: Mapped[CardProduct] = relationship()
@@ -230,6 +232,8 @@ class AppSettings(Base):
     address: Mapped[str] = mapped_column(String(300), default="上海市徐汇区建国西路 357 号")
     address_en: Mapped[str] = mapped_column(String(300), default="357 West Jianguo Road, Shanghai")
     phone: Mapped[str] = mapped_column(String(32), default="021-5555-2026")
+    logo_url: Mapped[str] = mapped_column(String(600), default="")
+    favicon_url: Mapped[str] = mapped_column(String(600), default="")
     booking_cutoff_minutes: Mapped[int] = mapped_column(Integer, default=120)
     no_show_block_days: Mapped[int] = mapped_column(Integer, default=7)
     reminder_hours: Mapped[int] = mapped_column(Integer, default=24)

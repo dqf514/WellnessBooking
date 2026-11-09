@@ -4,7 +4,7 @@ from datetime import datetime
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session, joinedload
 
-from ..booking_service import create_booking
+from ..booking_service import create_booking, transition_booking
 from ..database import get_db
 from ..deps import get_current_member
 from ..models import AppSettings, Booking, CardProduct, ClassSession, Course, Member, Teacher, Transaction
@@ -23,7 +23,7 @@ def bootstrap(db: Session = Depends(get_db)):
     teachers = db.query(Teacher).filter(Teacher.active.is_(True), Teacher.visible.is_(True)).order_by(Teacher.id).all()
     products = db.query(CardProduct).filter(CardProduct.active.is_(True)).order_by(CardProduct.price).all()
     return {
-        "venue": {"name": settings.venue_name, "name_en": settings.venue_name_en, "address": settings.address, "address_en": settings.address_en, "phone": settings.phone, "booking_cutoff_minutes": settings.booking_cutoff_minutes},
+        "venue": {"name": settings.venue_name, "name_en": settings.venue_name_en, "address": settings.address, "address_en": settings.address_en, "phone": settings.phone, "logo_url": settings.logo_url, "favicon_url": settings.favicon_url, "booking_cutoff_minutes": settings.booking_cutoff_minutes},
         "courses": [course_dict(row) for row in courses],
         "teachers": [teacher_dict(row) for row in teachers],
         "products": [product_dict(row) for row in products],
@@ -93,13 +93,7 @@ def member_cancel_booking(booking_id: int, db: Session = Depends(get_db), member
         raise HTTPException(400, "当前预约不可取消")
     if session_datetime(booking.session.session_date, booking.session.start_time) <= datetime.now():
         raise HTTPException(400, "课程已开始，无法自主取消")
-    if booking.consumed and booking.member_card:
-        from ..booking_service import _restore
-        _restore(booking.member_card, booking.session.course.course_type)
-    booking.consumed = False
-    booking.status = "cancelled"
-    booking.cancelled_at = datetime.now()
-    booking.cancelled_by = "会员自主取消"
+    transition_booking(db, booking, "cancel", "会员自主取消")
     db.commit()
     notify_booking(db, booking, cancelled=True)
     return booking_dict(booking)

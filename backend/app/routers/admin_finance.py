@@ -110,11 +110,17 @@ def redeem_order(payload: dict = Body(...), db: Session = Depends(get_db), user:
     order = db.query(Transaction).filter(Transaction.redemption_code == code).first()
     if not order or order.status != "pending" or not order.product_id or not order.member_id:
         raise HTTPException(404, "待核销电子码不存在")
+    claimed = db.query(Transaction).filter(Transaction.id == order.id, Transaction.status == "pending").update({"status": "paid"}, synchronize_session=False)
+    if claimed != 1:
+        raise HTTPException(404, "待核销电子码不存在")
     member = db.get(Member, order.member_id)
     product = db.get(CardProduct, order.product_id)
-    card = issue_card(db, member=member, product=product, price=order.amount, payment_method=order.payment_method, note=f"电子码 {code} 核销")
+    if not member or not product:
+        raise HTTPException(404, "会员或卡课产品不存在")
+    card = issue_card(db, member=member, product=product, price=order.amount, payment_method=order.payment_method, note=f"电子码 {code} 核销", record_transaction=False)
     order.status = "paid"
     order.member_card_id = card.id
+    order.note = f"电子码 {code} 核销"
     order.redeemed_at = datetime.now()
     audit(db, user, "finance", "redeem_order", "transaction", order.id, {"card_id": card.id})
     db.commit()

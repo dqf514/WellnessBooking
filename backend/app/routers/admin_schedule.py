@@ -29,8 +29,17 @@ def _validate_session(db: Session, data: dict, exclude_id: int | None = None) ->
         raise HTTPException(400, "结束时间必须晚于开始时间")
     if int(data.get("capacity", 0)) < 1:
         raise HTTPException(400, "可约人数至少为 1")
-    if not db.get(Course, int(data.get("course_id", 0))) or not db.get(Teacher, int(data.get("teacher_id", 0))) or not db.get(Room, int(data.get("room_id", 0))):
+    course = db.get(Course, int(data.get("course_id", 0)))
+    teacher = db.get(Teacher, int(data.get("teacher_id", 0)))
+    room = db.get(Room, int(data.get("room_id", 0)))
+    if not course or not teacher or not room:
         raise HTTPException(400, "课程、教练或教室不存在")
+    if not course.active or not teacher.active or not room.active:
+        raise HTTPException(400, "课程、教练或教室已停用")
+    if exclude_id:
+        current = db.get(ClassSession, exclude_id)
+        if current and int(data["capacity"]) < current.reserved_count:
+            raise HTTPException(400, f"容量不能低于已预约人数 {current.reserved_count}")
     conflicts = db.query(ClassSession).filter(ClassSession.session_date == data["session_date"], ClassSession.status == "scheduled", or_(ClassSession.room_id == data["room_id"], ClassSession.teacher_id == data["teacher_id"]))
     if exclude_id:
         conflicts = conflicts.filter(ClassSession.id != exclude_id)

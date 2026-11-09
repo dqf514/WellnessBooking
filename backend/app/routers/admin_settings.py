@@ -1,9 +1,13 @@
 import hashlib
 import re
+import struct
+import time
+from pathlib import Path
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy.orm import Session
 
+from ..config import UPLOAD_DIR
 from ..database import get_db
 from ..deps import require_admin, require_read
 from ..log_util import audit, sms_log
@@ -18,7 +22,7 @@ router = APIRouter(prefix="/api/admin", tags=["admin-settings"])
 
 
 def _settings_dict(row: AppSettings) -> dict:
-    return {"venue_name": row.venue_name, "venue_name_en": row.venue_name_en, "address": row.address, "address_en": row.address_en, "phone": row.phone, "booking_cutoff_minutes": row.booking_cutoff_minutes, "no_show_block_days": row.no_show_block_days, "reminder_hours": row.reminder_hours}
+    return {"venue_name": row.venue_name, "venue_name_en": row.venue_name_en, "address": row.address, "address_en": row.address_en, "phone": row.phone, "logo_url": row.logo_url, "favicon_url": row.favicon_url, "booking_cutoff_minutes": row.booking_cutoff_minutes, "no_show_block_days": row.no_show_block_days, "reminder_hours": row.reminder_hours}
 
 
 @router.get("/settings")
@@ -36,6 +40,45 @@ def put_app_settings(payload: dict = Body(...), db: Session = Depends(get_db), u
     if not 0 <= int(row.booking_cutoff_minutes) <= 10080 or not 0 <= int(row.no_show_block_days) <= 365 or not 1 <= int(row.reminder_hours) <= 168:
         raise HTTPException(400, "预约或提醒参数超出允许范围")
     audit(db, user, "settings", "update", "app_settings", 1, payload)
+    db.commit()
+    return _settings_dict(row)
+
+
+@router.post("/settings/branding/{kind}")
+def upload_branding_image(kind: str, file: UploadFile = File(...), db: Session = Depends(get_db), user: User = Depends(require_admin)):
+    if kind not in {"logo", "favicon"}:
+        raise HTTPException(404, "不支持的品牌图片类型")
+    raw = file.file.read(2 * 1024 * 1024 + 1)
+    if len(raw) > 2 * 1024 * 1024:
+        raise HTTPException(400, "图片不能超过 2MB")
+    if len(raw) < 33 or raw[:8] != b"\x89PNG\r\n\x1a\n" or raw[12:16] != b"IHDR":
+        raise HTTPException(400, "仅支持 PNG 图片")
+    width, height = struct.unpack(">II", raw[16:24])
+    expected = (256, 256) if kind == "logo" else (64, 64)
+    if (width, height) != expected:
+        label = "Logo" if kind == "logo" else "favicon"
+        raise HTTPException(400, f"{label} 尺寸必须为 {expected[0]}×{expected[1]} 像素")
+    directory = UPLOAD_DIR / "branding"
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / f"{kind}.png").write_bytes(raw)
+    row = db.get(AppSettings, 1)
+    url = f"/uploads/branding/{kind}.png?v={int(time.time())}"
+    setattr(row, f"{kind}_url", url)
+    audit(db, user, "settings", "update_branding", "app_settings", 1, {"kind": kind, "width": width, "height": height, "size_bytes": len(raw)})
+    db.commit()
+    return _settings_dict(row)
+
+
+@router.delete("/settings/branding/{kind}")
+def reset_branding_image(kind: str, db: Session = Depends(get_db), user: User = Depends(require_admin)):
+    if kind not in {"logo", "favicon"}:
+        raise HTTPException(404, "不支持的品牌图片类型")
+    row = db.get(AppSettings, 1)
+    setattr(row, f"{kind}_url", "")
+    path = UPLOAD_DIR / "branding" / f"{kind}.png"
+    if path.exists():
+        path.unlink()
+    audit(db, user, "settings", "reset_branding", "app_settings", 1, {"kind": kind})
     db.commit()
     return _settings_dict(row)
 

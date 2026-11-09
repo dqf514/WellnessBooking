@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { Empty, Icon, LogoutConfirm, Modal, Spinner } from "@/components/UI";
+import { BrandLogo } from "@/components/BrandLogo";
 import { useLanguage } from "@/context/LanguageContext";
 import { apiFetch, downloadFile, getToken } from "@/lib/api";
 import { addDays, isoDate, money, shortDate, today, weekday, weekStart } from "@/lib/date";
@@ -204,7 +205,7 @@ export function PublicHome() {
 
   return <div className="public-site">
     <header className="public-header">
-      <a href="#top" className="brand" aria-label="Yinyu Wellness"><span className="brand-mark"><svg viewBox="0 0 36 36" aria-hidden="true"><path d="M28 6C15 7 8 13 8 23c7 1 15-2 20-17Z"/><path d="M8 29c3-8 8-12 16-17"/></svg></span><span><strong>{data ? local(data.venue.name, data.venue.name_en) : "音昱 Wellness"}</strong><small>MIND · BODY · EVERYDAY</small></span></a>
+      <a href="#top" className="brand" aria-label="Yinyu Wellness"><BrandLogo/><span><strong>{data ? local(data.venue.name, data.venue.name_en) : "音昱 Wellness"}</strong><small>MIND · BODY · EVERYDAY</small></span></a>
       <nav className="public-nav" aria-label="Main"><a href="#schedule">{t("schedule")}</a><a href="#teachers">{t("teachers")}</a><a href="#membership">{t("membership")}</a></nav>
       <div className="header-actions"><button className="text-button" type="button" onClick={() => setLanguage(language === "zh" ? "en" : "zh")}>{t("language")}</button><button className="account-button" type="button" aria-label={me?.member.name ?? t("login")} onClick={() => getToken("member") ? setMeOpen(true) : setLoginOpen(true)}><Icon name="user" size={18}/><span>{me?.member.name ?? t("login")}</span></button></div>
     </header>
@@ -255,7 +256,7 @@ export function PublicHome() {
       <section className="membership-section" id="membership"><div className="section-heading"><div><span className="eyebrow">YOUR PRACTICE, YOUR PACE</span><h2>{t("membership")}</h2></div><p>{local("次卡、周期卡与私教套餐，按你的节奏选择。", "Class packs, passes and private programs for your own rhythm.")}</p></div><div className="product-grid">{data?.products.filter((product) => product.online_sale).slice(0, 6).map((product) => <article className="product-card" key={product.id}><span className="product-type">{product.category.toUpperCase()}</span><h3>{local(product.name, product.name_en)}</h3><div className="product-price"><strong>{money(product.price)}</strong><span>/ {product.total_sessions ? `${product.total_sessions} ${t("sessions")}` : t("unlimited")}</span></div><p>{product.validity_days} {t("validDays")}</p><button className="button button-outline" type="button" disabled={busy} onClick={() => requestOrder(product)}>{t("buy")}<Icon name="arrow" size={17}/></button></article>)}</div></section>
     </main>
 
-    <footer className="public-footer"><div><span className="brand footer-brand"><span className="brand-mark"><svg viewBox="0 0 36 36" aria-hidden="true"><path d="M28 6C15 7 8 13 8 23c7 1 15-2 20-17Z"/><path d="M8 29c3-8 8-12 16-17"/></svg></span><strong>{data ? local(data.venue.name, data.venue.name_en) : "音昱 Wellness"}</strong></span><p>{data && local(data.venue.address, data.venue.address_en)}</p></div><div><a href={`tel:${data?.venue.phone}`}><Icon name="phone" size={17}/>{data?.venue.phone}</a><Link to="/login"><Icon name="user" size={17}/>{t("staff")}</Link></div></footer>
+    <footer className="public-footer"><div><span className="brand footer-brand"><BrandLogo/><strong>{data ? local(data.venue.name, data.venue.name_en) : "音昱 Wellness"}</strong></span><p>{data && local(data.venue.address, data.venue.address_en)}</p></div><div><a href={`tel:${data?.venue.phone}`}><Icon name="phone" size={17}/>{data?.venue.phone}</a><Link to="/login"><Icon name="user" size={17}/>{t("staff")}</Link></div></footer>
 
     <nav className="mobile-bottom-nav" aria-label="Mobile"><a href="#top"><Icon name="home"/><span>{t("home")}</span></a><a href="#schedule"><Icon name="calendar"/><span>{t("book")}</span></a><button type="button" onClick={() => getToken("member") ? setMeOpen(true) : setLoginOpen(true)}><Icon name="user"/><span>{t("account")}</span></button></nav>
 

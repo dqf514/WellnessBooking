@@ -9,7 +9,7 @@ from .models import CardProduct, Member, MemberCard, Transaction
 from .utils import add_days, today
 
 
-def issue_card(db: Session, *, member: Member, product: CardProduct, price: float, payment_method: str, starts_on: str = "", note: str = "") -> MemberCard:
+def issue_card(db: Session, *, member: Member, product: CardProduct, price: float, payment_method: str, starts_on: str = "", note: str = "", record_transaction: bool = True) -> MemberCard:
     if not product.active:
         raise HTTPException(400, "该卡课产品已停用")
     start = starts_on or today()
@@ -28,5 +28,6 @@ def issue_card(db: Session, *, member: Member, product: CardProduct, price: floa
     )
     db.add(card)
     db.flush()
-    db.add(Transaction(member_id=member.id, member_card_id=card.id, product_id=product.id, category=product.category, kind="purchase", amount=price, payment_method=payment_method, status="paid", note=note or product.name))
+    if record_transaction:
+        db.add(Transaction(member_id=member.id, member_card_id=card.id, product_id=product.id, category=product.category, kind="purchase", amount=price, payment_method=payment_method, status="paid", note=note or product.name))
     return card

@@ -296,3 +296,26 @@ textarea { resize: vertical; line-height: 1.7; }input[readonly] { background: #e
   .data-table td::before { flex: none; white-space: normal; }
   .page-actions .button, .table-actions .button, .table-actions .text-button { white-space: normal; }
 }
+
+.brand.admin-brand strong, .brand.login-brand strong { color: #fff; }
+.brand.admin-brand small, .brand.login-brand small { color: var(--sage-300); }
+.brand-mark { flex: 0 0 auto; overflow: hidden; }
+.brand-mark img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.branding-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.branding-item { display: flex; align-items: center; gap: 18px; min-width: 0; padding: 18px; border: 1px solid var(--line); border-radius: 6px; background: #f7f9f4; }
+.branding-preview { display: grid; place-items: center; flex: 0 0 auto; width: 76px; height: 76px; }
+.branding-preview .brand-mark { width: 72px; height: 72px; }
+.branding-preview.favicon-preview { width: 64px; height: 64px; border-radius: 12px; }
+.favicon-preview > img { display: block; width: 64px; height: 64px; border-radius: 12px; object-fit: cover; }
+.branding-copy { min-width: 0; }
+.branding-copy p { margin: 6px 0 13px; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.branding-copy .file-button { display: inline-flex; width: auto; margin: 0; }
+@media (max-width: 960px) {
+  .branding-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 420px) {
+  .branding-item { align-items: flex-start; flex-direction: column; }
+  .branding-copy .file-button { width: 100%; justify-content: center; }
+}
+
+.branding-reset { display: block; min-height: 36px; margin-top: 4px; padding: 0; }

@@ -155,6 +155,7 @@ def update_card(card_id: int, payload: dict = Body(...), db: Session = Depends(g
         card.note = str(payload.get("note", card.note))
     else:
         raise HTTPException(400, "不支持的卡操作")
+    card.version += 1
     audit(db, user, "member_card", action, "member_card", card_id, payload)
     db.commit()
     return card_dict(card)
@@ -168,6 +169,7 @@ def batch_extend_cards(payload: dict = Body(...), db: Session = Depends(get_db),
     rows = db.query(MemberCard).filter(MemberCard.status == "active", MemberCard.expires_on >= today()).all()
     for card in rows:
         card.expires_on = add_days(card.expires_on, days)
+        card.version += 1
     audit(db, user, "member_card", "batch_extend", "member_card", detail={"days": days, "count": len(rows), "note": payload.get("note", "")})
     db.commit()
     return {"ok": True, "updated": len(rows)}

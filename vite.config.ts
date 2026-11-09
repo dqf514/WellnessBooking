@@ -9,11 +9,17 @@ export default defineConfig({
     port: 38733,
     strictPort: true,
     host: true,
-    proxy: { "/api": { target: "http://127.0.0.1:38734", changeOrigin: true } },
+    proxy: {
+      "/api": { target: "http://127.0.0.1:38734", changeOrigin: true },
+      "/uploads": { target: "http://127.0.0.1:38734", changeOrigin: true },
+    },
   },
   preview: {
     port: 38735,
     strictPort: true,
-    proxy: { "/api": { target: "http://127.0.0.1:38734", changeOrigin: true } },
+    proxy: {
+      "/api": { target: "http://127.0.0.1:38734", changeOrigin: true },
+      "/uploads": { target: "http://127.0.0.1:38734", changeOrigin: true },
+    },
   },
 });
