@@ -5,7 +5,9 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.requests import Request
+from starlette.types import Scope
 
 from .api_key_service import record_api_key_usage
 from .booking_service import reconcile_booking_inventory
@@ -56,7 +58,19 @@ def health():
     return {"ok": True, "service": "wellness-booking"}
 
 
+class SPAStaticFiles(StaticFiles):
+    async def get_response(self, path: str, scope: Scope):
+        try:
+            return await super().get_response(path, scope)
+        except StarletteHTTPException as exc:
+            normalized_path = path.replace("\\", "/").lstrip("/")
+            is_api = normalized_path == "api" or normalized_path.startswith("api/")
+            if exc.status_code != 404 or scope["method"] not in ("GET", "HEAD") or is_api or Path(normalized_path).suffix:
+                raise
+            return await super().get_response("index.html", scope)
+
+
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 dist = Path(__file__).resolve().parent.parent.parent / "dist"
 if dist.exists():
-    app.mount("/", StaticFiles(directory=str(dist), html=True), name="frontend")
+    app.mount("/", SPAStaticFiles(directory=str(dist), html=True), name="frontend")
