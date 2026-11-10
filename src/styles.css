@@ -379,9 +379,25 @@ textarea { resize: vertical; line-height: 1.7; }input[readonly] { background: #e
 .admin-content { width: 100%; max-width: none; margin: 0; }
 .admin-nav { align-content: start; }
 .admin-nav-group { display: grid; gap: 3px; }
-.admin-nav-heading { display: flex; align-items: center; gap: 12px; min-height: 42px; padding: 8px 14px 4px; color: #d3dfd7; font-size: 13px; font-weight: 600; }
+.admin-nav-heading { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 42px; padding: 8px 14px 4px; border: 0; background: transparent; color: #d3dfd7; font-size: 13px; font-weight: 600; text-align: left; cursor: pointer; }
+.admin-nav-heading > svg:last-child { margin-left: auto; transition: transform .2s; }
+.admin-nav-group.expanded .admin-nav-heading > svg:last-child, .admin-nav-group:hover .admin-nav-heading > svg:last-child, .admin-nav-group:focus-within .admin-nav-heading > svg:last-child { transform: rotate(90deg); }
 .admin-nav-children { display: grid; gap: 2px; }
 .admin-nav .admin-nav-children a { min-height: 37px; padding: 7px 10px 7px 45px; font-size: 12px; }
+@media (min-width: 701px) {
+  .admin-nav-children { display: none; }
+  .admin-nav-group:hover .admin-nav-children, .admin-nav-group:focus-within .admin-nav-children, .admin-nav-group.expanded .admin-nav-children { display: grid; }
+}
+@media (max-width: 960px) and (min-width: 701px) {
+  .admin-nav-heading { justify-content: center; padding: 10px; }
+  .admin-nav-heading span, .admin-nav-heading > svg:last-child { display: none; }
+  .admin-nav .admin-nav-children a { justify-content: center; padding: 7px; }
+}
+@media (max-width: 700px) {
+  .admin-nav-heading { cursor: default; }
+  .admin-nav-heading > svg:last-child { display: none; }
+  .admin-nav-children { display: grid; }
+}
 .view-controls { display: flex; align-items: center; gap: 12px; margin-left: auto; }
 .view-mode-switch { display: flex; padding: 3px; border: 1px solid var(--line); border-radius: 5px; background: var(--paper); }
 .view-mode-switch button { min-width: 58px; min-height: 36px; padding: 5px 10px; border: 0; border-radius: 3px; background: transparent; color: var(--muted); font-size: 12px; }

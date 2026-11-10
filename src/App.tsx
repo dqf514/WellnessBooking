@@ -13,6 +13,7 @@ import { ProductsPage } from "@/pages/admin/ProductsPage";
 import { FinancePage } from "@/pages/admin/FinancePage";
 import { ReportsPage } from "@/pages/admin/ReportsPage";
 import { SettingsPage } from "@/pages/admin/SettingsPage";
+import { ResourceManagementPage } from "@/pages/admin/ResourceManagementPage";
 import { Spinner } from "@/components/UI";
 
 function Protected({ children, roles }: { children: ReactNode; roles?: string[] }) {
@@ -24,5 +25,5 @@ function Protected({ children, roles }: { children: ReactNode; roles?: string[] 
 }
 
 export default function App() {
-  return <Routes><Route path="/" element={<PublicHome/>}/><Route path="/login" element={<LoginPage/>}/><Route path="/admin" element={<Protected><AdminLayout/></Protected>}><Route index element={<DashboardPage/>}/><Route path="bookings" element={<Navigate to="group" replace/>}/><Route path="bookings/:type" element={<BookingsPage/>}/><Route path="schedule" element={<Navigate to="group" replace/>}/><Route path="schedule/:type" element={<SchedulePage/>}/><Route path="members" element={<MembersPage/>}/><Route path="rooms" element={<RoomsPage/>}/><Route path="products" element={<Protected roles={["admin", "finance"]}><ProductsPage/></Protected>}/><Route path="finance" element={<Protected roles={["admin", "finance"]}><FinancePage/></Protected>}/><Route path="reports" element={<ReportsPage/>}/><Route path="settings" element={<Protected roles={["admin"]}><SettingsPage/></Protected>}/></Route><Route path="*" element={<Navigate to="/" replace/>}/></Routes>;
+  return <Routes><Route path="/" element={<PublicHome/>}/><Route path="/login" element={<LoginPage/>}/><Route path="/admin" element={<Protected><AdminLayout/></Protected>}><Route index element={<DashboardPage/>}/><Route path="bookings" element={<Navigate to="group" replace/>}/><Route path="bookings/:type" element={<BookingsPage/>}/><Route path="schedule" element={<Navigate to="group" replace/>}/><Route path="schedule/:type" element={<SchedulePage/>}/><Route path="members" element={<MembersPage/>}/><Route path="rooms" element={<RoomsPage/>}/><Route path="resources/rooms" element={<Protected roles={["admin"]}><ResourceManagementPage kind="rooms"/></Protected>}/><Route path="resources/teachers" element={<Protected roles={["admin"]}><ResourceManagementPage kind="teachers"/></Protected>}/><Route path="products" element={<Protected roles={["admin", "finance"]}><ProductsPage/></Protected>}/><Route path="finance" element={<Protected roles={["admin", "finance"]}><FinancePage/></Protected>}/><Route path="reports" element={<ReportsPage/>}/><Route path="settings" element={<Protected roles={["admin"]}><SettingsPage/></Protected>}/></Route><Route path="*" element={<Navigate to="/" replace/>}/></Routes>;
 }
