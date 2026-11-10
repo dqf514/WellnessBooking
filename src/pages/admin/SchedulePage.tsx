@@ -1,6 +1,9 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import { Field, Notice, PageHeader } from "@/components/AdminUI";
-import { Badge, Icon, Modal, Spinner } from "@/components/UI";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useParams } from "react-router-dom";
+import { Notice, PageHeader } from "@/components/AdminUI";
+import { CourseLibraryModal } from "@/components/CourseLibraryModal";
+import { SessionEditor, type SessionEditorInitial } from "@/components/SessionEditor";
+import { Badge, Icon, Spinner } from "@/components/UI";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { apiFetch } from "@/lib/api";
@@ -8,88 +11,68 @@ import { addDays, shortDate, today, weekStart, weekday } from "@/lib/date";
 import { useSwipeNavigation } from "@/lib/useSwipeNavigation";
 import type { Meta, Session } from "@/types";
 
-interface SessionForm { course_id: string; teacher_id: string; room_id: string; session_date: string; start_time: string; end_time: string; capacity: string; notes: string }
-const blank: SessionForm = { course_id: "", teacher_id: "", room_id: "", session_date: today(), start_time: "09:00", end_time: "10:00", capacity: "10", notes: "" };
-
 export function SchedulePage() {
   const { user } = useAuth();
-  const { admin: a, local, language } = useLanguage();
+  const { type: routeType } = useParams();
+  const type = ["group", "private", "workshop"].includes(routeType ?? "") ? routeType! : "group";
+  const { local, language } = useLanguage();
   const canWrite = ["admin", "frontdesk"].includes(user?.role ?? "");
   const [week, setWeek] = useState(weekStart(today()));
-  const [type, setType] = useState("");
   const [meta, setMeta] = useState<Meta | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState<SessionForm>(blank);
   const [editing, setEditing] = useState<Session | null>(null);
-  const [formOpen, setFormOpen] = useState(false);
+  const [initial, setInitial] = useState<SessionEditorInitial>({});
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [copyOpen, setCopyOpen] = useState(false);
   const days = useMemo(() => Array.from({ length: 7 }, (_, index) => addDays(week, index)), [week]);
   const scheduleSwipe = useSwipeNavigation(() => setWeek((current) => addDays(current, -7)), () => setWeek((current) => addDays(current, 7)));
+  const typeLabel = type === "group" ? local("团课", "Group class") : type === "private" ? local("私教", "Personal training") : local("工作坊", "Workshop");
 
+  const loadMeta = useCallback(async () => {
+    const result = await apiFetch<Meta>("/api/admin/meta"); setMeta(result); return result;
+  }, []);
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const query = new URLSearchParams({ date_from: week, date_to: addDays(week, 6) });
-      if (type) query.set("course_type", type);
+      const query = new URLSearchParams({ date_from: week, date_to: addDays(week, 6), course_type: type === "private" ? "private,assessment" : type });
       const result = await apiFetch<{ items: Session[] }>(`/api/admin/sessions?${query}`);
       setSessions(result.items);
-    } catch (err) { setError(err instanceof Error ? err.message : "加载失败"); }
+    } catch (err) { setError(err instanceof Error ? err.message : local("加载失败", "Loading failed")); }
     finally { setLoading(false); }
   }, [week, type]);
-  useEffect(() => { void apiFetch<Meta>("/api/admin/meta").then(setMeta).catch((err) => setError(err.message)); }, []);
+  useEffect(() => { void loadMeta().catch((err) => setError(err.message)); }, [loadMeta]);
   useEffect(() => { void load(); }, [load]);
 
   function openCreate(day = week) {
-    if (!meta) return;
-    const course = meta.courses.find((item) => item.course_type === "group" && item.active) ?? meta.courses[0];
-    setEditing(null); setForm({ ...blank, course_id: String(course?.id ?? ""), teacher_id: String(meta.teachers[0]?.id ?? ""), room_id: String(meta.rooms[0]?.id ?? ""), session_date: day, end_time: course ? endFor("09:00", course.duration_minutes) : "10:00" }); setFormOpen(true);
-  }
-  function openEdit(session: Session) {
-    setEditing(session); setForm({ course_id: String(session.course_id), teacher_id: String(session.teacher_id), room_id: String(session.room_id), session_date: session.session_date, start_time: session.start_time, end_time: session.end_time, capacity: String(session.capacity), notes: session.notes }); setFormOpen(true);
-  }
-  function endFor(start: string, duration: number) {
-    const [hour, minute] = start.split(":").map(Number);
-    const total = hour * 60 + minute + duration;
-    return `${String(Math.floor(total / 60) % 24).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
-  }
-  function updateForm(key: keyof SessionForm, value: string) {
-    setForm((current) => {
-      const next = { ...current, [key]: value };
-      if (key === "course_id" || key === "start_time") {
-        const course = meta?.courses.find((item) => item.id === Number(next.course_id));
-        if (course) { next.end_time = endFor(next.start_time, course.duration_minutes); if (key === "course_id" && ["private", "assessment"].includes(course.course_type)) next.capacity = "1"; }
-      }
-      return next;
-    });
-  }
-  async function save(event: FormEvent) {
-    event.preventDefault(); setBusy(true); setError("");
-    const payload = { ...form, course_id: Number(form.course_id), teacher_id: Number(form.teacher_id), room_id: Number(form.room_id), capacity: Number(form.capacity) };
-    try {
-      await apiFetch(editing ? `/api/admin/sessions/${editing.id}` : "/api/admin/sessions", { method: editing ? "PATCH" : "POST", json: payload });
-      setMessage(local(editing ? "排课已更新" : "排课已创建", editing ? "Class schedule updated" : "Class scheduled")); setFormOpen(false); await load();
-    } catch (err) { setError(err instanceof Error ? err.message : "保存失败"); }
-    finally { setBusy(false); }
-  }
-  async function cancelSession() {
-    if (!editing || !window.confirm(a("取消这节课程？有效预约会一并取消并发送取消通知。"))) return;
-    setBusy(true);
-    try { await apiFetch(`/api/admin/sessions/${editing.id}`, { method: "DELETE" }); setMessage(a("课程与相关预约已取消")); setFormOpen(false); await load(); }
-    catch (err) { setError(err instanceof Error ? err.message : "取消失败"); }
-    finally { setBusy(false); }
+    setEditing(null); setInitial({ session_date: day }); setEditorOpen(true);
   }
   async function copyWeek() {
-    if (!window.confirm(local(`将 ${addDays(week, -7)} 至 ${addDays(week, -1)} 的课程复制到本周？冲突与重复课程会自动跳过。`, `Copy classes from ${addDays(week, -7)} through ${addDays(week, -1)} to this week? Conflicts and duplicates will be skipped.`))) return;
     setBusy(true); setError("");
-    try { const result = await apiFetch<{ created: number; skipped: string[] }>("/api/admin/sessions/copy-week", { method: "POST", json: { week_start: week } }); setMessage(local(`已复制 ${result.created} 节，跳过 ${result.skipped.length} 节${result.skipped.length ? `：${result.skipped.slice(0, 2).join("；")}` : ""}`, `Copied ${result.created} classes; skipped ${result.skipped.length}${result.skipped.length ? `: ${result.skipped.slice(0, 2).map((reason) => a(reason)).join("; ")}` : ""}`)); await load(); }
-    catch (err) { setError(err instanceof Error ? err.message : "复制失败"); }
+    try {
+      const result = await apiFetch<{ created: number; skipped: string[] }>("/api/admin/sessions/copy-week", { method: "POST", json: { week_start: week } });
+      setMessage(local(`已复制 ${result.created} 节，跳过 ${result.skipped.length} 节`, `Copied ${result.created} classes; skipped ${result.skipped.length}`)); setCopyOpen(false); await load();
+    } catch (err) { setError(err instanceof Error ? err.message : local("复制失败", "Copy failed")); }
     finally { setBusy(false); }
   }
 
-  return <div><PageHeader eyebrow="WEEKLY PLANNER" title={a("周课表")} description={a("团课、私教、评估、工作坊与培训统一排课；教室和教练冲突会自动拦截。")} actions={canWrite && <><button className="button button-outline" disabled={busy} type="button" onClick={() => void copyWeek()}>{a("复制上周课表")}</button><button className="button button-primary" type="button" onClick={() => openCreate()}><Icon name="plus" size={18}/>{a("新建排课")}</button></>}/><section className="schedule-toolbar"><div className="week-switch"><button className="icon-button" type="button" aria-label={a("上一周")} onClick={() => setWeek(addDays(week, -7))}>←</button><strong>{shortDate(week)} — {shortDate(addDays(week, 6))}</strong><button className="icon-button" type="button" aria-label={a("下一周")} onClick={() => setWeek(addDays(week, 7))}>→</button><button className="text-button" type="button" onClick={() => setWeek(weekStart(today()))}>{a("本周")}</button></div><select aria-label={a("课程类别")} value={type} onChange={(event) => setType(event.target.value)}><option value="">{a("全部课程")}</option><option value="group">{a("团课")}</option><option value="private">{a("私教")}</option><option value="assessment">{a("评估")}</option><option value="workshop">{a("工作坊")}</option><option value="training">{a("培训")}</option></select></section>{error && <Notice error message={error}/>} {message && <Notice message={message}/>} {loading ? <Spinner/> : <div className="week-grid-scroll" {...scheduleSwipe}><section className="week-grid">{days.map((day) => { const daySessions = sessions.filter((item) => item.session_date === day); return <div className={`week-day ${day === today() ? "today" : ""}`} key={day}><header><span>{weekday(day, language === "en")}</span><strong>{shortDate(day)}</strong>{day === today() && <Badge tone="green">{a("今天")}</Badge>}</header><div className="week-day-classes">{daySessions.map((session) => <button type="button" key={session.id} className={`schedule-class ${session.status === "cancelled" ? "cancelled" : ""}`} style={{ "--course-color": session.course.color } as React.CSSProperties} onClick={() => canWrite ? openEdit(session) : undefined}><span>{session.start_time}–{session.end_time}</span><strong>{local(session.course.name, session.course.name_en)}</strong><small>{local(session.teacher.name, session.teacher.name_en)}</small><small>{local(session.room.name, session.room.name_en)}</small><div><Badge tone={session.available ? "green" : "red"}>{session.booked_count}/{session.capacity}</Badge>{session.status === "cancelled" && <Badge>{a("已取消")}</Badge>}</div></button>)}{daySessions.length === 0 && <p className="no-class">{a("暂无排课")}</p>}</div>{canWrite && <button className="add-class-link" type="button" onClick={() => openCreate(day)}><Icon name="plus" size={15}/>{a("添加排课")}</button>}</div>; })}</section></div>}
-    {formOpen && <Modal title={editing ? a("编辑排课") : a("新建排课")} onClose={() => setFormOpen(false)}><form className="form-grid two-columns" onSubmit={save}><Field label={a("课程")}><select required value={form.course_id} onChange={(event) => updateForm("course_id", event.target.value)}>{meta?.courses.filter((item) => item.active).map((course) => <option key={course.id} value={course.id}>{local(course.name, course.name_en)} · {a(course.course_type)}</option>)}</select></Field><Field label={a("上课日期")}><input required type="date" value={form.session_date} onChange={(event) => updateForm("session_date", event.target.value)}/></Field><Field label={a("开始时间")}><input required type="time" step={900} value={form.start_time} onChange={(event) => updateForm("start_time", event.target.value)}/></Field><Field label={a("结束时间")} hint={a("按课程时长自动带出，可手动调整")}><input required type="time" step={900} value={form.end_time} onChange={(event) => updateForm("end_time", event.target.value)}/></Field><Field label={a("教练")}><select required value={form.teacher_id} onChange={(event) => updateForm("teacher_id", event.target.value)}>{meta?.teachers.filter((item) => item.active).map((teacher) => <option key={teacher.id} value={teacher.id}>{local(teacher.name, teacher.name_en)}</option>)}</select></Field><Field label={a("教室")}><select required value={form.room_id} onChange={(event) => updateForm("room_id", event.target.value)}>{meta?.rooms.filter((item) => item.active).map((room) => <option key={room.id} value={room.id}>{local(room.name, room.name_en)}</option>)}</select></Field><Field label={a("最大人数")}><input required min={1} type="number" value={form.capacity} onChange={(event) => updateForm("capacity", event.target.value)}/></Field><Field label={a("备注")} className="span-two"><textarea rows={3} value={form.notes} onChange={(event) => updateForm("notes", event.target.value)}/></Field><div className="form-footer span-two">{editing && <button className="button button-danger-ghost" type="button" disabled={busy} onClick={() => void cancelSession()}>{a("取消课程")}</button>}<span/><button className="button button-outline" type="button" onClick={() => setFormOpen(false)}>{a("返回")}</button><button className="button button-primary" disabled={busy} type="submit">{busy ? a("保存中…") : a("保存排课")}</button></div></form></Modal>}
+  return <div>
+    <PageHeader eyebrow="WEEKLY PLANNER" title={local(`${typeLabel}排课`, `${typeLabel} schedule`)} description={local("独立管理课种与每周场次；教练、教室和时间冲突会自动拦截。", "Manage class templates and weekly sessions with automatic instructor, room and time conflict checks.")} actions={canWrite && <>{user?.role === "admin" && type !== "private" && <button className="button button-outline" type="button" onClick={() => setLibraryOpen(true)}>{local("课程库", "Class library")}</button>}<button className="button button-outline" disabled={busy} type="button" onClick={() => setCopyOpen(true)}>{local("复制上周课表", "Copy previous week")}</button><button className="button button-primary" type="button" onClick={() => openCreate()}><Icon name="plus" size={18}/>{local("新建排课", "Schedule class")}</button></>}/>
+    <section className="schedule-toolbar"><div className="week-switch"><button className="icon-button" type="button" aria-label={local("上一周", "Previous week")} onClick={() => setWeek(addDays(week, -7))}>←</button><strong>{shortDate(week)} — {shortDate(addDays(week, 6))}</strong><button className="icon-button" type="button" aria-label={local("下一周", "Next week")} onClick={() => setWeek(addDays(week, 7))}>→</button><button className="text-button" type="button" onClick={() => setWeek(weekStart(today()))}>{local("本周", "This week")}</button></div><Badge tone="blue">{typeLabel}</Badge></section>
+    {error && <Notice error message={error}/>} {message && <Notice message={message}/>}
+    {loading ? <Spinner/> : <div className="week-grid-scroll" {...scheduleSwipe}><section className="week-grid">{days.map((day) => { const daySessions = sessions.filter((item) => item.session_date === day); return <div className={`week-day ${day === today() ? "today" : ""}`} key={day}><header><span>{weekday(day, language === "en")}</span><strong>{shortDate(day)}</strong>{day === today() && <Badge tone="green">{local("今天", "Today")}</Badge>}</header><div className="week-day-classes">{daySessions.map((session) => <button type="button" key={session.id} className={`schedule-class ${session.status === "cancelled" ? "cancelled" : ""}`} style={{ "--course-color": session.course.color } as React.CSSProperties} onClick={() => { if (!canWrite) return; setEditing(session); setEditorOpen(true); }}><span>{session.start_time}–{session.end_time}</span><strong>{local(session.course.name, session.course.name_en)}</strong><small>{local(session.teacher.name, session.teacher.name_en)}</small><small>{local(session.room.name, session.room.name_en)} · {session.room.floor}</small><div><Badge tone={session.available ? "green" : "red"}>{session.booked_count}/{session.capacity}</Badge>{session.status === "cancelled" && <Badge>{local("已取消", "Cancelled")}</Badge>}</div></button>)}{daySessions.length === 0 && <p className="no-class">{local("暂无排课", "No classes")}</p>}</div>{canWrite && <button className="add-class-link" type="button" onClick={() => openCreate(day)}><Icon name="plus" size={15}/>{local("添加排课", "Add class")}</button>}</div>; })}</section></div>}
+    {editorOpen && meta && <SessionEditor key={editing?.id ?? `new-${initial.session_date}`} meta={meta} session={editing} initial={initial} courseType={type} onClose={() => setEditorOpen(false)} onSaved={load}/>}
+    {libraryOpen && meta && <CourseLibraryModal meta={meta} initialType={type} onClose={() => setLibraryOpen(false)} onChanged={loadMeta}/>}
+    {copyOpen && <ModalShim title={local("复制上周课表", "Copy previous week")} description={local(`将 ${addDays(week, -7)} 至 ${addDays(week, -1)} 的课程复制到本周？冲突与重复课程会自动跳过。`, `Copy classes from ${addDays(week, -7)} through ${addDays(week, -1)}? Conflicts and duplicates will be skipped.`)} busy={busy} onClose={() => setCopyOpen(false)} onConfirm={() => void copyWeek()}/>}
   </div>;
+}
+
+import { Modal } from "@/components/UI";
+function ModalShim({ title, description, busy, onClose, onConfirm }: { title: string; description: string; busy: boolean; onClose: () => void; onConfirm: () => void }) {
+  const { local } = useLanguage();
+  return <Modal title={title} onClose={onClose}><div className="logout-confirmation"><p>{description}</p><div className="logout-confirmation-actions"><button className="button button-outline" type="button" onClick={onClose}>{local("取消", "Cancel")}</button><button className="button button-primary" disabled={busy} type="button" onClick={onConfirm}>{local("确认复制", "Copy classes")}</button></div></div></Modal>;
 }

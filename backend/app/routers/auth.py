@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy.orm import Session
+from starlette.requests import Request
 
 from ..database import get_db
 from ..deps import get_current_user
@@ -41,12 +42,16 @@ def staff_sms_login(payload: dict = Body(...), db: Session = Depends(get_db)):
 
 
 @router.get("/me")
-def me(user: User = Depends(get_current_user)):
+def me(request: Request, user: User = Depends(get_current_user)):
+    if getattr(request.state, "auth_kind", "jwt") != "jwt":
+        raise HTTPException(403, "员工身份信息仅支持登录会话查询")
     return user_dict(user)
 
 
 @router.post("/change-password")
-def change_password(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def change_password(request: Request, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    if getattr(request.state, "auth_kind", "jwt") != "jwt":
+        raise HTTPException(403, "API Key 不能用于修改登录密码")
     if not verify_password(str(payload.get("old_password", "")), user.password_hash):
         raise HTTPException(400, "原密码不正确")
     new_password = str(payload.get("new_password", ""))

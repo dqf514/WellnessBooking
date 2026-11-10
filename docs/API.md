@@ -1,6 +1,6 @@
 # 音昱 Wellness API 对接文档
 
-> 版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 **76 个 HTTP 接口**。
+> 版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 **95 个 HTTP 接口**。
 >
 > 在线交互文档：`/docs`（Swagger UI）、`/redoc`（ReDoc）；原始 OpenAPI 3 定义：`/openapi.json`。
 
@@ -47,7 +47,37 @@ Token 类型为 JWT，签名算法 HS256；有效期默认 10080 分钟（7 天�
 
 权限在服务端强制执行，隐藏前端菜单并不等于接口授权。`teacher` 和 `viewer` 虽可读取业务数据，但不能执行写操作。
 
-### 1.4 错误与并发
+### 1.4 API Key 接入鉴权
+
+系统对接可在“系统设置 → API 密钥”创建独立凭证，调用后台接口时发送：
+
+```http
+X-API-Key: <完整 API Key>
+```
+
+- 密钥以 `yyk_` 开头，服务端只保存 SHA-256 哈希；完整明文仅在创建或轮换响应中返回一次，之后只能查看 `前缀…后四位`。
+- 不要把密钥放在 URL、前端代码或公开仓库中。`Authorization: Bearer` 与 `X-API-Key` 不能同时使用，否则返回 `400`。
+- API Key 复用创建人的员工身份，实际权限是“创建人当前角色允许范围”和“密钥 scopes”的交集。创建人停用后密钥立即不可用，角色降级也会进一步受限。
+- 无效、停用、过期或已删除密钥返回 `401`；角色或 scope 不足返回 `403`。写操作不会因为有 `read` 而自动获得权限。
+- API Key 仅用于 `/api/admin` 业务接口，不能访问会员个人接口、查询员工身份、修改密码，也不能管理 API Key；密钥管理只接受管理员 JWT 登录会话。
+- 每次携带 `yyk_` 前缀密钥的请求都会记录方法、路径、状态码、IP、User-Agent 和时间，日志不记录完整密钥或 Query String。
+
+| scope | 权限范围 |
+| --- | --- |
+| `read` | 后台业务数据、报表与普通操作/短信日志读取 |
+| `members:write` | 会员、会员卡、会员记录、爽约限制与合同文件写入 |
+| `bookings:write` | 后台添加预约、签到、取消签到、完成、取消和爽约 |
+| `schedule:write` | 排课、复制周课表与教室占用写入 |
+| `catalog:write` | 课程、教室和教练基础资料写入 |
+| `finance:write` | 产品、手工入账、退款与电子码核销 |
+| `settings:write` | 场馆、品牌、员工账号与短信设置写入 |
+| `maintenance:write` | 数据导入导出、备份和恢复 |
+
+```bash
+curl "$API/api/admin/dashboard" -H "X-API-Key: $WELLNESS_API_KEY"
+```
+
+### 1.5 错误与并发
 
 业务错误格式：
 
@@ -75,9 +105,9 @@ FastAPI 参数校验错误格式：
 
 预约通过原子容量更新和唯一约束防止超约、重复预约；扣次通过会员卡 `version` 乐观锁防止并发重复扣减。收到 `409` 后必须重新读取数据。
 
-### 1.5 分页、筛选与 CORS
+### 1.6 分页、筛选与 CORS
 
-- 操作/短信日志固定每页 50 条，`page` 从 1 开始。
+- 操作/短信日志固定每页 50 条，API Key 使用日志固定每页 20 条，`page` 均从 1 开始。
 - 财务流水按时间倒序最多返回 1000 条；其他列表当前没有分页参数。
 - 会员端课表单次跨度最多 31 天；后台课表不限制跨度，但调用方应主动控制范围。
 - 开发环境 CORS 仅允许 `127.0.0.1` / `localhost` 的 `38733`、`38735` 端口；生产跨域部署需调整服务端 CORS 配置。
@@ -117,7 +147,7 @@ FastAPI 参数校验错误格式：
 
 **Teacher**：`id`、`user_id`、`name`、`name_en`、`phone`、`gender`、`specialties`、`specialties_en`、`bio`、`bio_en`、`image_url`、`visible`、`active`。
 
-**Room**：`id`、`name`、`name_en`、`capacity`、`color`、`active`。
+**Room**：`id`、`name`、`name_en`、`capacity`、`floor`、`sort_order`、`color`、`active`。
 
 课程类型现有值为 `group`（团课）、`private`（私教）、`assessment`（评估）、`workshop`（工作坊）、`training`（培训）。`visible=false` 的教练不在会员端教练列表出现；`active=false` 的基础资料不可用于新排课。
 
@@ -136,9 +166,10 @@ FastAPI 参数校验错误格式：
 | `purchased_at`、`starts_on`、`expires_on` | date | 购买日、生效日、到期日 |
 | `total_sessions`、`remaining_sessions` | integer / null | 总次数、剩余次数；周期卡可为 `null` |
 | `benefits` | object[] | 分课程类型权益，见下表 |
-| `status` | string | `active` / `cancelled`；响应可将过期活动卡显示为 `expired` |
+| `status` | string | `active` / `cancelled` / `upgraded`；响应可将过期活动卡显示为 `expired` |
 | `frozen_until` | string | 冻结截止日，未冻结为空字符串 |
 | `note` | string | 操作备注 |
+| `shared_with` | object[] | 共享会员的 `id`、`name`、`phone` |
 
 `benefits[]` 的典型结构为 `{ "course_type": "group", "quantity": 10, "remaining": 8 }`；`course_type="all"` 表示全类型适用。存在匹配权益时优先扣减权益，否则使用产品 `category` 和卡的总剩余次数。`quantity` 是返还上限。
 
@@ -158,9 +189,9 @@ FastAPI 参数校验错误格式：
 | `course`、`teacher`、`room` | object | 完整关联对象 |
 | `bookings` | Booking[] | 仅后台 `detailed=true` 或写排课时返回 |
 
-**Booking**：`id`、`session_id`、`member_id`、`member`、`member_card_id`、`card_name`、`status`、`source`、`booked_at`、`cancelled_at`、`cancelled_by`、`checked_in_at`、`completed_at`、`consumed`、`notes`；除嵌套在排课详情中时，还包含完整 `session`。
+**Booking**：`id`、`session_id`、`member_id`、`member`、`member_card_id`、`experience_voucher_id`、`card_name`、`status`、`source`、`booked_at`、`cancelled_at`、`cancelled_by`、`checked_in_at`、`completed_at`、`consumed`、`notes`；除嵌套在排课详情中时，还包含完整 `session`。使用体验券消课时 `card_name` 为“免费体验券”。
 
-预约状态为 `booked`（待上课）、`checked_in`（已签到）、`completed`（已完成）、`cancelled`（已取消）、`no_show`（爽约）。来源为 `public` 或 `admin`。`consumed=true` 表示已经扣除一次卡权益，完成消课不会再次扣减。
+预约状态为 `booked`（待上课）、`checked_in`（历史已签到状态）、`completed`（已签到消课）、`cancelled`（已取消）、`no_show`（爽约）。来源为 `public` 或 `admin`。新签到直接写入 `completed`；`consumed=true` 表示已经扣除一次卡或体验券权益，重复完成不会再次扣减。
 
 ### 2.6 Transaction 财务流水
 
@@ -169,7 +200,7 @@ FastAPI 参数校验错误格式：
 | `id`、`member_id`、`member_card_id`、`product_id` | integer / null | 关联资源 ID |
 | `member_name`、`product_name`、`product_name_en` | string | 展示名称 |
 | `category` | string | 课程类别或 `misc` 等自定义类别 |
-| `kind` | string | `purchase` / `manual` / `refund` |
+| `kind` | string | `purchase` / `manual` / `refund` / `upgrade` |
 | `amount` | number | 入账为正，退款为负 |
 | `payment_method` | string | 结账方式，例如 `cash`、`wechat`、`alipay` |
 | `status` | string | `pending` / `paid` / `refunded` |
@@ -432,15 +463,15 @@ curl -X POST "$API/api/auth/login" \
 
 #### GET /api/admin/members/{member_id}/documents
 
-- **权限**：只读；**响应**：`{ items: DocumentMeta[] }`。
-- `DocumentMeta`：`id`、`original_name`、`content_type`、`size_bytes`、`uploaded_by`、`created_at`。
+- **权限**：只读；**响应**：`{ items: DocumentMeta[] }`；可用 `category=contract|assessment` 筛选。
+- `DocumentMeta`：`id`、`category`、`original_name`、`content_type`、`size_bytes`、`uploaded_by`、`created_at`。
 
 ### 7.2 上传文件
 
 #### POST /api/admin/members/{member_id}/documents
 
-- **权限**：前台；**multipart**：字段 `file`。
-- 仅扩展名 `.pdf`、`.png`、`.jpg`、`.jpeg`、`.webp`，单文件最大 8 MiB，不允许空文件。
+- **权限**：前台；**multipart**：字段 `file`，分类字段 `category=contract|assessment`，默认 `contract`。
+- 支持 PDF、图片、Word、Excel、CSV，单文件最大 12 MiB，不允许空文件。
 - **响应**：DocumentMeta。服务端以 UUID 重命名存储，响应不暴露存储路径。
 
 ### 7.3 下载文件
@@ -763,32 +794,101 @@ curl -X POST "$API/api/auth/login" \
 
 预约成功、取消和课前提醒没有独立“立即发送”业务 API，分别由预约/取消接口和后台调度任务触发。提醒只处理 `booked`，按 `reminder_hours` 时间窗筛选，并依据短信日志避免同一预约重复提醒。
 
-## 12. 数据导出、备份与恢复（10）
+## 12. API Key 管理与调用日志（6）
+
+> 本组接口仅允许管理员 JWT 登录会话，不接受 API Key 调用，防止凭证自我提权或轮换其他凭证。任何响应都不会返回 `key_hash`。
+
+**ApiKey 安全视图**包含：`id`、`name`、`key_prefix`、`key_suffix`、`masked_key`、`scopes`、`active`、`expired`、`expires_at`、`created_by`、`creator_name`、`created_at`、`updated_at`、`rotated_at`、`last_used_at`、`last_used_ip`、`usage_count`。`expires_at`、未发生的时间字段为 `null`；`last_used_ip` 未使用时为空字符串。
+
+有效期可传 `YYYY-MM-DD`（当天 23:59:59 到期）、`YYYY-MM-DDTHH:MM` 或带秒的本地 ISO 时间，不支持时区后缀；必须晚于服务器当前时间。传 `null`、空字符串或 `never` 表示永不过期，创建时省略该字段则默认 90 天。
+
+### 12.1 API Key 列表与权限选项
+
+#### GET /api/admin/api-keys
+
+- **权限**：管理员登录会话；**请求**：无。
+- **响应**：`{ items: ApiKey[], scope_options }`，按 ID 倒序。
+- `scope_options[]` 含 `id`、`description`，覆盖 1.4 节全部 8 种 scope；列表只返回掩码，不能用于取回完整密钥。
+
+### 12.2 创建 API Key
+
+#### POST /api/admin/api-keys
+
+- **权限**：管理员登录会话。
+- **Body**：`name`（1–100 字符）、`scopes`（至少一个有效 scope 的数组）、`expires_at`（可选，规则见本节开头）。
+- **响应**：`{ item, api_key, message }`。`api_key` 是唯一一次返回的完整明文，必须立即安全保存。
+- 新凭证默认 `active=true`，创建人为当前管理员；操作写入普通审计日志。
+
+```json
+{
+  "name": "CRM 数据同步",
+  "scopes": ["read"],
+  "expires_at": "2027-01-31T23:59:59"
+}
+```
+
+### 12.3 修改名称、权限、有效期或启停
+
+#### PATCH /api/admin/api-keys/{key_id}
+
+- **权限**：管理员登录会话。
+- **Body**：`name`、`scopes`、`expires_at`、`active` 任意子集；未传字段保持不变。
+- **响应**：ApiKey 安全视图，不返回完整密钥。
+- 停用后下一次调用立即返回 `401`；将 `expires_at` 改为 `null` 会变为永不过期，应谨慎使用。
+
+### 12.4 轮换 API Key
+
+#### POST /api/admin/api-keys/{key_id}/rotate
+
+- **权限**：管理员登录会话；**Body**：无。
+- **响应**：`{ item, api_key, message }`，新完整明文仅本次返回。
+- 原密钥立即失效，名称、scopes、有效期和 active 状态保持不变；`rotated_at` 更新。不会自动启用已停用密钥。
+
+### 12.5 删除 API Key
+
+#### DELETE /api/admin/api-keys/{key_id}
+
+- **权限**：管理员登录会话；**Body**：无。
+- **响应**：`{ ok: true }`；删除后调用返回 `401`。
+- 使用日志保留当时的密钥 ID、名称和前缀快照，此操作不可撤销。
+
+### 12.6 查询 API Key 使用日志
+
+#### GET /api/admin/api-key-logs
+
+- **权限**：管理员登录会话。
+- **Query**：`key_id`（0 表示全部）、`result=all|success|denied`、`page`（≥1）、`q`（按密钥名称、路径或 IP 模糊搜索）。
+- `success` 为状态码小于 400，`denied` 为状态码大于等于 400。
+- **响应**：`{ items, total, page, page_size: 20 }`，按日志 ID 倒序。
+- 日志项：`id`、`api_key_id`、`key_name`、`key_prefix`、`method`、`path`、`status_code`、`ip`、`user_agent`、`created_at`。
+- 无效或过期密钥的拒绝请求也会记录；路径不含 Query String，日志中不会出现完整密钥。
+
+## 13. 数据导出、备份与恢复（10）
 
 > 以下接口均需管理员。备份工具只支持 SQLite 文件数据库；数据库备份不包含 `/uploads` 中的合同、Logo 等文件，完整灾难恢复还需另行备份上传目录。
 
-### 12.1 立即一致性备份
+### 13.1 立即一致性备份
 
 #### POST /api/admin/maintenance/backup-db
 
 - **Body**：无；使用 SQLite Online Backup API 生成一致性快照。
 - **响应**：`{ ok, filename, size_bytes, message }`；随后按保留计划清理旧备份。
 
-### 12.2 备份列表
+### 13.2 备份列表
 
 #### GET /api/admin/maintenance/backups
 
 - **请求**：无。
 - **响应**：`{ items }`，每项含 `filename`、`size_bytes`、`modified_at`，按修改时间倒序。
 
-### 12.3 下载备份
+### 13.3 下载备份
 
 #### GET /api/admin/maintenance/backups/download
 
 - **Query**：`filename` 必填，只能是备份目录内的 `.db` 文件名，不允许路径跳转。
 - **响应**：`application/octet-stream` 文件流；不存在返回 `404`。
 
-### 12.4 从已有备份恢复
+### 13.4 从已有备份恢复
 
 #### POST /api/admin/maintenance/restore-db/from-backup
 
@@ -796,7 +896,7 @@ curl -X POST "$API/api/auth/login" \
 - **响应**：`{ ok, before_backup, message }`。
 - 校验 SQLite 文件头、完整性和 `members` 表，恢复前自动备份当前库；成功后需重新登录并重启后端。
 
-### 12.5 上传数据库并恢复
+### 13.5 上传数据库并恢复
 
 #### POST /api/admin/maintenance/restore-db/upload
 
@@ -804,14 +904,14 @@ curl -X POST "$API/api/auth/login" \
 - **响应与规则**：同从已有备份恢复。
 - 上传副本保留在备份目录。恢复是高风险全量覆盖操作，不可当作普通导入重复调用。
 
-### 12.6 读取自动备份计划
+### 13.6 读取自动备份计划
 
 #### GET /api/admin/maintenance/backup-plan
 
 - **请求**：无。
 - **响应**：`enabled`、`daily_time_hm`、`keep_last`、`last_run_date`。
 
-### 12.7 更新自动备份计划
+### 13.7 更新自动备份计划
 
 #### PUT /api/admin/maintenance/backup-plan
 
@@ -819,7 +919,7 @@ curl -X POST "$API/api/auth/login" \
 - 保留份数被限制在 1–3650；保存后立即清理超出份数的旧备份。
 - **响应**：`ok` 加完整计划字段。
 
-### 12.8 导出 CSV
+### 13.8 导出 CSV
 
 #### GET /api/admin/maintenance/export/{kind}.csv
 
@@ -829,14 +929,14 @@ curl -X POST "$API/api/auth/login" \
 - 预约列：`id,member,phone,course,teacher,room,date,start_time,end_time,status,source,booked_at,cancelled_at,cancelled_by`。
 - 流水列：`id,member,category,kind,amount,payment_method,status,occurred_at,note,redemption_code`。
 
-### 12.9 下载会员导入模板
+### 13.9 下载会员导入模板
 
 #### GET /api/admin/maintenance/members-template.csv
 
 - **请求**：无；**响应**：UTF-8 BOM CSV。
 - 列：`name,name_en,phone,gender,birth_date,source,wechat,emergency_phone,notes`，含一行示例。
 
-### 12.10 导入会员 CSV
+### 13.10 导入会员 CSV
 
 #### POST /api/admin/maintenance/members/import.csv
 
@@ -845,9 +945,9 @@ curl -X POST "$API/api/auth/login" \
 - **响应**：`{ ok, created, updated, skipped, error_count, errors }`，最多返回前 100 条行级错误。
 - 姓名和手机号逐行校验；`skip` 跳过同手机号，`update` 用 CSV 字段覆盖已有会员。错误行跳过，其余有效行仍提交。
 
-## 13. 典型业务调用顺序
+## 14. 典型业务调用顺序
 
-### 13.1 会员预约闭环
+### 14.1 会员预约闭环
 
 ```text
 GET  /api/public/bootstrap
@@ -859,7 +959,7 @@ GET  /api/public/me                         -> 刷新预约、卡和流水
 DELETE /api/public/bookings/{booking_id}     -> cancelled，释放席位
 ```
 
-### 13.2 前台签到与消课闭环
+### 14.2 前台签到与消课闭环
 
 ```text
 POST /api/admin/members                              -> 建立唯一手机号档案
@@ -874,7 +974,7 @@ GET  /api/admin/reports                                -> 到课与经营复盘
 
 误签到使用 `undo_check_in`，误预约使用 `cancel`；不要通过直接调整剩余次数掩盖状态错误。
 
-### 13.3 电子码购卡闭环
+### 14.3 电子码购卡闭环
 
 ```text
 会员：POST /api/public/orders                  -> pending + redemption_code
@@ -886,12 +986,13 @@ GET  /api/admin/reports                                -> 到课与经营复盘
 
 全额退款会销整张关联卡；调用方在确认框中必须明确提示。部分退款不会销卡，但原单也不可再次退款。
 
-### 13.4 JavaScript 请求示例
+### 14.4 JavaScript 请求示例
 
 ```js
-async function api(path, { method = "GET", token, body, form } = {}) {
+async function api(path, { method = "GET", token, apiKey, body, form } = {}) {
   const headers = {};
   if (token) headers.Authorization = `Bearer ${token}`;
+  if (apiKey) headers["X-API-Key"] = apiKey;
   if (body !== undefined) headers["Content-Type"] = "application/json";
   const response = await fetch(path, {
     method,
@@ -911,13 +1012,18 @@ const sessions = await api(
   "/api/admin/sessions?date_from=2026-01-01&date_to=2026-01-07&detailed=true",
   { token: login.access_token }
 );
+
+const dashboard = await api("/api/admin/dashboard", {
+  apiKey: process.env.WELLNESS_API_KEY
+});
 ```
 
 下载文件时不要使用会强制 `response.json()` 的封装；应读取 `response.blob()`，并保留 Authorization 请求头。
 
-## 14. 对接检查清单
+## 15. 对接检查清单
 
-- 员工与会员 Token 分开存储，不用 Query String 传 Token。
+- 员工与会员 Token 分开存储，不用 Query String 传 Token 或 API Key；系统对接使用 `X-API-Key`。
+- API Key 按最小权限分配 scopes 和有效期，完整明文只保存在安全的密码管理器中；泄露或员工离职时立即轮换、停用或删除，并定期检查使用日志。
 - 不在前端信任 `available`、卡余额或角色，最终校验始终以服务端响应为准。
 - 预约、签到、核销后重新读取关联资源，不自行累加金额或次数。
 - 对 `400/409` 展示具体原因；只有网络中断等明确可重试场景才考虑重试。
@@ -925,3 +1031,129 @@ const sessions = await api(
 - 生产环境更换默认 JWT 密钥、停用演示数据与开发验证码，并限制文档和后台的公网访问。
 - 密钥、短信密码、数据库和合同文件不得提交到前端代码或公开仓库。
 - 备份数据库的同时备份上传目录，并定期实际验证恢复流程。
+
+
+## 16. 会员权益、快捷预约与目录扩展（13）
+
+本节接口均需员工 Bearer Token 或相应 API Key scope。会员权益写操作使用 `members:write`，快捷预约使用 `bookings:write`，排课与教室占用使用 `schedule:write`，目录维护使用 `catalog:write`。
+
+签到同时完成消课：`POST /api/admin/bookings/{booking_id}/check_in` 返回状态为 `completed`，写入 `checked_in_at` 和 `completed_at`，并同步扣减有效自有卡、共享卡或体验券。`undo_check_in` 恢复预约及权益。签到响应额外返回 `member_reminders: string[]`。
+
+### 16.1 升卡、转卡与共享
+
+#### POST /api/admin/cards/{card_id}/upgrade
+
+前台。将正常卡升级为另一产品，原卡状态变为 `upgraded`，新卡继承新产品的有效期和权益，同时生成 `kind=upgrade` 的补差流水。
+
+```json
+{
+  "product_id": 6,
+  "price": 25712,
+  "payment_method": "wechat",
+  "starts_on": "2026-11-10",
+  "note": "月卡补差升级年卡"
+}
+```
+
+`price` 为本次补差金额，省略时按“新产品标价减原卡实购价、最低为 0”计算。仅支持同类别产品或年卡类别升级。响应包含 `old_card`、`card` 和 `difference`。
+
+#### POST /api/admin/cards/{card_id}/transfer
+
+前台。将正常卡及剩余权益转给另一有效会员。接收字段为 `target_member_id` 和选填 `note`。若该卡仍关联未消课的有效预约，返回 `400`，需先取消或调整预约。
+
+#### POST /api/admin/cards/{card_id}/share
+
+前台。把正常卡共享给另一有效会员，接收 `target_member_id`。共享人预约和签到时可直接扣减原卡权益，预约记录仍归属实际到课的共享人。重复共享返回 `400`。
+
+#### DELETE /api/admin/cards/{card_id}/shares/{member_id}
+
+前台。移除共享关系。共享人仍有该卡关联的未消课有效预约时返回 `400`，需先取消预约。历史核销记录不删除。
+
+### 16.2 会员提醒
+
+#### POST /api/admin/members/{member_id}/reminders
+
+前台。创建会员提醒：
+
+```json
+{ "content": "会员生日准备了小礼物，签到时交给会员", "remind_on": "2026-11-16" }
+```
+
+`remind_on` 可留空表示立即提醒。到期提醒出现在会员详情 `reminder_alerts` 中，并在签到响应 `member_reminders` 中返回。生日前 7 天会自动生成提示，无需创建生日提醒。
+
+#### PATCH /api/admin/reminders/{reminder_id}
+
+前台。传 `{ "active": false }` 完成提醒，或传非空 `content` 修改内容。详情中的 `reminders` 保存提醒 ID、内容、日期、状态、创建人和创建时间。
+
+### 16.3 免费体验券
+
+#### POST /api/admin/members/{member_id}/vouchers
+
+前台。发放可用于真实预约和消课的体验券：
+
+```json
+{ "course_type": "private", "quantity": 1, "expires_on": "2026-12-10", "note": "销售体验 offer" }
+```
+
+`course_type` 支持 `all`、`group`、`private`、`assessment`、`workshop`、`training`；`quantity` 为 1–100。有效期不能早于当天。无可用会员卡时，签到会原子扣减体验券；取消签到返还。响应及会员详情的 `vouchers` 包含总次数、剩余次数、状态、有效期和发券人。
+
+#### PATCH /api/admin/vouchers/{voucher_id}
+
+前台。传 `{ "status": "cancelled" }` 停用体验券，传 `active` 可重新启用。停用不影响历史核销记录。
+
+### 16.4 一步完成私教排课与预约
+
+#### POST /api/admin/private-bookings
+
+前台。一次事务中创建一节容量为 1 的私教/评估课程和会员预约，避免先排课再选会员的两步操作。
+
+```json
+{
+  "course_id": 5,
+  "teacher_id": 4,
+  "room_id": 5,
+  "member_id": 1,
+  "session_date": "2026-11-20",
+  "start_time": "09:00",
+  "end_time": "10:00",
+  "notes": "初次私教"
+}
+```
+
+课程必须是 `private` 或 `assessment`，教练、教室冲突返回 `409`，课程已开始返回 `400`。成功响应包含 `session` 和 `booking`，任一失败则整体不保存。发送预约通知的规则与普通后台预约一致。
+
+### 16.5 排课永久删除保护
+
+#### DELETE /api/admin/sessions/{session_id}/permanent
+
+前台。仅从未产生任何预约的排课可物理删除。已有预约（包括已取消预约）返回 `400`，应改用 `DELETE /api/admin/sessions/{session_id}` 取消课程并保留历史。
+
+### 16.6 编辑教室占用
+
+#### PATCH /api/admin/room-reservations/{reservation_id}
+
+前台。修改已有教室占用，支持 `room_id`、`title`、`reservation_date`、`start_time`、`end_time`、`usage_type`、`notes`。省略字段沿用原值。保存前排除自身并检查课程及其他占用冲突；取消占用仍使用原有 DELETE 接口。
+
+### 16.7 教室自定义排序
+
+#### POST /api/admin/rooms/reorder
+
+管理员。接收完整 `room_ids` 数组，按数组顺序写入 `sort_order`：
+
+```json
+{ "room_ids": [5, 1, 2, 3, 4] }
+```
+
+ID 必须覆盖当前全部教室且不能重复。教室另有 `floor` 字段；创建和编辑教室时均可提交 `floor`、`sort_order`，列表和总览按楼层、自定义顺序和 ID 排列。
+
+### 16.8 上传教练照片
+
+#### POST /api/admin/teachers/{teacher_id}/photo
+
+管理员。`multipart/form-data` 上传字段名为 `file`，支持 PNG、JPG、WebP，最大 4MB。服务端校验真实文件头，返回更新后的 Teacher；`image_url` 为 `/uploads/teachers/...` 路径。
+
+### 16.9 评估附件与营收口径补充
+
+会员资料上传接口 `POST /api/admin/members/{member_id}/documents` 新增 multipart 字段 `category`：`contract`（默认）或 `assessment`。支持 PDF、图片、Word、Excel、CSV，单文件最大 12MB；列表和响应均返回 `category`。
+
+报表 `summary.revenue` 为确认营收，`summary.cash_received` 为现金实收：365 天团课/年卡/套餐按有效开始日逐日分摊，私教产品购买只计现金、签到消课时按“卡实购价÷总次数”确认，团课卡购买即确认。响应另有 `amortized_revenue` 和 `private_recognized_revenue`。财务流水页始终展示现金口径。

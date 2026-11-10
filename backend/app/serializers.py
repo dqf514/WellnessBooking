@@ -18,7 +18,7 @@ def teacher_dict(row: Teacher) -> dict:
 
 
 def room_dict(row: Room) -> dict:
-    return {"id": row.id, "name": row.name, "name_en": row.name_en, "capacity": row.capacity, "color": row.color, "active": row.active}
+    return {"id": row.id, "name": row.name, "name_en": row.name_en, "capacity": row.capacity, "floor": row.floor, "sort_order": row.sort_order, "color": row.color, "active": row.active}
 
 
 def course_dict(row: Course) -> dict:
@@ -31,7 +31,8 @@ def product_dict(row: CardProduct) -> dict:
 
 def card_dict(row: MemberCard) -> dict:
     expired = bool(row.expires_on and row.expires_on < today())
-    return {"id": row.id, "member_id": row.member_id, "product_id": row.product_id, "product_name": row.product.name, "product_name_en": row.product.name_en, "category": row.product.category, "card_no": row.card_no, "purchase_price": row.purchase_price, "purchased_at": row.purchased_at, "starts_on": row.starts_on, "expires_on": row.expires_on, "total_sessions": row.total_sessions, "remaining_sessions": row.remaining_sessions, "benefits": json_loads(row.benefits_json, []), "status": "expired" if expired and row.status == "active" else row.status, "frozen_until": row.frozen_until, "note": row.note}
+    shares = getattr(row, "shares", [])
+    return {"id": row.id, "member_id": row.member_id, "product_id": row.product_id, "product_name": row.product.name, "product_name_en": row.product.name_en, "category": row.product.category, "card_no": row.card_no, "purchase_price": row.purchase_price, "purchased_at": row.purchased_at, "starts_on": row.starts_on, "expires_on": row.expires_on, "total_sessions": row.total_sessions, "remaining_sessions": row.remaining_sessions, "benefits": json_loads(row.benefits_json, []), "status": "expired" if expired and row.status == "active" else row.status, "frozen_until": row.frozen_until, "note": row.note, "shared_with": [{"id": share.member_id, "name": share.member.name, "phone": share.member.phone} for share in shares]}
 
 
 def session_dict(row: ClassSession, detailed: bool = False) -> dict:
@@ -43,7 +44,7 @@ def session_dict(row: ClassSession, detailed: bool = False) -> dict:
 
 
 def booking_dict(row: Booking, include_session: bool = True) -> dict:
-    data = {"id": row.id, "session_id": row.session_id, "member_id": row.member_id, "member": member_dict(row.member), "member_card_id": row.member_card_id, "card_name": row.member_card.product.name if row.member_card else "", "status": row.status, "source": row.source, "booked_at": dt(row.booked_at), "cancelled_at": dt(row.cancelled_at), "cancelled_by": row.cancelled_by, "checked_in_at": dt(row.checked_in_at), "completed_at": dt(row.completed_at), "consumed": row.consumed, "notes": row.notes}
+    data = {"id": row.id, "session_id": row.session_id, "member_id": row.member_id, "member": member_dict(row.member), "member_card_id": row.member_card_id, "card_name": row.member_card.product.name if row.member_card else "免费体验券" if row.experience_voucher_id else "", "experience_voucher_id": row.experience_voucher_id, "status": row.status, "source": row.source, "booked_at": dt(row.booked_at), "cancelled_at": dt(row.cancelled_at), "cancelled_by": row.cancelled_by, "checked_in_at": dt(row.checked_in_at), "completed_at": dt(row.completed_at), "consumed": row.consumed, "notes": row.notes}
     if include_session:
         data["session"] = session_dict(row.session)
     return data

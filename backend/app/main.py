@@ -5,11 +5,13 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.requests import Request
 
+from .api_key_service import record_api_key_usage
 from .booking_service import reconcile_booking_inventory
 from .config import UPLOAD_DIR
 from .database import Base, SessionLocal, engine, ensure_booking_constraints, ensure_schema
-from .routers import admin_core, admin_documents, admin_finance, admin_schedule, admin_settings, auth, maintenance, public
+from .routers import admin_api_keys, admin_core, admin_documents, admin_finance, admin_membership, admin_schedule, admin_settings, auth, maintenance, public
 from .scheduler import start_scheduler
 from .seed import run_seed
 
@@ -30,7 +32,22 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title="音昱 Wellness 预约管理 API", version="1.0.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["http://127.0.0.1:38733", "http://localhost:38733", "http://127.0.0.1:38735", "http://localhost:38735"], allow_credentials=False, allow_methods=["*"], allow_headers=["*"])
-for router in (auth.router, public.router, admin_core.router, admin_documents.router, admin_schedule.router, admin_finance.router, admin_settings.router, maintenance.router):
+
+
+@app.middleware("http")
+async def api_key_usage_middleware(request: Request, call_next):
+    if not request.headers.get("x-api-key", "").startswith("yyk_"):
+        return await call_next(request)
+    status_code = 500
+    try:
+        response = await call_next(request)
+        status_code = response.status_code
+        return response
+    finally:
+        record_api_key_usage(request, status_code)
+
+
+for router in (auth.router, public.router, admin_core.router, admin_documents.router, admin_membership.router, admin_schedule.router, admin_finance.router, admin_settings.router, admin_api_keys.router, maintenance.router):
     app.include_router(router)
 
 

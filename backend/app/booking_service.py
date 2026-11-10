@@ -6,7 +6,8 @@ from sqlalchemy import case, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from .models import AppSettings, Booking, ClassSession, Member, MemberCard
+from .membership_service import find_available_voucher
+from .models import AppSettings, Booking, ClassSession, ExperienceVoucher, Member, MemberCard, MemberCardShare
 from .utils import add_days, json_loads, session_datetime, today
 
 ACTIVE_BOOKING_STATUSES = {"booked", "checked_in", "completed", "no_show"}
@@ -27,7 +28,7 @@ def _card_quantity_for(card: MemberCard, course_type: str) -> int | None:
 
 
 def _card_usable(card: MemberCard, course_type: str, on_date: str) -> bool:
-    if card.status != "active" or card.expires_on < on_date:
+    if card.status != "active" or card.expires_on < on_date or card.starts_on > on_date:
         return False
     if card.frozen_until and card.frozen_until >= on_date:
         return False
@@ -36,11 +37,17 @@ def _card_usable(card: MemberCard, course_type: str, on_date: str) -> bool:
 
 
 def find_available_card(db: Session, member: Member, course_type: str, on_date: str) -> MemberCard | None:
-    cards = db.query(MemberCard).filter(MemberCard.member_id == member.id, MemberCard.status == "active", MemberCard.expires_on >= on_date).order_by(MemberCard.expires_on.asc(), MemberCard.id.asc()).all()
-    for card in cards:
+    filters = [MemberCard.status == "active", MemberCard.expires_on >= on_date]
+    own = db.query(MemberCard).filter(MemberCard.member_id == member.id, *filters).all()
+    shared = db.query(MemberCard).join(MemberCardShare, MemberCardShare.card_id == MemberCard.id).filter(MemberCardShare.member_id == member.id, *filters).all()
+    for card in sorted({card.id: card for card in [*own, *shared]}.values(), key=lambda item: (item.expires_on, item.id)):
         if _card_usable(card, course_type, on_date):
             return card
     return None
+
+
+def has_available_entitlement(db: Session, member: Member, course_type: str, on_date: str) -> bool:
+    return bool(find_available_card(db, member, course_type, on_date) or find_available_voucher(db, member, course_type, on_date))
 
 
 def create_booking(db: Session, *, session: ClassSession, member: Member, source: str, public: bool = False) -> Booking:
@@ -65,8 +72,8 @@ def create_booking(db: Session, *, session: ClassSession, member: Member, source
         raise HTTPException(400, "该会员已预约此课程")
     if session.reserved_count >= session.capacity:
         raise HTTPException(400, "课程已约满")
-    if public and session.course.price > 0 and not find_available_card(db, member, session.course.course_type, session.session_date):
-        raise HTTPException(400, "暂无可用会员卡，请先购卡或联系前台")
+    if public and session.course.price > 0 and not has_available_entitlement(db, member, session.course.course_type, session.session_date):
+        raise HTTPException(400, "暂无可用会员卡或体验券，请先购卡或联系前台")
     booking = Booking(session_id=session.id, member_id=member.id, source=source)
     try:
         with db.begin_nested():
@@ -130,6 +137,22 @@ def _restore(db: Session, card: MemberCard, course_type: str) -> None:
     card.version = expected_version + 1
 
 
+def _consume_voucher(db: Session, voucher: ExperienceVoucher) -> None:
+    updated = db.query(ExperienceVoucher).filter(ExperienceVoucher.id == voucher.id, ExperienceVoucher.version == voucher.version, ExperienceVoucher.remaining_sessions > 0).update({"remaining_sessions": ExperienceVoucher.remaining_sessions - 1, "version": ExperienceVoucher.version + 1}, synchronize_session=False)
+    if updated != 1:
+        raise HTTPException(409, "体验券刚刚发生变更，请刷新后重试")
+    voucher.remaining_sessions -= 1
+    voucher.version += 1
+
+
+def _restore_voucher(db: Session, voucher: ExperienceVoucher) -> None:
+    updated = db.query(ExperienceVoucher).filter(ExperienceVoucher.id == voucher.id, ExperienceVoucher.version == voucher.version).update({"remaining_sessions": func.min(ExperienceVoucher.total_sessions, ExperienceVoucher.remaining_sessions + 1), "version": ExperienceVoucher.version + 1}, synchronize_session=False)
+    if updated != 1:
+        raise HTTPException(409, "体验券刚刚发生变更，请刷新后重试")
+    voucher.remaining_sessions = min(voucher.total_sessions, voucher.remaining_sessions + 1)
+    voucher.version += 1
+
+
 def consume_booking(db: Session, booking: Booking) -> None:
     if booking.consumed:
         return
@@ -138,17 +161,31 @@ def consume_booking(db: Session, booking: Booking) -> None:
     card = db.get(MemberCard, booking.member_card_id) if booking.member_card_id else None
     if not card or not _card_usable(card, course_type, on_date):
         card = find_available_card(db, booking.member, course_type, on_date)
-    if not card:
-        raise HTTPException(400, "会员无可用卡或对应权益不足，请先购卡/续卡")
-    if not card.starts_on or card.starts_on > on_date:
-        previous_start = card.starts_on
-        card.starts_on = on_date
-        if previous_start:
+    if card:
+        if card.starts_on > on_date:
+            previous_start = card.starts_on
+            card.starts_on = on_date
             days = (datetime.fromisoformat(previous_start) - datetime.fromisoformat(on_date)).days
             card.expires_on = add_days(card.expires_on, -days)
-    _consume(db, card, course_type)
-    booking.member_card_id = card.id
+        _consume(db, card, course_type)
+        booking.member_card_id = card.id
+    else:
+        voucher = db.get(ExperienceVoucher, booking.experience_voucher_id) if booking.experience_voucher_id else find_available_voucher(db, booking.member, course_type, on_date)
+        if not voucher or voucher.status != "active" or voucher.expires_on < on_date or voucher.course_type not in {course_type, "all"}:
+            raise HTTPException(400, "会员无可用卡、体验券或对应权益不足，请先购卡/续卡")
+        _consume_voucher(db, voucher)
+        booking.experience_voucher_id = voucher.id
     booking.consumed = True
+
+
+def restore_consumption(db: Session, booking: Booking) -> None:
+    if not booking.consumed:
+        return
+    if booking.member_card:
+        _restore(db, booking.member_card, booking.session.course.course_type)
+    if booking.experience_voucher:
+        _restore_voucher(db, booking.experience_voucher)
+    booking.consumed = False
 
 
 def _release_session_slot(db: Session, booking: Booking) -> None:
@@ -161,16 +198,16 @@ def transition_booking(db: Session, booking: Booking, action: str, actor_name: s
         if booking.status != "booked":
             raise HTTPException(400, "仅待签到预约可签到")
         consume_booking(db, booking)
-        booking.status = "checked_in"
+        booking.status = "completed"
         booking.checked_in_at = datetime.now()
+        booking.completed_at = booking.checked_in_at
     elif action == "undo_check_in":
-        if booking.status != "checked_in":
+        if booking.status not in {"checked_in", "completed"}:
             raise HTTPException(400, "当前状态不可取消签到")
-        if booking.member_card and booking.consumed:
-            _restore(db, booking.member_card, booking.session.course.course_type)
-        booking.consumed = False
+        restore_consumption(db, booking)
         booking.status = "booked"
         booking.checked_in_at = None
+        booking.completed_at = None
     elif action == "complete":
         if booking.status not in {"booked", "checked_in"}:
             raise HTTPException(400, "当前状态不可完成")
@@ -178,11 +215,9 @@ def transition_booking(db: Session, booking: Booking, action: str, actor_name: s
         booking.status = "completed"
         booking.completed_at = datetime.now()
     elif action == "cancel":
-        if booking.status in {"cancelled", "completed", "no_show"}:
+        if booking.status in {"cancelled", "no_show"}:
             raise HTTPException(400, "当前状态不可取消")
-        if booking.member_card and booking.consumed:
-            _restore(db, booking.member_card, booking.session.course.course_type)
-        booking.consumed = False
+        restore_consumption(db, booking)
         booking.status = "cancelled"
         booking.cancelled_at = datetime.now()
         booking.cancelled_by = actor_name
@@ -205,9 +240,7 @@ def reconcile_booking_inventory(db: Session) -> None:
     for session_id, member_id in duplicates:
         rows = db.query(Booking).filter(Booking.session_id == session_id, Booking.member_id == member_id, Booking.status.in_(ACTIVE_BOOKING_STATUSES)).order_by(Booking.id).all()
         for booking in rows[1:]:
-            if booking.consumed and booking.member_card:
-                _restore(db, booking.member_card, booking.session.course.course_type)
-            booking.consumed = False
+            restore_consumption(db, booking)
             booking.status = "cancelled"
             booking.cancelled_at = datetime.now()
             booking.cancelled_by = "系统清理重复预约"

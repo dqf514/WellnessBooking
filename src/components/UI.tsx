@@ -28,7 +28,7 @@ export function Icon({ name, size = 20 }: { name: IconName; size?: number }) { r
 let openModalCount = 0;
 let originalBodyOverflow = "";
 
-export function Modal({ title, children, onClose, wide = false }: { title: string; children: ReactNode; onClose: () => void; wide?: boolean }) {
+export function Modal({ title, children, onClose, wide = false, drawer = false, className = "" }: { title: string; children: ReactNode; onClose: () => void; wide?: boolean; drawer?: boolean; className?: string }) {
   const { t } = useLanguage();
   const modalRef = useRef<HTMLElement>(null);
   const onCloseRef = useRef(onClose);
@@ -60,7 +60,7 @@ export function Modal({ title, children, onClose, wide = false }: { title: strin
       previousFocus?.focus();
     };
   }, []);
-  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section ref={modalRef} className={`modal ${wide ? "modal-wide" : ""}`} role="dialog" aria-modal="true" aria-labelledby={titleId}><header className="modal-header"><h2 id={titleId}>{title}</h2><button className="icon-button" type="button" onClick={onClose} aria-label={t("close")}><Icon name="close" /></button></header><div className="modal-body">{children}</div></section></div>;
+  return <div className={`modal-backdrop ${drawer ? "drawer-backdrop" : ""}`} role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section ref={modalRef} className={`modal ${wide ? "modal-wide" : ""} ${drawer ? "modal-drawer" : ""} ${className}`} role="dialog" aria-modal="true" aria-labelledby={titleId}><header className="modal-header"><h2 id={titleId}>{title}</h2><button className="icon-button" type="button" onClick={onClose} aria-label={t("close")}><Icon name="close" /></button></header><div className="modal-body">{children}</div></section></div>;
 }
 
 export function ResponsiveTable({ children }: { children: ReactNode }) {

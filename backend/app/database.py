@@ -43,6 +43,9 @@ def ensure_schema():
             "app_settings": {"logo_url": "VARCHAR(600) DEFAULT ''", "favicon_url": "VARCHAR(600) DEFAULT ''"},
             "class_sessions": {"reserved_count": "INTEGER DEFAULT 0"},
             "member_cards": {"version": "INTEGER DEFAULT 0"},
+            "rooms": {"floor": "VARCHAR(30) DEFAULT '1F'", "sort_order": "INTEGER DEFAULT 0"},
+            "bookings": {"experience_voucher_id": "INTEGER REFERENCES experience_vouchers(id)"},
+            "member_documents": {"category": "VARCHAR(24) DEFAULT 'contract'"},
         }
         for table, columns_to_add in additions.items():
             existing = {column["name"] for column in inspect(connection).get_columns(table)}

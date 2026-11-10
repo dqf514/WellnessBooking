@@ -7,7 +7,8 @@ from sqlalchemy.orm import Session, joinedload
 from ..booking_service import create_booking, transition_booking
 from ..database import get_db
 from ..deps import get_current_member
-from ..models import AppSettings, Booking, CardProduct, ClassSession, Course, Member, Teacher, Transaction
+from ..membership_service import voucher_dict
+from ..models import AppSettings, Booking, CardProduct, ClassSession, Course, ExperienceVoucher, Member, MemberCard, MemberCardShare, Teacher, Transaction
 from ..security import create_access_token
 from ..serializers import booking_dict, card_dict, course_dict, member_dict, product_dict, session_dict, teacher_dict, transaction_dict
 from ..sms_service import notify_booking, send_otp, verify_otp
@@ -69,7 +70,9 @@ def member_login(payload: dict = Body(...), db: Session = Depends(get_db)):
 def member_me(db: Session = Depends(get_db), member: Member = Depends(get_current_member)):
     bookings = db.query(Booking).filter(Booking.member_id == member.id).order_by(Booking.booked_at.desc()).all()
     transactions = db.query(Transaction).filter(Transaction.member_id == member.id).order_by(Transaction.occurred_at.desc()).all()
-    return {"member": member_dict(member), "cards": [card_dict(card) for card in member.cards], "bookings": [booking_dict(row) for row in bookings], "transactions": [transaction_dict(row) for row in transactions]}
+    shared = db.query(MemberCard).join(MemberCardShare, MemberCardShare.card_id == MemberCard.id).filter(MemberCardShare.member_id == member.id).all()
+    vouchers = db.query(ExperienceVoucher).filter(ExperienceVoucher.member_id == member.id, ExperienceVoucher.status == "active").all()
+    return {"member": member_dict(member), "cards": [card_dict(card) for card in [*member.cards, *shared]], "vouchers": [voucher_dict(row) for row in vouchers], "bookings": [booking_dict(row) for row in bookings], "transactions": [transaction_dict(row) for row in transactions]}
 
 
 @router.post("/bookings")

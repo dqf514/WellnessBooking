@@ -66,6 +66,8 @@ class Room(Base, TimestampMixin):
     name: Mapped[str] = mapped_column(String(120))
     name_en: Mapped[str] = mapped_column(String(120), default="")
     capacity: Mapped[int] = mapped_column(Integer, default=10)
+    floor: Mapped[str] = mapped_column(String(30), default="1F", index=True)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
     color: Mapped[str] = mapped_column(String(20), default="#2f6b5b")
     active: Mapped[bool] = mapped_column(Boolean, default=True)
 
@@ -150,6 +152,7 @@ class Booking(Base):
     session_id: Mapped[int] = mapped_column(ForeignKey("class_sessions.id"), index=True)
     member_id: Mapped[int] = mapped_column(ForeignKey("members.id"), index=True)
     member_card_id: Mapped[int | None] = mapped_column(ForeignKey("member_cards.id"), nullable=True)
+    experience_voucher_id: Mapped[int | None] = mapped_column(ForeignKey("experience_vouchers.id"), nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="booked", index=True)
     source: Mapped[str] = mapped_column(String(20), default="admin")
     booked_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
@@ -163,6 +166,46 @@ class Booking(Base):
     session: Mapped[ClassSession] = relationship(back_populates="bookings")
     member: Mapped[Member] = relationship()
     member_card: Mapped[MemberCard | None] = relationship()
+    experience_voucher: Mapped["ExperienceVoucher | None"] = relationship()
+
+
+class MemberCardShare(Base):
+    __tablename__ = "member_card_shares"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    card_id: Mapped[int] = mapped_column(ForeignKey("member_cards.id"), index=True)
+    member_id: Mapped[int] = mapped_column(ForeignKey("members.id"), index=True)
+    created_by: Mapped[str] = mapped_column(String(80), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    card: Mapped[MemberCard] = relationship(backref="shares")
+    member: Mapped[Member] = relationship()
+
+
+class ExperienceVoucher(Base):
+    __tablename__ = "experience_vouchers"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    member_id: Mapped[int] = mapped_column(ForeignKey("members.id"), index=True)
+    course_type: Mapped[str] = mapped_column(String(24), default="group")
+    total_sessions: Mapped[int] = mapped_column(Integer, default=1)
+    remaining_sessions: Mapped[int] = mapped_column(Integer, default=1)
+    expires_on: Mapped[str] = mapped_column(String(10), index=True)
+    status: Mapped[str] = mapped_column(String(20), default="active")
+    note: Mapped[str] = mapped_column(Text, default="")
+    issued_by: Mapped[str] = mapped_column(String(80), default="")
+    version: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    member: Mapped[Member] = relationship()
+
+
+class MemberReminder(Base):
+    __tablename__ = "member_reminders"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    member_id: Mapped[int] = mapped_column(ForeignKey("members.id"), index=True)
+    content: Mapped[str] = mapped_column(Text)
+    remind_on: Mapped[str] = mapped_column(String(10), default="", index=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_by: Mapped[str] = mapped_column(String(80), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    member: Mapped[Member] = relationship()
 
 
 class RoomReservation(Base, TimestampMixin):
@@ -197,6 +240,7 @@ class MemberDocument(Base):
     __tablename__ = "member_documents"
     id: Mapped[int] = mapped_column(primary_key=True)
     member_id: Mapped[int] = mapped_column(ForeignKey("members.id"), index=True)
+    category: Mapped[str] = mapped_column(String(24), default="contract", index=True)
     original_name: Mapped[str] = mapped_column(String(255))
     stored_name: Mapped[str] = mapped_column(String(255), unique=True)
     content_type: Mapped[str] = mapped_column(String(100), default="application/octet-stream")
@@ -303,3 +347,36 @@ class BackupPlanSettings(Base):
     daily_time_hm: Mapped[str] = mapped_column(String(5), default="03:00")
     keep_last: Mapped[int] = mapped_column(Integer, default=30)
     last_run_date: Mapped[str] = mapped_column(String(10), default="")
+
+
+class ApiKey(Base, TimestampMixin):
+    __tablename__ = "api_keys"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(100))
+    key_prefix: Mapped[str] = mapped_column(String(24), index=True)
+    key_suffix: Mapped[str] = mapped_column(String(4))
+    key_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    scopes_json: Mapped[str] = mapped_column(Text, default="[]")
+    active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    created_by: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_used_ip: Mapped[str] = mapped_column(String(64), default="")
+    rotated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    creator: Mapped[User] = relationship()
+
+
+class ApiKeyUsageLog(Base):
+    __tablename__ = "api_key_usage_logs"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    api_key_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    key_name: Mapped[str] = mapped_column(String(100), default="")
+    key_prefix: Mapped[str] = mapped_column(String(24), default="", index=True)
+    actor_user_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    method: Mapped[str] = mapped_column(String(10))
+    path: Mapped[str] = mapped_column(String(500))
+    status_code: Mapped[int] = mapped_column(Integer, index=True)
+    ip: Mapped[str] = mapped_column(String(64), default="")
+    user_agent: Mapped[str] = mapped_column(String(300), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, index=True)

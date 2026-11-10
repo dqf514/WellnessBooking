@@ -1,6 +1,6 @@
 import json
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -8,10 +8,11 @@ from sqlalchemy.orm import Session
 from ..card_service import issue_card
 from ..database import get_db
 from ..deps import require_finance, require_read, require_staff
+from ..finance_service import recognized_revenue
 from ..log_util import audit
 from ..models import Booking, CardProduct, ClassSession, Member, Room, RoomReservation, Transaction, User
 from ..serializers import product_dict, transaction_dict
-from ..utils import add_days, clean_payload, dt, minutes, today, valid_date
+from ..utils import clean_payload, minutes, today, valid_date
 
 router = APIRouter(prefix="/api/admin", tags=["admin-finance"])
 PRODUCT_FIELDS = {"name", "name_en", "category", "price", "original_price", "validity_days", "total_sessions", "description", "description_en", "online_sale", "active"}
@@ -68,7 +69,7 @@ def list_transactions(date_from: str = Query(""), date_to: str = Query(""), cate
 
 @router.post("/transactions/manual")
 def manual_transaction(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_finance)):
-    amount = float(payload.get("amount", 0))
+    amount = round(float(payload.get("amount", 0)), 2)
     if amount == 0:
         raise HTTPException(400, "入账金额不能为 0")
     member_id = payload.get("member_id") or None
@@ -136,25 +137,7 @@ def reports(date_from: str = Query(""), date_to: str = Query(""), db: Session = 
     sessions = db.query(ClassSession).filter(ClassSession.session_date >= start, ClassSession.session_date <= end).all()
     session_ids = [row.id for row in sessions]
     bookings = db.query(Booking).filter(Booking.session_id.in_(session_ids)).all() if session_ids else []
-    transactions = db.query(Transaction).filter(Transaction.occurred_at >= datetime.fromisoformat(f"{start}T00:00:00"), Transaction.occurred_at <= datetime.fromisoformat(f"{end}T23:59:59"), Transaction.status.in_(["paid", "refunded"])).all()
-    revenue = defaultdict(float)
-    for row in transactions:
-        revenue[row.category] += row.amount
-    annual_products = {row.id: row for row in db.query(CardProduct).filter(CardProduct.validity_days == 365).all()}
-    amortized_revenue = 0.0
-    if annual_products:
-        annual_rows = db.query(Transaction).filter(Transaction.product_id.in_(annual_products.keys()), Transaction.status.in_(["paid", "refunded"])).all()
-        range_start = datetime.fromisoformat(start).date()
-        range_end = datetime.fromisoformat(end).date()
-        for row in annual_rows:
-            product = annual_products.get(row.product_id)
-            if not product:
-                continue
-            amortization_start = row.occurred_at.date()
-            overlap_start = max(range_start, amortization_start)
-            overlap_end = min(range_end, amortization_start + timedelta(days=product.validity_days - 1))
-            overlap_days = max(0, (overlap_end - overlap_start).days + 1)
-            amortized_revenue += row.amount / product.validity_days * overlap_days
+    revenue = recognized_revenue(db, start, end)
     course_stats = defaultdict(lambda: {"sessions": 0, "cancelled": 0, "attendees": 0, "bookings": 0})
     teacher_stats = defaultdict(lambda: {"sessions": 0, "minutes": 0, "attendees": 0, "cancelled": 0})
     course_names_en = {}
@@ -178,7 +161,7 @@ def reports(date_from: str = Query(""), date_to: str = Query(""), db: Session = 
         teacher_stats[teacher_name]["attendees"] += attendees
         weekday[datetime.fromisoformat(session.session_date).weekday()] += attendees
         hour[session.start_time[:2]] += attendees
-    rooms = db.query(Room).all()
+    rooms = db.query(Room).order_by(Room.floor, Room.sort_order, Room.id).all()
     reservations = db.query(RoomReservation).filter(RoomReservation.reservation_date >= start, RoomReservation.reservation_date <= end, RoomReservation.status == "active").all()
     days = (datetime.fromisoformat(end) - datetime.fromisoformat(start)).days + 1
     room_usage = []
@@ -190,9 +173,10 @@ def reports(date_from: str = Query(""), date_to: str = Query(""), db: Session = 
         room_usage.append({"room_id": room.id, "room_name": room.name, "room_name_en": room.name_en, "used_hours": round(used_minutes / 60, 1), "internal_hours": round(internal_minutes / 60, 1), "utilization": round(used_minutes / max(1, days * 12 * 60) * 100, 1)})
     return {
         "range": {"from": start, "to": end},
-        "summary": {"revenue": sum(revenue.values()), "sessions": len(sessions), "cancelled_sessions": len([row for row in sessions if row.status == "cancelled"]), "attendees": len([row for row in bookings if row.status in {"checked_in", "completed"}]), "booking_count": len([row for row in bookings if row.status != "cancelled"]), "cancelled_bookings": len([row for row in bookings if row.status == "cancelled"])},
-        "amortized_revenue": round(amortized_revenue, 2),
-        "revenue_by_category": [{"label": key, "value": round(value, 2)} for key, value in sorted(revenue.items())],
+        "summary": {"revenue": revenue["recognized"], "cash_received": revenue["cash_received"], "sessions": len(sessions), "cancelled_sessions": len([row for row in sessions if row.status == "cancelled"]), "attendees": len([row for row in bookings if row.status in {"checked_in", "completed"}]), "booking_count": len([row for row in bookings if row.status != "cancelled"]), "cancelled_bookings": len([row for row in bookings if row.status == "cancelled"])},
+        "amortized_revenue": revenue["annual"],
+        "private_recognized_revenue": revenue["private"],
+        "revenue_by_category": revenue["by_category"],
         "course_stats": [{"label": key, "label_en": course_names_en.get(key, ""), **value} for key, value in sorted(course_stats.items(), key=lambda item: item[1]["attendees"], reverse=True)],
         "teacher_stats": [{"label": key, "label_en": teacher_names_en.get(key, ""), **value, "hours": round(value["minutes"] / 60, 1)} for key, value in sorted(teacher_stats.items(), key=lambda item: item[1]["minutes"], reverse=True)],
         "weekday": [{"label": key, "value": weekday.get(key, 0)} for key in range(7)],

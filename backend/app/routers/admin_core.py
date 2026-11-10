@@ -7,14 +7,14 @@ from sqlalchemy.orm import Session, joinedload
 from ..card_service import issue_card
 from ..database import get_db
 from ..deps import require_read, require_staff
+from ..finance_service import recognized_revenue
 from ..log_util import audit
-from ..models import Booking, CardProduct, ClassSession, Member, MemberCard, MemberRecord, Transaction, User
+from ..membership_service import due_reminders, reminder_dict, voucher_dict
+from ..models import Booking, CardProduct, ClassSession, Course, ExperienceVoucher, Member, MemberCard, MemberCardShare, MemberRecord, MemberReminder, Room, Teacher, Transaction, User
 from ..serializers import booking_dict, card_dict, course_dict, member_dict, product_dict, room_dict, session_dict, teacher_dict, transaction_dict, user_dict
-from ..utils import add_days, clean_payload, dt, today, valid_date, valid_phone
-from ..models import Course, Room, Teacher
+from ..utils import add_days, clean_payload, today, valid_date, valid_phone
 
 router = APIRouter(prefix="/api/admin", tags=["admin-core"])
-
 MEMBER_FIELDS = {"name", "name_en", "phone", "gender", "id_number", "birth_date", "source", "advisor_id", "emergency_phone", "wechat", "notes", "active"}
 
 
@@ -24,14 +24,15 @@ def dashboard(db: Session = Depends(get_db), _: User = Depends(require_read)):
     month = day[:7]
     sessions = db.query(ClassSession).filter(ClassSession.session_date == day).order_by(ClassSession.start_time).all()
     bookings = db.query(Booking).join(ClassSession).filter(ClassSession.session_date == day).all()
-    revenue = sum(row.amount for row in db.query(Transaction).filter(Transaction.status.in_(["paid", "refunded"]), Transaction.occurred_at >= datetime.fromisoformat(f"{month}-01T00:00:00")).all())
+    revenue = recognized_revenue(db, f"{month}-01", day)
     return {
         "today_sessions": len([row for row in sessions if row.status == "scheduled"]),
         "today_bookings": len([row for row in bookings if row.status in {"booked", "checked_in", "completed"}]),
         "checked_in": len([row for row in bookings if row.status in {"checked_in", "completed"}]),
         "active_members": db.query(Member).filter(Member.active.is_(True)).count(),
         "new_members": db.query(Member).filter(Member.created_at >= datetime.fromisoformat(f"{month}-01T00:00:00")).count(),
-        "month_revenue": revenue,
+        "month_revenue": revenue["recognized"],
+        "month_cash_received": revenue["cash_received"],
         "upcoming": [session_dict(row) for row in sessions[:8]],
         "recent_bookings": [booking_dict(row) for row in sorted(bookings, key=lambda item: item.booked_at, reverse=True)[:8]],
     }
@@ -41,7 +42,7 @@ def dashboard(db: Session = Depends(get_db), _: User = Depends(require_read)):
 def meta(db: Session = Depends(get_db), _: User = Depends(require_read)):
     return {
         "courses": [course_dict(row) for row in db.query(Course).order_by(Course.course_type, Course.id).all()],
-        "rooms": [room_dict(row) for row in db.query(Room).order_by(Room.id).all()],
+        "rooms": [room_dict(row) for row in db.query(Room).order_by(Room.floor, Room.sort_order, Room.id).all()],
         "teachers": [teacher_dict(row) for row in db.query(Teacher).order_by(Teacher.id).all()],
         "products": [product_dict(row) for row in db.query(CardProduct).order_by(CardProduct.id).all()],
         "users": [user_dict(row) for row in db.query(User).order_by(User.id).all()],
@@ -89,7 +90,10 @@ def get_member(member_id: int, db: Session = Depends(get_db), _: User = Depends(
     bookings = db.query(Booking).filter(Booking.member_id == member_id).order_by(Booking.booked_at.desc()).all()
     records = db.query(MemberRecord).filter(MemberRecord.member_id == member_id).order_by(MemberRecord.record_date.desc()).all()
     transactions = db.query(Transaction).filter(Transaction.member_id == member_id).order_by(Transaction.occurred_at.desc()).all()
-    return {**member_dict(row, include_cards=True), "bookings": [booking_dict(item) for item in bookings], "records": [{"id": item.id, "record_type": item.record_type, "title": item.title, "content": item.content, "record_date": item.record_date, "teacher_name": item.teacher.name if item.teacher else ""} for item in records], "transactions": [transaction_dict(item) for item in transactions]}
+    vouchers = db.query(ExperienceVoucher).filter(ExperienceVoucher.member_id == member_id).order_by(ExperienceVoucher.id.desc()).all()
+    reminders = db.query(MemberReminder).filter(MemberReminder.member_id == member_id, MemberReminder.active.is_(True)).order_by(MemberReminder.remind_on, MemberReminder.id).all()
+    shared_cards = db.query(MemberCard).join(MemberCardShare, MemberCardShare.card_id == MemberCard.id).filter(MemberCardShare.member_id == member_id).all()
+    return {**member_dict(row, include_cards=True), "shared_cards": [card_dict(card) for card in shared_cards], "bookings": [booking_dict(item) for item in bookings], "records": [{"id": item.id, "record_type": item.record_type, "title": item.title, "content": item.content, "record_date": item.record_date, "teacher_name": item.teacher.name if item.teacher else ""} for item in records], "transactions": [transaction_dict(item) for item in transactions], "vouchers": [voucher_dict(item) for item in vouchers], "reminders": [reminder_dict(item) for item in reminders], "reminder_alerts": due_reminders(db, row)}
 
 
 @router.patch("/members/{member_id}")
@@ -142,10 +146,11 @@ def update_card(card_id: int, payload: dict = Body(...), db: Session = Depends(g
         frozen_until = valid_date(str(payload.get("frozen_until", "")), "冻结截止日期")
         card.frozen_until = frozen_until
         card.status = "active"
-    elif action == "unfreeze":
+    elif action in {"unfreeze", "activate"}:
         card.frozen_until = ""
-    elif action in {"activate", "cancel"}:
-        card.status = "active" if action == "activate" else "cancelled"
+        card.status = "active"
+    elif action == "cancel":
+        card.status = "cancelled"
     elif action == "adjust":
         if "remaining_sessions" in payload:
             card.remaining_sessions = max(0, int(payload["remaining_sessions"]))
