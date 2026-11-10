@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { Empty, Icon, LogoutConfirm, Modal, Spinner } from "@/components/UI";
 import { BrandLogo } from "@/components/BrandLogo";
@@ -36,6 +36,11 @@ export function PublicHome() {
   const [type, setType] = useState<CourseType | "all">("all");
   const [view, setView] = useState<ScheduleView>("day");
   const [date, setDate] = useState(today());
+  const [scheduleMotion, setScheduleMotion] = useState<"next" | "previous" | "none">("none");
+  const [loadedScheduleKey, setLoadedScheduleKey] = useState("");
+  const siteRef = useRef<HTMLDivElement>(null);
+  const scheduleRequest = useRef(0);
+  const revealedElements = useRef(new WeakSet<HTMLElement>());
   const [selected, setSelected] = useState<Session | null>(null);
   const [loginOpen, setLoginOpen] = useState(false);
   const [meOpen, setMeOpen] = useState(false);
@@ -62,6 +67,7 @@ export function PublicHome() {
     if (view === "month") return { start: monthStart(date), end: monthEnd(date) };
     return { start: date, end: date };
   }, [date, view]);
+  const scheduleKey = `${view}:${range.start}:${type}`;
   const monthCells = useMemo(() => {
     const first = new Date(`${range.start}T12:00:00`);
     const offset = (first.getDay() + 6) % 7;
@@ -82,15 +88,21 @@ export function PublicHome() {
   }, [date, language, range, view]);
 
   const loadSessions = useCallback(async () => {
+    const request = ++scheduleRequest.current;
     setLoading(true);
     try {
       const query = new URLSearchParams({ date_from: range.start, date_to: range.end });
       if (type !== "all") query.set("course_type", type);
       const result = await apiFetch<{ items: Session[] }>(`/api/public/sessions?${query}`);
+      if (request !== scheduleRequest.current) return;
       setSessions(result.items);
-    } catch (err) { setError(err instanceof Error ? err.message : t("error")); }
-    finally { setLoading(false); }
-  }, [range, type, t]);
+      setLoadedScheduleKey(scheduleKey);
+    } catch (err) {
+      if (request === scheduleRequest.current) setError(err instanceof Error ? err.message : t("error"));
+    } finally {
+      if (request === scheduleRequest.current) setLoading(false);
+    }
+  }, [range, scheduleKey, type, t]);
 
   const loadMe = useCallback(async () => {
     if (!getToken("member")) return;
@@ -103,6 +115,28 @@ export function PublicHome() {
     void loadMe();
   }, [loadMe, t]);
   useEffect(() => { void loadSessions(); }, [loadSessions]);
+  useEffect(() => {
+    const root = siteRef.current;
+    if (!root || window.matchMedia("(prefers-reduced-motion: reduce)").matches || !("IntersectionObserver" in window)) return;
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        const element = entry.target as HTMLElement;
+        observer.unobserve(element);
+        if (revealedElements.current.has(element)) return;
+        revealedElements.current.add(element);
+        const delay = Math.min(Number(element.dataset.revealDelay ?? 0), 240);
+        element.animate([
+          { opacity: 0, transform: "translate3d(0, 24px, 0)" },
+          { opacity: 1, transform: "translate3d(0, 0, 0)" },
+        ], { duration: 680, delay, easing: "cubic-bezier(.22, 1, .36, 1)" });
+      });
+    }, { threshold: .12, rootMargin: "0px 0px -5% 0px" });
+    root.querySelectorAll<HTMLElement>("[data-reveal]").forEach((element) => {
+      if (!revealedElements.current.has(element)) observer.observe(element);
+    });
+    return () => observer.disconnect();
+  }, [data]);
   useEffect(() => {
     if (!error && !message) return;
     const timer = window.setTimeout(() => { setError(""); setMessage(""); }, 5000);
@@ -187,10 +221,21 @@ export function PublicHome() {
     return status === "booked" ? t("statusBooked") : status === "checked_in" ? t("statusChecked") : status === "completed" ? t("statusCompleted") : status === "no_show" ? t("statusNoShow") : t("statusCancelled");
   }
 
+  function selectDate(value: string) {
+    if (value === date) return;
+    setScheduleMotion(value > date ? "next" : "previous");
+    setDate(value);
+  }
   function navigatePeriod(direction: number) {
+    setScheduleMotion(direction > 0 ? "next" : "previous");
     setDate(view === "month" ? shiftMonth(date, direction) : addDays(date, direction * (view === "week" ? 7 : 1)));
   }
-  function openDay(value: string) { setDate(value); setView("day"); }
+  function changeView(value: ScheduleView) {
+    if (value === view) return;
+    setScheduleMotion("none");
+    setView(value);
+  }
+  function openDay(value: string) { setScheduleMotion("none"); setDate(value); setView("day"); }
   function seatText(session: Session) {
     const status = seatStatus(session);
     return status === "full" ? t("full") : status === "limited" ? local("席位紧张", "Few spots") : local("余位充足", "Available");
@@ -203,7 +248,7 @@ export function PublicHome() {
     </button>;
   }
 
-  return <div className="public-site">
+  return <div className="public-site" ref={siteRef}>
     <header className="public-header">
       <a href="#top" className="brand" aria-label="Yinyu Wellness"><BrandLogo/><span><strong>{data ? local(data.venue.name, data.venue.name_en) : "音昱 Wellness"}</strong><small>MIND · BODY · EVERYDAY</small></span></a>
       <nav className="public-nav" aria-label="Main"><a href="#schedule">{t("schedule")}</a><a href="#teachers">{t("teachers")}</a><a href="#membership">{t("membership")}</a></nav>
@@ -219,24 +264,27 @@ export function PublicHome() {
         <span className="hero-watermark" aria-hidden="true">息</span>
       </section>
 
-      <section className="intro-section" id="about"><p className="section-index">YINYU PHILOSOPHY</p><div><h2>{local("不追求更用力，\n而是更了解自己。", "Not more force.\nMore understanding.")}</h2><p>{local("我们把传统养生、现代运动与正念练习放在同一个日常里。小班教学，诚实建议，让每一次练习都有来处，也有归处。", "Traditional wellness, modern movement and mindfulness belong in the same everyday life. Small classes, honest guidance, and practice with purpose.")}</p></div></section>
+      <section className="intro-section" id="about"><p className="section-index" data-reveal>YINYU PHILOSOPHY</p><div><h2 data-reveal>{local("不追求更用力，\n而是更了解自己。", "Not more force.\nMore understanding.")}</h2><p data-reveal data-reveal-delay="90">{local("我们把传统养生、现代运动与正念练习放在同一个日常里。小班教学，诚实建议，让每一次练习都有来处，也有归处。", "Traditional wellness, modern movement and mindfulness belong in the same everyday life. Small classes, honest guidance, and practice with purpose.")}</p></div></section>
 
       <section className="schedule-section" id="schedule" {...scheduleSwipe}>
-        <div className="section-heading"><div><span className="eyebrow">MOVE WITH US</span><h2>{t("schedule")}</h2></div><p>{local("日 / 周 / 月课表 · 实时名额 · 课前可自主取消", "Day, week and month views · Live availability · Cancel before class")}</p></div>
+        <div className="section-heading" data-reveal><div><span className="eyebrow">MOVE WITH US</span><h2>{t("schedule")}</h2></div><p>{local("日 / 周 / 月课表 · 实时名额 · 课前可自主取消", "Day, week and month views · Live availability · Cancel before class")}</p></div>
         <div className="filter-bar">
-          <div className="type-tabs" role="tablist" aria-label={local("课程类型", "Class types")}>{types.map((item) => <button key={item} type="button" role="tab" aria-selected={type === item} className={type === item ? "active" : ""} onClick={() => setType(item)}>{t(item)}</button>)}</div>
-          <div className="schedule-view-switch" role="tablist" aria-label={local("课表视图", "Schedule view")}>{(["day", "week", "month"] as const).map((item) => <button key={item} type="button" role="tab" aria-selected={view === item} className={view === item ? "active" : ""} onClick={() => setView(item)}>{item === "day" ? local("日", "Day") : item === "week" ? local("周", "Week") : local("月", "Month")}</button>)}</div>
+          <div className="type-tabs" role="tablist" aria-label={local("课程类型", "Class types")}>{types.map((item) => <button key={item} type="button" role="tab" aria-selected={type === item} className={type === item ? "active" : ""} onClick={() => { setScheduleMotion("none"); setType(item); }}>{t(item)}</button>)}</div>
+          <div className="schedule-view-switch" role="tablist" aria-label={local("课表视图", "Schedule view")}>{(["day", "week", "month"] as const).map((item) => <button key={item} type="button" role="tab" aria-selected={view === item} className={view === item ? "active" : ""} onClick={() => changeView(item)}>{item === "day" ? local("日", "Day") : item === "week" ? local("周", "Week") : local("月", "Month")}</button>)}</div>
         </div>
         <div className="schedule-navigation">
           <button className="icon-button" type="button" aria-label={view === "day" ? local("前一天", "Previous day") : view === "week" ? local("上一周", "Previous week") : local("上一月", "Previous month")} onClick={() => navigatePeriod(-1)}><span className="schedule-nav-prev"><Icon name="chevron" size={18}/></span></button>
-          <div className="schedule-period-label"><strong>{rangeLabel}</strong><span>{local(`${sessions.length} 节课程`, `${sessions.length} classes`)}</span></div>
+          <div className="schedule-period-label" key={scheduleKey} aria-live="polite"><strong>{rangeLabel}</strong><span>{local(`${sessions.length} 节课程`, `${sessions.length} classes`)}</span></div>
           <button className="icon-button" type="button" aria-label={view === "day" ? local("后一天", "Next day") : view === "week" ? local("下一周", "Next week") : local("下一月", "Next month")} onClick={() => navigatePeriod(1)}><Icon name="chevron" size={18}/></button>
-          <button className="schedule-today" type="button" onClick={() => setDate(today())}>{local("回到今天", "Today")}</button>
+          <button className="schedule-today" type="button" onClick={() => selectDate(today())}>{local("回到今天", "Today")}</button>
           <div className="capacity-legend" aria-label={local("席位状态图例", "Availability legend")}><span className="capacity-available"><i/>{local("余位充足", "Available")}</span><span className="capacity-limited"><i/>{local("席位紧张", "Few spots")}</span><span className="capacity-full"><i/>{local("已约满", "Full")}</span></div>
         </div>
-        {view === "day" && <div className="date-strip">{days.map((day) => <button type="button" key={day} className={date === day ? "active" : ""} onClick={() => setDate(day)}><span>{weekday(day, language === "en")}</span><strong>{shortDate(day)}</strong>{day === today() && <small>{local("今天", "Today")}</small>}</button>)}</div>}
+        {view === "day" && <div className="date-strip">{days.map((day) => <button type="button" key={day} className={date === day ? "active" : ""} onClick={() => selectDate(day)}><span>{weekday(day, language === "en")}</span><strong>{shortDate(day)}</strong>{day === today() && <small>{local("今天", "Today")}</small>}</button>)}</div>}
         {(error || message) && <div className={`public-notice ${error ? "error" : ""}`} role={error ? "alert" : "status"} aria-live={error ? "assertive" : "polite"} aria-atomic="true"><span className="toast-icon"><Icon name={error ? "bell" : "check"} size={19}/></span><div className="toast-copy"><strong>{error ? local("操作未完成", "Action failed") : local("操作成功", "Success")}</strong><p>{error || message}</p></div><button type="button" onClick={() => { setError(""); setMessage(""); }} aria-label={t("close")}><Icon name="close" size={17}/></button></div>}
-        {loading ? <Spinner/> : view === "day" ? sessions.length === 0 ? <Empty>{local("这一天暂未排课，看看其他日期吧。", "No classes on this day. Try another date.")}</Empty> : <div className="class-list">{sessions.map((session) => <article className={`class-row capacity-${seatStatus(session)} ${session.available === 0 ? "sold-out" : ""}`} key={session.id} style={{ "--course-color": session.course.color } as React.CSSProperties}>
+        <div className="schedule-results-shell">
+          <div key={loadedScheduleKey || "initial"} className={`schedule-results enter-${scheduleMotion} ${loading && loadedScheduleKey ? "is-refreshing" : ""}`} aria-busy={loading}>
+            <div className="schedule-results-content" inert={loading && Boolean(loadedScheduleKey)}>
+        {loading && !loadedScheduleKey ? <Spinner/> : view === "day" ? sessions.length === 0 ? <Empty>{local("这一天暂未排课，看看其他日期吧。", "No classes on this day. Try another date.")}</Empty> : <div className="class-list">{sessions.map((session) => <article className={`class-row capacity-${seatStatus(session)} ${session.available === 0 ? "sold-out" : ""}`} key={session.id} style={{ "--course-color": session.course.color } as React.CSSProperties}>
           <div className="class-time"><strong>{session.start_time}</strong><span>{session.end_time}</span></div>
           <button className="class-main" type="button" onClick={() => setSelected(session)}><span className="class-category">{t(session.course.course_type)}</span><h3>{local(session.course.name, session.course.name_en)}</h3><p>{local(session.teacher.name, session.teacher.name_en)} · {local(session.room.name, session.room.name_en)}</p></button>
           <div className="class-capacity"><span className="seat-status"><i/>{seatText(session)}</span><span className="seat-count"><strong>{session.available}</strong> {t("available")}</span><small>{session.booked_count}/{session.capacity} {t("booked")}</small></div>
@@ -249,11 +297,15 @@ export function PublicHome() {
           const daySessions = sessionsByDate.get(day) ?? [];
           return <article className={`public-month-cell ${day === today() ? "today" : ""}`} key={day}><header><button className="month-day-number" type="button" onClick={() => openDay(day)} aria-label={local(`查看 ${day} 日课表`, `View classes on ${day}`)}>{Number(day.slice(8))}</button>{daySessions.length > 0 && <small>{local(`${daySessions.length} 节`, `${daySessions.length}`)}</small>}</header><div className="public-month-classes">{daySessions.slice(0, 3).map((session) => calendarSession(session, true))}{daySessions.length > 3 && <button className="month-more" type="button" onClick={() => openDay(day)}>{local(`查看其余 ${daySessions.length - 3} 节`, `+${daySessions.length - 3} more`)}</button>}</div></article>;
         })}</div></div>}
+            </div>
+          </div>
+          {loading && loadedScheduleKey && <div className="schedule-loading-line" role="status"><span className="sr-only">{local("正在更新课表", "Updating schedule")}</span></div>}
+        </div>
       </section>
 
-      <section className="teachers-section" id="teachers"><div className="section-heading"><div><span className="eyebrow">PEOPLE MAKE PRACTICE</span><h2>{t("teachers")}</h2></div><p>{local("专业，而不距离感。", "Expertise, without distance.")}</p></div><div className="teacher-grid">{data?.teachers.map((teacher, index) => <article className="teacher-card" key={teacher.id}><div className="teacher-photo"><img src={teacher.image_url} alt={local(teacher.name, teacher.name_en)} loading="lazy"/><span>0{index + 1}</span></div><h3>{local(teacher.name, teacher.name_en)}</h3><p className="teacher-specialty">{local(teacher.specialties, teacher.specialties_en)}</p><p>{local(teacher.bio, teacher.bio_en)}</p></article>)}</div></section>
+      <section className="teachers-section" id="teachers"><div className="section-heading" data-reveal><div><span className="eyebrow">PEOPLE MAKE PRACTICE</span><h2>{t("teachers")}</h2></div><p>{local("专业，而不距离感。", "Expertise, without distance.")}</p></div><div className="teacher-grid">{data?.teachers.map((teacher, index) => <article className="teacher-card" key={teacher.id} data-reveal data-reveal-delay={index * 65}><div className="teacher-photo"><img src={teacher.image_url} alt={local(teacher.name, teacher.name_en)} loading="lazy"/><span>0{index + 1}</span></div><h3>{local(teacher.name, teacher.name_en)}</h3><p className="teacher-specialty">{local(teacher.specialties, teacher.specialties_en)}</p><p>{local(teacher.bio, teacher.bio_en)}</p></article>)}</div></section>
 
-      <section className="membership-section" id="membership"><div className="section-heading"><div><span className="eyebrow">YOUR PRACTICE, YOUR PACE</span><h2>{t("membership")}</h2></div><p>{local("次卡、周期卡与私教套餐，按你的节奏选择。", "Class packs, passes and private programs for your own rhythm.")}</p></div><div className="product-grid">{data?.products.filter((product) => product.online_sale).slice(0, 6).map((product) => <article className="product-card" key={product.id}><span className="product-type">{product.category.toUpperCase()}</span><h3>{local(product.name, product.name_en)}</h3><div className="product-price"><strong>{money(product.price)}</strong><span>/ {product.total_sessions ? `${product.total_sessions} ${t("sessions")}` : t("unlimited")}</span></div><p>{product.validity_days} {t("validDays")}</p><button className="button button-outline" type="button" disabled={busy} onClick={() => requestOrder(product)}>{t("buy")}<Icon name="arrow" size={17}/></button></article>)}</div></section>
+      <section className="membership-section" id="membership"><div className="section-heading" data-reveal><div><span className="eyebrow">YOUR PRACTICE, YOUR PACE</span><h2>{t("membership")}</h2></div><p>{local("次卡、周期卡与私教套餐，按你的节奏选择。", "Class packs, passes and private programs for your own rhythm.")}</p></div><div className="product-grid">{data?.products.filter((product) => product.online_sale).slice(0, 6).map((product, index) => <article className="product-card" key={product.id} data-reveal data-reveal-delay={(index % 3) * 70}><span className="product-type">{product.category.toUpperCase()}</span><h3>{local(product.name, product.name_en)}</h3><div className="product-price"><strong>{money(product.price)}</strong><span>/ {product.total_sessions ? `${product.total_sessions} ${t("sessions")}` : t("unlimited")}</span></div><p>{product.validity_days} {t("validDays")}</p><button className="button button-outline" type="button" disabled={busy} onClick={() => requestOrder(product)}>{t("buy")}<Icon name="arrow" size={17}/></button></article>)}</div></section>
     </main>
 
     <footer className="public-footer"><div><span className="brand footer-brand"><BrandLogo/><strong>{data ? local(data.venue.name, data.venue.name_en) : "音昱 Wellness"}</strong></span><p>{data && local(data.venue.address, data.venue.address_en)}</p></div><div><a href={`tel:${data?.venue.phone}`}><Icon name="phone" size={17}/>{data?.venue.phone}</a><Link to="/login"><Icon name="user" size={17}/>{t("staff")}</Link></div></footer>
