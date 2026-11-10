@@ -212,6 +212,29 @@ def booking_action(booking_id: int, action: str, db: Session = Depends(get_db), 
     return {**booking_dict(booking), "member_reminders": alerts}
 
 
+@router.get("/rooms/availability")
+def room_availability(date: str = Query(...), start_time: str = Query(...), end_time: str = Query(...), exclude_session_id: int = Query(0), db: Session = Depends(get_db), _: User = Depends(require_read)):
+    day = valid_date(date, "上课日期")
+    start = valid_time(start_time, "开始时间")
+    end = valid_time(end_time, "结束时间")
+    if minutes(end) <= minutes(start):
+        raise HTTPException(400, "结束时间必须晚于开始时间")
+    rooms = db.query(Room).filter(Room.active.is_(True), Room.deleted_at.is_(None)).order_by(Room.floor, Room.sort_order, Room.id).all()
+    sessions = db.query(ClassSession).filter(ClassSession.session_date == day, ClassSession.status == "scheduled", ClassSession.deleted_at.is_(None)).order_by(ClassSession.start_time).all()
+    reservations = db.query(RoomReservation).filter(RoomReservation.reservation_date == day, RoomReservation.status == "active", RoomReservation.deleted_at.is_(None)).order_by(RoomReservation.start_time).all()
+    items = []
+    for room in rooms:
+        conflicts = []
+        for row in sessions:
+            if row.id != exclude_session_id and row.room_id == room.id and overlaps(start, end, row.start_time, row.end_time):
+                conflicts.append({"kind": "class", "title": row.course.name, "title_en": row.course.name_en, "teacher_name": row.teacher.name, "teacher_name_en": row.teacher.name_en, "start_time": row.start_time, "end_time": row.end_time})
+        for row in reservations:
+            if row.room_id == room.id and overlaps(start, end, row.start_time, row.end_time):
+                conflicts.append({"kind": "reservation", "title": row.title, "title_en": "", "teacher_name": "", "teacher_name_en": "", "start_time": row.start_time, "end_time": row.end_time})
+        items.append({**room_dict(room), "available": not conflicts, "conflicts": conflicts})
+    return {"date": day, "start_time": start, "end_time": end, "rooms": items}
+
+
 @router.get("/rooms/overview")
 def room_overview(date: str = Query(""), floor: str = Query(""), db: Session = Depends(get_db), _: User = Depends(require_read)):
     day = valid_date(date or today())

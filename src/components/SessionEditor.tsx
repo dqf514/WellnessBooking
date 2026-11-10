@@ -1,12 +1,14 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Field, Notice } from "@/components/AdminUI";
 import { Modal } from "@/components/UI";
 import { useLanguage } from "@/context/LanguageContext";
 import { apiFetch } from "@/lib/api";
 import { today } from "@/lib/date";
-import type { Meta, Session } from "@/types";
+import type { Meta, Room, Session } from "@/types";
 
 interface SessionForm { course_id: string; teacher_id: string; room_id: string; session_date: string; start_time: string; end_time: string; capacity: string; notes: string }
+interface RoomConflict { kind: "class" | "reservation"; title: string; title_en: string; teacher_name: string; teacher_name_en: string; start_time: string; end_time: string }
+interface RoomAvailability extends Room { available: boolean; conflicts: RoomConflict[] }
 
 export interface SessionEditorInitial { course_id?: string; teacher_id?: string; room_id?: string; session_date?: string; start_time?: string; end_time?: string; capacity?: string; notes?: string }
 
@@ -34,6 +36,31 @@ export function SessionEditor({ meta, session, initial = {}, courseType = "", on
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [confirm, setConfirm] = useState<"cancel" | "delete" | null>(null);
+  const [availability, setAvailability] = useState<Record<number, RoomAvailability>>({});
+  const [checkingRooms, setCheckingRooms] = useState(false);
+  const [roomError, setRoomError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    if (!form.session_date || !form.start_time || !form.end_time) return undefined;
+    setCheckingRooms(true); setRoomError("");
+    const timer = window.setTimeout(async () => {
+      try {
+        const query = new URLSearchParams({ date: form.session_date, start_time: form.start_time, end_time: form.end_time, exclude_session_id: String(session?.id ?? 0) });
+        const result = await apiFetch<{ rooms: RoomAvailability[] }>(`/api/admin/rooms/availability?${query}`);
+        if (active) setAvailability(Object.fromEntries(result.rooms.map((room) => [room.id, room])));
+      } catch (err) {
+        if (active) { setAvailability({}); setRoomError(err instanceof Error ? err.message : local("教室占用检查失败", "Room availability check failed")); }
+      } finally { if (active) setCheckingRooms(false); }
+    }, 250);
+    return () => { active = false; window.clearTimeout(timer); };
+  }, [form.session_date, form.start_time, form.end_time, session?.id]);
+
+  const selectedConflicts = availability[Number(form.room_id)]?.conflicts ?? [];
+  function conflictText(conflict: RoomConflict) {
+    return `${conflict.start_time}–${conflict.end_time} ${local(conflict.title, conflict.title_en)}${conflict.teacher_name ? ` · ${local(conflict.teacher_name, conflict.teacher_name_en)}` : ""}`;
+  }
+  const roomHint = checkingRooms ? local("正在检查教室占用…", "Checking room availability…") : selectedConflicts.length ? local(`当前教室冲突：${conflictText(selectedConflicts[0])}`, `Selected room conflict: ${conflictText(selectedConflicts[0])}`) : local("冲突教室已禁用，并标注对应课程或占用", "Conflicting rooms are disabled with class or reservation details");
 
   function update(key: keyof SessionForm, value: string) {
     setForm((current) => {
@@ -51,6 +78,7 @@ export function SessionEditor({ meta, session, initial = {}, courseType = "", on
 
   async function save(event: FormEvent) {
     event.preventDefault();
+    if (selectedConflicts.length) { setError(local(`当前教室与 ${conflictText(selectedConflicts[0])} 冲突，请选择其他教室`, `The selected room conflicts with ${conflictText(selectedConflicts[0])}. Choose another room.`)); return; }
     setBusy(true); setError("");
     const payload = { ...form, course_id: Number(form.course_id), teacher_id: Number(form.teacher_id), room_id: Number(form.room_id), capacity: Number(form.capacity) };
     try {
@@ -73,13 +101,13 @@ export function SessionEditor({ meta, session, initial = {}, courseType = "", on
   return <>
     <Modal wide title={session ? local("编辑排课", "Edit class") : local("新建排课", "Schedule class")} onClose={onClose}>
       <form className="form-grid two-columns" onSubmit={save}>
-        {error && <div className="span-two"><Notice error message={error}/></div>}
+        {(error || roomError) && <div className="span-two"><Notice error message={error || roomError}/></div>}
         <Field label={local("课程 / 服务", "Class / service")}><select required value={form.course_id} onChange={(event) => update("course_id", event.target.value)}>{courses.map((course) => <option key={course.id} value={course.id}>{local(course.name, course.name_en)} · {local(course.course_type === "group" ? "团课" : course.course_type === "private" ? "私教" : course.course_type === "workshop" ? "工作坊" : "评估", course.course_type)}</option>)}</select></Field>
         <Field label={local("上课日期", "Class date")}><input required type="date" value={form.session_date} onChange={(event) => update("session_date", event.target.value)}/></Field>
         <Field label={local("开始时间", "Start time")}><input required type="time" step={900} value={form.start_time} onChange={(event) => update("start_time", event.target.value)}/></Field>
         <Field label={local("结束时间", "End time")} hint={local("按课程时长自动带出，可手动调整", "Based on class duration; editable")}><input required type="time" step={900} value={form.end_time} onChange={(event) => update("end_time", event.target.value)}/></Field>
         <Field label={local("教练", "Instructor")}><select required value={form.teacher_id} onChange={(event) => update("teacher_id", event.target.value)}>{meta.teachers.filter((item) => item.active).map((teacher) => <option key={teacher.id} value={teacher.id}>{local(teacher.name, teacher.name_en)}</option>)}</select></Field>
-        <Field label={local("教室", "Room")}><select required value={form.room_id} onChange={(event) => update("room_id", event.target.value)}>{meta.rooms.filter((item) => item.active).map((room) => <option key={room.id} value={room.id}>{local(room.name, room.name_en)} · {room.floor}</option>)}</select></Field>
+        <Field label={local("教室", "Room")} hint={roomHint}><select required value={form.room_id} onChange={(event) => update("room_id", event.target.value)}>{meta.rooms.filter((item) => item.active).map((room) => { const conflicts = availability[room.id]?.conflicts ?? []; return <option key={room.id} value={room.id} disabled={conflicts.length > 0}>{local(room.name, room.name_en)} · {room.floor}{conflicts.length ? ` · ${local("冲突", "Conflict")}: ${conflicts.map(conflictText).join(local("；", "; "))}` : ""}</option>; })}</select></Field>
         <Field label={local("最大人数", "Capacity")}><input required min={1} type="number" value={form.capacity} readOnly={courseType === "private"} onChange={(event) => update("capacity", event.target.value)}/></Field>
         <Field label={local("备注", "Notes")}><input value={form.notes} onChange={(event) => update("notes", event.target.value)}/></Field>
         <div className="form-footer span-two">

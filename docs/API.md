@@ -1,6 +1,6 @@
 # 音昱 Wellness API 对接文档
 
-> 版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 **107 个 HTTP 接口**。
+> 版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 **108 个 HTTP 接口**。
 >
 > 文档更新：2026-11-10 · 功能基线：预约排课、会员权益与营收业务闭环。
 >
@@ -605,7 +605,7 @@ curl -X POST "$API/api/auth/login" \
 - **权限**：前台；**响应**：`{ ok, item, message }`。
 - 记录和文件保留 180 天，期间不可列表或下载，可由管理员恢复；到期彻底删除见第 16 章。
 
-## 8. 排课、预约、教室与目录（21）
+## 8. 排课、预约、教室与目录（22）
 
 ### 8.1 查询后台排课
 
@@ -792,6 +792,15 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 
 - **权限**：管理员；`multipart/form-data` 上传字段名为 `file`，支持 PNG、JPG、WebP，最大 4 MiB。
 - **响应**：更新后的 Teacher。服务端校验真实文件头，`image_url` 为 `/uploads/teachers/...` 路径；上传文件需与数据库一起备份。
+
+### 8.22 查询各教室指定时段占用
+
+#### GET /api/admin/rooms/availability
+
+- **权限**：只读；**Query**：`date`、`start_time`、`end_time` 必填，`exclude_session_id` 可选（编辑排课时排除自身）。
+- **响应**：`{ date, start_time, end_time, rooms }`，按楼层和排序返回启用教室；每项在 Room 基础上增加 `available` 和 `conflicts`。
+- `conflicts[]` 同时包含重叠课程和内部占用：`kind=class|reservation`、`title`、`title_en`、`teacher_name`、`teacher_name_en`、`start_time`、`end_time`。
+- 结束时间必须晚于开始时间。此接口用于在排课编辑器中即时禁用并标注冲突教室；新建和修改排课仍会执行服务端最终冲突校验。
 
 ## 9. 产品、财务与报表（10）
 

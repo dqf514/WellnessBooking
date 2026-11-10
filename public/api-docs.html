@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#173f35">
-  <meta name="description" content="音昱 Wellness 完整 API 对接文档，覆盖 107 个接口、权限、字段、业务规则与示例。">
+  <meta name="description" content="音昱 Wellness 完整 API 对接文档，覆盖 108 个接口、权限、字段、业务规则与示例。">
   <meta name="generator" content="docs/build_api_docs.py">
   <link id="api-favicon" rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Crect width='36' height='36' rx='18' fill='%23173f35'/%3E%3Cpath d='M28 6C15 7 8 13 8 23c7 1 15-2 20-17ZM8 29c3-8 8-12 16-17' fill='none' stroke='%23e9efe7' stroke-width='1.5'/%3E%3C/svg%3E">
   <title>API 对接文档 · 音昱 Wellness</title>
@@ -33,7 +33,7 @@
     <aside class="sidebar" aria-label="API 文档目录">
       <label class="search-label"><span>搜索接口、字段或业务规则</span><input class="search-input" id="api-search" type="search" placeholder="例如：签到、退款、bookings" autocomplete="off"><span class="search-hint">按 / 快速搜索，Esc 清空</span></label>
       <p class="search-results" id="search-results" aria-live="polite"></p>
-      <p class="toc-title">API REFERENCE · 107 ENDPOINTS</p>
+      <p class="toc-title">API REFERENCE · 108 ENDPOINTS</p>
       <nav><ul class="toc-list"><li><a href="#1-接入基础">1. 接入基础</a></li>
 <li><a href="#2-通用数据结构">2. 通用数据结构</a></li>
 <li><a href="#3-健康检查与员工认证-6">3. 健康检查与员工认证（6）</a></li>
@@ -41,7 +41,7 @@
 <li><a href="#5-经营概览与基础元数据-2">5. 经营概览与基础元数据（2）</a></li>
 <li><a href="#6-会员档案-会员卡-权益与爽约-20">6. 会员档案、会员卡、权益与爽约（20）</a></li>
 <li><a href="#7-会员合同与评估文件-6">7. 会员合同与评估文件（6）</a></li>
-<li><a href="#8-排课-预约-教室与目录-21">8. 排课、预约、教室与目录（21）</a></li>
+<li><a href="#8-排课-预约-教室与目录-22">8. 排课、预约、教室与目录（22）</a></li>
 <li><a href="#9-产品-财务与报表-10">9. 产品、财务与报表（10）</a></li>
 <li><a href="#10-场馆-品牌与账号-8">10. 场馆、品牌与账号（8）</a></li>
 <li><a href="#11-短信与审计日志-5">11. 短信与审计日志（5）</a></li>
@@ -60,7 +60,7 @@
 <option value="5-经营概览与基础元数据-2">5. 经营概览与基础元数据（2）</option>
 <option value="6-会员档案-会员卡-权益与爽约-20">6. 会员档案、会员卡、权益与爽约（20）</option>
 <option value="7-会员合同与评估文件-6">7. 会员合同与评估文件（6）</option>
-<option value="8-排课-预约-教室与目录-21">8. 排课、预约、教室与目录（21）</option>
+<option value="8-排课-预约-教室与目录-22">8. 排课、预约、教室与目录（22）</option>
 <option value="9-产品-财务与报表-10">9. 产品、财务与报表（10）</option>
 <option value="10-场馆-品牌与账号-8">10. 场馆、品牌与账号（8）</option>
 <option value="11-短信与审计日志-5">11. 短信与审计日志（5）</option>
@@ -71,7 +71,7 @@
 <option value="16-回收站与-180-天保留-4">16. 回收站与 180 天保留（4）</option></select></label>
       <div class="search-empty" id="search-empty" hidden>没有匹配的接口。可尝试“预约”“卡”“settings”或清空搜索。</div>
       <h1 id="音昱-wellness-api-对接文档">音昱 Wellness API 对接文档<a class="anchor" href="#音昱-wellness-api-对接文档" aria-label="链接到此节">#</a></h1>
-<aside class="callout">版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 <strong>107 个 HTTP 接口</strong>。 文档更新：2026-11-10 · 功能基线：预约排课、会员权益与营收业务闭环。 在线交互文档：<code>/docs</code>（Swagger UI）、<code>/redoc</code>（ReDoc）；原始 OpenAPI 3 定义：<code>/openapi.json</code>。接口路径、方法、参数和实时响应结构以同版本 <code>/openapi.json</code> 为最终依据。</aside>
+<aside class="callout">版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 <strong>108 个 HTTP 接口</strong>。 文档更新：2026-11-10 · 功能基线：预约排课、会员权益与营收业务闭环。 在线交互文档：<code>/docs</code>（Swagger UI）、<code>/redoc</code>（ReDoc）；原始 OpenAPI 3 定义：<code>/openapi.json</code>。接口路径、方法、参数和实时响应结构以同版本 <code>/openapi.json</code> 为最终依据。</aside>
 <h2 id="1-接入基础">1. 接入基础<a class="anchor" href="#1-接入基础" aria-label="链接到此节">#</a></h2>
 <h3 id="1-1-服务地址">1.1 服务地址<a class="anchor" href="#1-1-服务地址" aria-label="链接到此节">#</a></h3>
 <div class="table-wrap"><table>
@@ -481,7 +481,7 @@
 <h4 id="delete-api-admin-documents-document-id"><span class="method method-delete">DELETE</span><a href="#delete-api-admin-documents-document-id" class="route">/api/admin/documents/{document_id}</a></h4>
 <ul><li><strong>权限</strong>：前台；<strong>响应</strong>：<code>{ ok, item, message }</code>。</li><li>记录和文件保留 180 天，期间不可列表或下载，可由管理员恢复；到期彻底删除见第 16 章。</li></ul>
 </section>
-<h2 id="8-排课-预约-教室与目录-21">8. 排课、预约、教室与目录（21）<a class="anchor" href="#8-排课-预约-教室与目录-21" aria-label="链接到此节">#</a></h2>
+<h2 id="8-排课-预约-教室与目录-22">8. 排课、预约、教室与目录（22）<a class="anchor" href="#8-排课-预约-教室与目录-22" aria-label="链接到此节">#</a></h2>
 <h3 id="8-1-查询后台排课">8.1 查询后台排课<a class="anchor" href="#8-1-查询后台排课" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/sessions">
 <h4 id="get-api-admin-sessions"><span class="method method-get">GET</span><a href="#get-api-admin-sessions" class="route">/api/admin/sessions</a></h4>
@@ -610,6 +610,11 @@
 <section class="endpoint" data-search="post /api/admin/teachers/{teacher_id}/photo">
 <h4 id="post-api-admin-teachers-teacher-id-photo"><span class="method method-post">POST</span><a href="#post-api-admin-teachers-teacher-id-photo" class="route">/api/admin/teachers/{teacher_id}/photo</a></h4>
 <ul><li><strong>权限</strong>：管理员；<code>multipart/form-data</code> 上传字段名为 <code>file</code>，支持 PNG、JPG、WebP，最大 4 MiB。</li><li><strong>响应</strong>：更新后的 Teacher。服务端校验真实文件头，<code>image_url</code> 为 <code>/uploads/teachers/...</code> 路径；上传文件需与数据库一起备份。</li></ul>
+</section>
+<h3 id="8-22-查询各教室指定时段占用">8.22 查询各教室指定时段占用<a class="anchor" href="#8-22-查询各教室指定时段占用" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="get /api/admin/rooms/availability">
+<h4 id="get-api-admin-rooms-availability"><span class="method method-get">GET</span><a href="#get-api-admin-rooms-availability" class="route">/api/admin/rooms/availability</a></h4>
+<ul><li><strong>权限</strong>：只读；<strong>Query</strong>：<code>date</code>、<code>start_time</code>、<code>end_time</code> 必填，<code>exclude_session_id</code> 可选（编辑排课时排除自身）。</li><li><strong>响应</strong>：<code>{ date, start_time, end_time, rooms }</code>，按楼层和排序返回启用教室；每项在 Room 基础上增加 <code>available</code> 和 <code>conflicts</code>。</li><li><code>conflicts[]</code> 同时包含重叠课程和内部占用：<code>kind=class|reservation</code>、<code>title</code>、<code>title_en</code>、<code>teacher_name</code>、<code>teacher_name_en</code>、<code>start_time</code>、<code>end_time</code>。</li><li>结束时间必须晚于开始时间。此接口用于在排课编辑器中即时禁用并标注冲突教室；新建和修改排课仍会执行服务端最终冲突校验。</li></ul>
 </section>
 <h2 id="9-产品-财务与报表-10">9. 产品、财务与报表（10）<a class="anchor" href="#9-产品-财务与报表-10" aria-label="链接到此节">#</a></h2>
 <h3 id="9-1-产品列表">9.1 产品列表<a class="anchor" href="#9-1-产品列表" aria-label="链接到此节">#</a></h3>
@@ -914,7 +919,7 @@ const dashboard = await api(&quot;/api/admin/dashboard&quot;, {
 <h4 id="delete-api-admin-recycle-resource-entity-id-permanent"><span class="method method-delete">DELETE</span><a href="#delete-api-admin-recycle-resource-entity-id-permanent" class="route">/api/admin/recycle/{resource}/{entity_id}/permanent</a></h4>
 <ul><li><strong>权限</strong>：管理员登录会话；<strong>Body</strong>：无；<strong>响应</strong>：<code>{ ok, message }</code>。</li><li>只有服务器确认删除时间已满 180 天才执行，提前返回 <code>400</code> 和可删除时间。外键关联未清理时返回 <code>409</code>。</li><li>合同/评估附件会同时删除磁盘文件；其他业务记录删除后不可恢复，操作写入审计日志。</li></ul>
 </section>
-      <footer class="docs-footer"><span>音昱 Wellness · API v1.0.0 · 107 个业务接口</span><span><a href="/help.html">系统操作指南</a> · <a href="/openapi.json">OpenAPI 3</a> · 文档源：<a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md">docs/API.md</a></span></footer>
+      <footer class="docs-footer"><span>音昱 Wellness · API v1.0.0 · 108 个业务接口</span><span><a href="/help.html">系统操作指南</a> · <a href="/openapi.json">OpenAPI 3</a> · 文档源：<a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md">docs/API.md</a></span></footer>
     </main>
   </div>
   <script>
