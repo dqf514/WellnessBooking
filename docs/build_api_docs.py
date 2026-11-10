@@ -140,7 +140,7 @@ TEMPLATE = r'''<!doctype html>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#173f35">
-  <meta name="description" content="音昱 Wellness 完整 API 对接文档，覆盖 82 个接口、权限、字段、业务规则与示例。">
+  <meta name="description" content="音昱 Wellness 完整 API 对接文档，覆盖 __ENDPOINT_COUNT__ 个接口、权限、字段、业务规则与示例。">
   <meta name="generator" content="docs/build_api_docs.py">
   <link id="api-favicon" rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Crect width='36' height='36' rx='18' fill='%23173f35'/%3E%3Cpath d='M28 6C15 7 8 13 8 23c7 1 15-2 20-17ZM8 29c3-8 8-12 16-17' fill='none' stroke='%23e9efe7' stroke-width='1.5'/%3E%3C/svg%3E">
   <title>API 对接文档 · 音昱 Wellness</title>
@@ -169,7 +169,7 @@ TEMPLATE = r'''<!doctype html>
     <aside class="sidebar" aria-label="API 文档目录">
       <label class="search-label"><span>搜索接口、字段或业务规则</span><input class="search-input" id="api-search" type="search" placeholder="例如：签到、退款、bookings" autocomplete="off"><span class="search-hint">按 / 快速搜索，Esc 清空</span></label>
       <p class="search-results" id="search-results" aria-live="polite"></p>
-      <p class="toc-title">API REFERENCE · 82 ENDPOINTS</p>
+      <p class="toc-title">API REFERENCE · __ENDPOINT_COUNT__ ENDPOINTS</p>
       <nav><ul class="toc-list">__NAVIGATION__</ul></nav>
       <div class="sidebar-bottom"><a href="/openapi.json" target="_blank" rel="noreferrer">下载 OpenAPI JSON ↗</a><a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md" target="_blank" rel="noreferrer">GitHub Markdown 源文档 ↗</a><a href="/help.html">← 返回系统操作指南</a></div>
     </aside>
@@ -177,7 +177,7 @@ TEMPLATE = r'''<!doctype html>
       <label class="section-jump"><span>跳转到文档章节</span><select id="mobile-jump">__MOBILE_NAVIGATION__</select></label>
       <div class="search-empty" id="search-empty" hidden>没有匹配的接口。可尝试“预约”“卡”“settings”或清空搜索。</div>
       __CONTENT__
-      <footer class="docs-footer"><span>音昱 Wellness · API v1.0.0 · 82 个业务接口</span><span><a href="/help.html">系统操作指南</a> · <a href="/openapi.json">OpenAPI 3</a> · 文档源：<a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md">docs/API.md</a></span></footer>
+      <footer class="docs-footer"><span>音昱 Wellness · API v1.0.0 · __ENDPOINT_COUNT__ 个业务接口</span><span><a href="/help.html">系统操作指南</a> · <a href="/openapi.json">OpenAPI 3</a> · 文档源：<a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md">docs/API.md</a></span></footer>
     </main>
   </div>
   <script>
@@ -239,12 +239,16 @@ TEMPLATE = r'''<!doctype html>
 
 
 def main() -> None:
-    content, navigation = convert(SOURCE.read_text(encoding="utf-8"))
+    markdown = SOURCE.read_text(encoding="utf-8")
+    endpoint_count = len(re.findall(r"^#### (?:GET|POST|PUT|PATCH|DELETE) ", markdown, re.MULTILINE))
+    if not endpoint_count:
+        raise RuntimeError("No HTTP endpoints found in docs/API.md")
+    content, navigation = convert(markdown)
     links = "\n".join(f'<li><a href="#{anchor}">{html.escape(text)}</a></li>' for anchor, text in navigation)
     options = "\n".join(f'<option value="{anchor}">{html.escape(text)}</option>' for anchor, text in navigation)
-    page = TEMPLATE.replace("__NAVIGATION__", links).replace("__MOBILE_NAVIGATION__", options).replace("__CONTENT__", content)
+    page = TEMPLATE.replace("__ENDPOINT_COUNT__", str(endpoint_count)).replace("__NAVIGATION__", links).replace("__MOBILE_NAVIGATION__", options).replace("__CONTENT__", content)
     TARGET.write_text(page, encoding="utf-8")
-    print(f"Generated {TARGET.relative_to(ROOT)} from {SOURCE.relative_to(ROOT)} ({len(navigation)} chapters)")
+    print(f"Generated {TARGET.relative_to(ROOT)} from {SOURCE.relative_to(ROOT)} ({len(navigation)} chapters, {endpoint_count} endpoints)")
 
 
 if __name__ == "__main__":

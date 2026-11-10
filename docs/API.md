@@ -2,7 +2,9 @@
 
 > 版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 **95 个 HTTP 接口**。
 >
-> 在线交互文档：`/docs`（Swagger UI）、`/redoc`（ReDoc）；原始 OpenAPI 3 定义：`/openapi.json`。
+> 文档更新：2026-11-10 · 功能基线：预约排课、会员权益与营收业务闭环。
+>
+> 在线交互文档：`/docs`（Swagger UI）、`/redoc`（ReDoc）；原始 OpenAPI 3 定义：`/openapi.json`。接口路径、方法、参数和实时响应结构以同版本 `/openapi.json` 为最终依据。
 
 ## 1. 接入基础
 
@@ -353,9 +355,9 @@ curl -X POST "$API/api/auth/login" \
 #### GET /api/admin/dashboard
 
 - **权限**：只读；**请求**：无。
-- **响应**：`today_sessions`、`today_bookings`、`checked_in`、`active_members`、`new_members`、`month_revenue`、`upcoming`、`recent_bookings`。
-- `upcoming` 最多 8 节今日排课，`recent_bookings` 最多 8 条今日课程预约。
-- 月收入包含当月 `paid` 与 `refunded` 流水并直接求和，因此退款负数会抵减收入。
+- **响应**：`today_sessions`、`today_bookings`、`checked_in`、`active_members`、`new_members`、`month_revenue`、`month_cash_received`、`upcoming`、`recent_bookings`。
+- `upcoming` 最多 8 节今日排课，`recent_bookings` 最多 8 条今日课程预约；`checked_in` 同时统计 `checked_in` 和 `completed`。
+- `month_revenue` 是本月至今日的确认营收，`month_cash_received` 是同期现金实收（含退款负数）；口径与第 9.8 节一致。
 
 ### 5.2 后台基础元数据
 
@@ -365,7 +367,7 @@ curl -X POST "$API/api/auth/login" \
 - **响应**：`courses`、`rooms`、`teachers`、`products`、`users` 五个完整数组，包括停用项。
 - 用于表单选项和关联展示；接口含全部员工账号，前端不应把响应暴露给非授权用户。
 
-## 6. 会员档案、会员卡与爽约（10）
+## 6. 会员档案、会员卡、权益与爽约（18）
 
 ### 6.1 查询会员列表
 
@@ -389,8 +391,10 @@ curl -X POST "$API/api/auth/login" \
 #### GET /api/admin/members/{member_id}
 
 - **权限**：只读；**请求**：无 Body。
-- **响应**：Member（含 cards）并增加 `bookings`、`records`、`transactions`。
-- `records[]` 含 `id`、`record_type`、`title`、`content`、`record_date`、`teacher_name`。
+- **响应**：Member（含 `cards`）并增加 `shared_cards`、`bookings`、`records`、`transactions`、`vouchers`、`reminders`、`reminder_alerts`。
+- `shared_cards` 是其他会员共享给当前会员、可用于预约签到的卡；`cards[].shared_with` 则列出当前会员卡的共享对象。
+- `records[]` 含 `id`、`record_type`、`title`、`content`、`record_date`、`teacher_name`；合同和评估附件通过第 7 章接口单独查询。
+- `reminders` 仅含有效提醒，`reminder_alerts` 是已到期提醒及生日前 7 天提示的字符串数组；未来提醒保留在 `reminders` 中，但不会提前弹出。
 
 ### 6.4 修改会员
 
@@ -457,7 +461,85 @@ curl -X POST "$API/api/auth/login" \
 - **权限**：只读；**请求**：无。
 - **响应**：`{ items: Booking[] }`，仅 `no_show` 状态，按预约时间倒序。
 
-## 7. 会员合同文件（3）
+### 6.11 升卡
+
+#### POST /api/admin/cards/{card_id}/upgrade
+
+- **权限**：前台。将正常卡升级为另一产品，原卡状态变为 `upgraded`，新卡继承新产品的有效期和权益，同时生成 `kind=upgrade` 的补差流水。
+
+```json
+{
+  "product_id": 6,
+  "price": 25712,
+  "payment_method": "wechat",
+  "starts_on": "2026-11-10",
+  "note": "月卡补差升级年卡"
+}
+```
+
+`price` 为本次补差金额，省略时按“新产品标价减原卡实购价、最低为 0”计算。仅支持同类别产品或年卡类别升级。响应包含 `old_card`、`card` 和 `difference`。新卡按新产品价格开卡，但不另生成全额购买流水；现金流水只记录本次补差金额。
+
+### 6.12 转卡
+
+#### POST /api/admin/cards/{card_id}/transfer
+
+- **权限**：前台。将正常卡及剩余权益转给另一有效会员。
+- **Body**：`target_member_id` 必填，`note` 可选；**响应**：更新后的 MemberCard。
+- 若该卡仍关联未消课的 `booked` / `checked_in` 预约，返回 `400`，需先取消或完成对应预约。历史预约仍保留原会员归属。
+
+### 6.13 共享会员卡
+
+#### POST /api/admin/cards/{card_id}/share
+
+- **权限**：前台；**Body**：`target_member_id`；**响应**：含最新 `shared_with` 的 MemberCard。
+- 共享人预约和签到时可扣减原卡权益，预约记录仍归属实际到课的共享人。目标必须是另一有效会员，重复共享返回 `400`。
+
+### 6.14 移除共享
+
+#### DELETE /api/admin/cards/{card_id}/shares/{member_id}
+
+- **权限**：前台；**Body**：无；**响应**：`{ ok: true }`。
+- 共享人仍有该卡关联的未消课有效预约时返回 `400`，需先取消预约。历史核销记录不删除。
+
+### 6.15 创建会员提醒
+
+#### POST /api/admin/members/{member_id}/reminders
+
+- **权限**：前台；**Body**：`content` 必填，`remind_on` 可选，留空表示立即提醒。
+
+```json
+{ "content": "会员生日准备了小礼物，签到时交给会员", "remind_on": "2026-11-16" }
+```
+
+到期提醒出现在会员详情 `reminder_alerts` 中，并在签到响应 `member_reminders` 中返回。生日前 7 天会自动生成提示，无需创建生日提醒。
+
+### 6.16 修改或完成提醒
+
+#### PATCH /api/admin/reminders/{reminder_id}
+
+- **权限**：前台；传 `{ "active": false }` 完成提醒，或传非空 `content` 修改内容。
+- **响应**：提醒对象，包含 `id`、`member_id`、`content`、`remind_on`、`active`、`created_by`、`created_at`。
+
+### 6.17 发放免费体验券
+
+#### POST /api/admin/members/{member_id}/vouchers
+
+- **权限**：前台。发放可用于真实预约和消课的体验券。
+
+```json
+{ "course_type": "private", "quantity": 1, "expires_on": "2026-12-10", "note": "销售体验 offer" }
+```
+
+`course_type` 支持 `all`、`group`、`private`、`assessment`、`workshop`、`training`；`quantity` 为 1–100，默认 1；`expires_on` 默认为发放日起 30 天且不能早于当天。无可用会员卡时，签到会原子扣减体验券；取消签到或取消已消课预约会返还。响应及会员详情的 `vouchers` 包含总次数、剩余次数、状态、有效期和发券人。
+
+### 6.18 停用或恢复体验券
+
+#### PATCH /api/admin/vouchers/{voucher_id}
+
+- **权限**：前台；**Body**：`status=cancelled` 停用，`status=active` 恢复。
+- **响应**：更新后的体验券。停用不影响历史核销记录；恢复后仍受有效期和剩余次数限制。
+
+## 7. 会员合同与评估文件（3）
 
 ### 7.1 文件列表
 
@@ -481,7 +563,7 @@ curl -X POST "$API/api/auth/login" \
 - **权限**：只读；**响应**：原始文件流及附件文件名。
 - 数据记录不存在或磁盘文件已移除均返回 `404`。
 
-## 8. 排课、预约与教室（16）
+## 8. 排课、预约、教室与目录（21）
 
 ### 8.1 查询后台排课
 
@@ -515,7 +597,7 @@ curl -X POST "$API/api/auth/login" \
 
 - **权限**：前台；**Body**：无。
 - **响应**：`{ ok, cancelled_bookings }`。
-- 排课状态变为 `cancelled`；取消待上课和已签到预约，释放席位并返还已扣权益，再逐条发送取消通知。已完成和爽约记录不改动。
+- 排课状态变为 `cancelled`；取消 `booked` 和历史 `checked_in` 预约，释放席位并返还已扣权益，再逐条发送取消通知。`completed`（含新签到即消课记录）和 `no_show` 记录不自动改动；如需撤销已消课预约，应先逐条执行 `undo_check_in`，再取消。
 
 ### 8.5 复制上一周课表
 
@@ -538,25 +620,25 @@ curl -X POST "$API/api/auth/login" \
 #### POST /api/admin/bookings/{booking_id}/{action}
 
 - **权限**：前台；**Body**：无；路径 `action` 见下表。
-- **响应**：更新后的 Booking。
+- **响应**：更新后的 Booking；`check_in` 额外返回 `member_reminders: string[]`，包含已到期会员提醒及生日前 7 天提示。
 
 | action | 允许原状态 | 结果与副作用 |
 | --- | --- | --- |
-| `check_in` | `booked` | 选择适用卡并扣一次，变为 `checked_in` |
-| `undo_check_in` | `checked_in` | 返还本次扣次，回到 `booked` |
-| `complete` | `booked`、`checked_in` | 未扣次则先扣一次，变为 `completed`，不重复扣 |
-| `cancel` | `booked`、`checked_in` | 返还已扣权益、释放席位，变为 `cancelled` 并发送短信 |
+| `check_in` | `booked` | 选择适用自有卡、共享卡或体验券并扣一次，直接变为 `completed`，同时写入签到和完成时间 |
+| `undo_check_in` | `checked_in`、`completed` | 返还本次卡权益或体验券，清空签到/完成时间并回到 `booked` |
+| `complete` | `booked`、`checked_in` | 兼容旧流程；未扣次则先扣一次，变为 `completed`，不重复扣 |
+| `cancel` | `booked`、`checked_in`、`completed` | 返还已扣权益、释放席位，变为 `cancelled` 并发送短信 |
 | `no_show` | `booked` | 变为 `no_show`，不扣次、不释放席位，并设置自助预约限制 |
 
-卡选择按到期日、ID 升序，需活动、未过期、未冻结且权益适用。首次使用一张尚未开始的卡时，会将生效日提前到上课日并等天数提前到期日。
+卡选择按到期日、ID 升序，需活动、已生效、未过期、未冻结且权益适用；优先使用有效卡，无可用卡时才选择有效体验券。扣次与返还均使用版本号做并发校验。
 
 ### 8.8 教室某日总览
 
 #### GET /api/admin/rooms/overview
 
-- **权限**：只读；**Query**：`date`，默认今日。
-- **响应**：`{ date, rooms }`；每个 Room 增加 `sessions` 和 `reservations`。
-- `reservations[]` 含 `id`、`title`、`start_time`、`end_time`、`usage_type`、`notes`；只包含启用教室、正常排课和有效占用。
+- **权限**：只读；**Query**：`date`（默认今日）、`floor`（可选，按楼层精确筛选）。
+- **响应**：`{ date, rooms }`；每个 Room 增加 `sessions` 和 `reservations`，教室按 `floor`、`sort_order`、`id` 排列。
+- `reservations[]` 含 `id`、`room_id`、`title`、`reservation_date`、`start_time`、`end_time`、`usage_type`、`notes`；只包含启用教室、正常排课和有效占用。
 
 ### 8.9 创建教室占用
 
@@ -593,8 +675,8 @@ curl -X POST "$API/api/auth/login" \
 
 #### POST /api/admin/rooms
 
-- **权限**：管理员；**Body**：`name`、`name_en`、`capacity`、`color`、`active`。
-- **响应**：Room。
+- **权限**：管理员；**Body**：`name`、`name_en`、`capacity`、`floor`、`sort_order`、`color`、`active`。
+- **响应**：Room。`sort_order` 省略时按当前教室数量生成。
 
 ### 8.14 修改教室
 
@@ -614,6 +696,60 @@ curl -X POST "$API/api/auth/login" \
 #### PATCH /api/admin/teachers/{teacher_id}
 
 - **权限**：管理员；**Body**：与新建相同，部分更新；**响应**：Teacher。
+
+### 8.17 一步完成私教排课与预约
+
+#### POST /api/admin/private-bookings
+
+- **权限**：前台。一次事务中创建一节容量为 1 的私教/评估课程和会员预约，避免先排课再选会员的两步操作。
+
+```json
+{
+  "course_id": 5,
+  "teacher_id": 4,
+  "room_id": 5,
+  "member_id": 1,
+  "session_date": "2026-11-20",
+  "start_time": "09:00",
+  "end_time": "10:00",
+  "notes": "初次私教"
+}
+```
+
+课程必须是 `private` 或 `assessment`，教练、教室冲突返回 `409`，课程已开始返回 `400`。成功响应包含 `session` 和 `booking`，任一失败则整体不保存。发送预约通知的规则与普通后台预约一致，保存后仍是 `booked`，签到时才扣次。
+
+### 8.18 永久删除空排课
+
+#### DELETE /api/admin/sessions/{session_id}/permanent
+
+- **权限**：前台；**Body**：无；**响应**：`{ ok: true }`。
+- 仅从未产生任何预约的排课可物理删除。已有预约（包括已取消预约）返回 `400`，应改用 `DELETE /api/admin/sessions/{session_id}` 取消课程并保留历史。
+
+### 8.19 编辑教室占用
+
+#### PATCH /api/admin/room-reservations/{reservation_id}
+
+- **权限**：前台；**Body**：`room_id`、`title`、`reservation_date`、`start_time`、`end_time`、`usage_type`、`notes` 的任意子集。
+- **响应**：`{ ok: true }`。省略字段沿用原值，保存前排除自身并检查课程及其他占用冲突；取消占用仍使用 DELETE 接口。
+
+### 8.20 教室自定义排序
+
+#### POST /api/admin/rooms/reorder
+
+- **权限**：管理员。接收完整 `room_ids` 数组，按数组顺序写入 `sort_order`。
+
+```json
+{ "room_ids": [5, 1, 2, 3, 4] }
+```
+
+ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、自定义顺序和 ID 排列；此接口不修改 `floor`。
+
+### 8.21 上传教练照片
+
+#### POST /api/admin/teachers/{teacher_id}/photo
+
+- **权限**：管理员；`multipart/form-data` 上传字段名为 `file`，支持 PNG、JPG、WebP，最大 4 MiB。
+- **响应**：更新后的 Teacher。服务端校验真实文件头，`image_url` 为 `/uploads/teachers/...` 路径；上传文件需与数据库一起备份。
 
 ## 9. 产品、财务与报表（8）
 
@@ -677,12 +813,15 @@ curl -X POST "$API/api/auth/login" \
 #### GET /api/admin/reports
 
 - **权限**：只读；**Query**：`date_from`（默认本月 1 日）、`date_to`（默认今日）。
-- **响应**：`range`、`summary`、`amortized_revenue`、`revenue_by_category`、`course_stats`、`teacher_stats`、`weekday`、`hour`、`room_usage`。
-- `summary` 含 `revenue`、`sessions`、`cancelled_sessions`、`attendees`、`booking_count`、`cancelled_bookings`。
-- 课程统计含 `sessions`、`cancelled`、`attendees`、`bookings`；教练统计另含 `minutes`、`hours`。
+- **响应**：`range`、`summary`、`amortized_revenue`、`private_recognized_revenue`、`revenue_by_category`、`course_stats`、`teacher_stats`、`weekday`、`hour`、`room_usage`。
+- `summary` 含 `revenue`（确认营收）、`cash_received`（现金实收）、`sessions`、`cancelled_sessions`、`attendees`、`booking_count`、`cancelled_bookings`。
+- 现金实收按查询范围内 `paid` / `refunded` 流水净额计算，含负数退款；待核销订单不计入。确认营收不等于现金实收：
+  - `category=annual|package|group` 且 `validity_days=365` 的产品，从卡 `starts_on` 起按 365 天直线分摊，取与查询范围重叠的天数；`amortized_revenue` 是这部分确认营收。
+  - 私教购买和升卡流水只计现金，不提前确认营收；有效私教消课按“卡实购价 ÷ 卡总次数”确认，计入 `private_recognized_revenue`。取消签到后记录不再处于已消课状态，因此不再计入。
+  - 其他已支付类别按流水发生时直接确认，退款负数流水按同一类别口径冲减。
+- `revenue_by_category` 是 `{ label, value }[]`；课程统计含 `sessions`、`cancelled`、`attendees`、`bookings`，教练统计另含 `minutes`、`hours`。
 - `weekday.label` 为 0–6（周一至周日），`hour.label` 为两位小时；`value` 是实际到课人次。
 - 教室统计含 `used_hours`、`internal_hours`、`utilization`；利用率分母按范围内每天 12 小时计算。
-- `amortized_revenue` 仅对 `validity_days=365` 的产品按购买日起 365 天直线分摊，并取与查询范围的重叠天数；它不是现金收入。
 
 ## 10. 场馆、品牌与账号（7）
 
@@ -965,14 +1104,13 @@ DELETE /api/public/bookings/{booking_id}     -> cancelled，释放席位
 POST /api/admin/members                              -> 建立唯一手机号档案
 POST /api/admin/members/{member_id}/cards             -> 开卡 + purchase 流水
 POST /api/admin/sessions                              -> scheduled 排课
-POST /api/admin/sessions/{session_id}/bookings         -> booked
-POST /api/admin/bookings/{booking_id}/check_in         -> checked_in，扣 1 次
-POST /api/admin/bookings/{booking_id}/complete         -> completed，不再扣次
-GET  /api/admin/members/{member_id}                    -> 核对卡、预约、流水
-GET  /api/admin/reports                                -> 到课与经营复盘
+POST /api/admin/sessions/{session_id}/bookings         -> booked，占 1 席，不扣次
+POST /api/admin/bookings/{booking_id}/check_in         -> completed，扣 1 次并返回到店提醒
+GET  /api/admin/members/{member_id}                    -> 核对卡、共享卡、预约、体验券和流水
+GET  /api/admin/reports                                -> 到课、现金实收与确认营收
 ```
 
-误签到使用 `undo_check_in`，误预约使用 `cancel`；不要通过直接调整剩余次数掩盖状态错误。
+误签到使用 `undo_check_in` 返回 `booked` 并返还权益，误预约使用 `cancel` 释放席位；不要通过直接调整剩余次数掩盖状态错误。新流程不需要再调用 `complete`，该动作仅为旧数据兼容保留。
 
 ### 14.3 电子码购卡闭环
 
@@ -986,7 +1124,22 @@ GET  /api/admin/reports                                -> 到课与经营复盘
 
 全额退款会销整张关联卡；调用方在确认框中必须明确提示。部分退款不会销卡，但原单也不可再次退款。
 
-### 14.4 JavaScript 请求示例
+### 14.4 私教与会员权益闭环
+
+```text
+POST /api/admin/members/{member_id}/vouchers           -> 发放体验券（可选）
+POST /api/admin/private-bookings                       -> 私教排课 + booked 预约，容量 1
+POST /api/admin/bookings/{booking_id}/check_in         -> completed，扣自有卡/共享卡/体验券
+POST /api/admin/bookings/{booking_id}/undo_check_in    -> booked，返还本次权益
+POST /api/admin/cards/{card_id}/share                  -> 添加家庭共享成员
+POST /api/admin/cards/{card_id}/upgrade                -> 原卡 upgraded + 新卡 + 补差流水
+POST /api/admin/cards/{card_id}/transfer               -> 无未消课预约时转移剩余权益
+GET  /api/admin/members/{member_id}                    -> 核对全部权益与到期提醒
+```
+
+签到优先选择有效自有卡或共享卡，无可用卡才使用体验券。升卡只记录补差流水；转卡和移除共享前应先处理该卡关联的未消课预约。
+
+### 14.5 JavaScript 请求示例
 
 ```js
 async function api(path, { method = "GET", token, apiKey, body, form } = {}) {
@@ -1031,129 +1184,3 @@ const dashboard = await api("/api/admin/dashboard", {
 - 生产环境更换默认 JWT 密钥、停用演示数据与开发验证码，并限制文档和后台的公网访问。
 - 密钥、短信密码、数据库和合同文件不得提交到前端代码或公开仓库。
 - 备份数据库的同时备份上传目录，并定期实际验证恢复流程。
-
-
-## 16. 会员权益、快捷预约与目录扩展（13）
-
-本节接口均需员工 Bearer Token 或相应 API Key scope。会员权益写操作使用 `members:write`，快捷预约使用 `bookings:write`，排课与教室占用使用 `schedule:write`，目录维护使用 `catalog:write`。
-
-签到同时完成消课：`POST /api/admin/bookings/{booking_id}/check_in` 返回状态为 `completed`，写入 `checked_in_at` 和 `completed_at`，并同步扣减有效自有卡、共享卡或体验券。`undo_check_in` 恢复预约及权益。签到响应额外返回 `member_reminders: string[]`。
-
-### 16.1 升卡、转卡与共享
-
-#### POST /api/admin/cards/{card_id}/upgrade
-
-前台。将正常卡升级为另一产品，原卡状态变为 `upgraded`，新卡继承新产品的有效期和权益，同时生成 `kind=upgrade` 的补差流水。
-
-```json
-{
-  "product_id": 6,
-  "price": 25712,
-  "payment_method": "wechat",
-  "starts_on": "2026-11-10",
-  "note": "月卡补差升级年卡"
-}
-```
-
-`price` 为本次补差金额，省略时按“新产品标价减原卡实购价、最低为 0”计算。仅支持同类别产品或年卡类别升级。响应包含 `old_card`、`card` 和 `difference`。
-
-#### POST /api/admin/cards/{card_id}/transfer
-
-前台。将正常卡及剩余权益转给另一有效会员。接收字段为 `target_member_id` 和选填 `note`。若该卡仍关联未消课的有效预约，返回 `400`，需先取消或调整预约。
-
-#### POST /api/admin/cards/{card_id}/share
-
-前台。把正常卡共享给另一有效会员，接收 `target_member_id`。共享人预约和签到时可直接扣减原卡权益，预约记录仍归属实际到课的共享人。重复共享返回 `400`。
-
-#### DELETE /api/admin/cards/{card_id}/shares/{member_id}
-
-前台。移除共享关系。共享人仍有该卡关联的未消课有效预约时返回 `400`，需先取消预约。历史核销记录不删除。
-
-### 16.2 会员提醒
-
-#### POST /api/admin/members/{member_id}/reminders
-
-前台。创建会员提醒：
-
-```json
-{ "content": "会员生日准备了小礼物，签到时交给会员", "remind_on": "2026-11-16" }
-```
-
-`remind_on` 可留空表示立即提醒。到期提醒出现在会员详情 `reminder_alerts` 中，并在签到响应 `member_reminders` 中返回。生日前 7 天会自动生成提示，无需创建生日提醒。
-
-#### PATCH /api/admin/reminders/{reminder_id}
-
-前台。传 `{ "active": false }` 完成提醒，或传非空 `content` 修改内容。详情中的 `reminders` 保存提醒 ID、内容、日期、状态、创建人和创建时间。
-
-### 16.3 免费体验券
-
-#### POST /api/admin/members/{member_id}/vouchers
-
-前台。发放可用于真实预约和消课的体验券：
-
-```json
-{ "course_type": "private", "quantity": 1, "expires_on": "2026-12-10", "note": "销售体验 offer" }
-```
-
-`course_type` 支持 `all`、`group`、`private`、`assessment`、`workshop`、`training`；`quantity` 为 1–100。有效期不能早于当天。无可用会员卡时，签到会原子扣减体验券；取消签到返还。响应及会员详情的 `vouchers` 包含总次数、剩余次数、状态、有效期和发券人。
-
-#### PATCH /api/admin/vouchers/{voucher_id}
-
-前台。传 `{ "status": "cancelled" }` 停用体验券，传 `active` 可重新启用。停用不影响历史核销记录。
-
-### 16.4 一步完成私教排课与预约
-
-#### POST /api/admin/private-bookings
-
-前台。一次事务中创建一节容量为 1 的私教/评估课程和会员预约，避免先排课再选会员的两步操作。
-
-```json
-{
-  "course_id": 5,
-  "teacher_id": 4,
-  "room_id": 5,
-  "member_id": 1,
-  "session_date": "2026-11-20",
-  "start_time": "09:00",
-  "end_time": "10:00",
-  "notes": "初次私教"
-}
-```
-
-课程必须是 `private` 或 `assessment`，教练、教室冲突返回 `409`，课程已开始返回 `400`。成功响应包含 `session` 和 `booking`，任一失败则整体不保存。发送预约通知的规则与普通后台预约一致。
-
-### 16.5 排课永久删除保护
-
-#### DELETE /api/admin/sessions/{session_id}/permanent
-
-前台。仅从未产生任何预约的排课可物理删除。已有预约（包括已取消预约）返回 `400`，应改用 `DELETE /api/admin/sessions/{session_id}` 取消课程并保留历史。
-
-### 16.6 编辑教室占用
-
-#### PATCH /api/admin/room-reservations/{reservation_id}
-
-前台。修改已有教室占用，支持 `room_id`、`title`、`reservation_date`、`start_time`、`end_time`、`usage_type`、`notes`。省略字段沿用原值。保存前排除自身并检查课程及其他占用冲突；取消占用仍使用原有 DELETE 接口。
-
-### 16.7 教室自定义排序
-
-#### POST /api/admin/rooms/reorder
-
-管理员。接收完整 `room_ids` 数组，按数组顺序写入 `sort_order`：
-
-```json
-{ "room_ids": [5, 1, 2, 3, 4] }
-```
-
-ID 必须覆盖当前全部教室且不能重复。教室另有 `floor` 字段；创建和编辑教室时均可提交 `floor`、`sort_order`，列表和总览按楼层、自定义顺序和 ID 排列。
-
-### 16.8 上传教练照片
-
-#### POST /api/admin/teachers/{teacher_id}/photo
-
-管理员。`multipart/form-data` 上传字段名为 `file`，支持 PNG、JPG、WebP，最大 4MB。服务端校验真实文件头，返回更新后的 Teacher；`image_url` 为 `/uploads/teachers/...` 路径。
-
-### 16.9 评估附件与营收口径补充
-
-会员资料上传接口 `POST /api/admin/members/{member_id}/documents` 新增 multipart 字段 `category`：`contract`（默认）或 `assessment`。支持 PDF、图片、Word、Excel、CSV，单文件最大 12MB；列表和响应均返回 `category`。
-
-报表 `summary.revenue` 为确认营收，`summary.cash_received` 为现金实收：365 天团课/年卡/套餐按有效开始日逐日分摊，私教产品购买只计现金、签到消课时按“卡实购价÷总次数”确认，团课卡购买即确认。响应另有 `amortized_revenue` 和 `private_recognized_revenue`。财务流水页始终展示现金口径。
