@@ -11,6 +11,7 @@ from ..deps import require_finance, require_read, require_staff
 from ..finance_service import recognized_revenue
 from ..log_util import audit
 from ..models import Booking, CardProduct, ClassSession, Member, Room, RoomReservation, Transaction, User
+from ..recycle_service import move_to_recycle
 from ..serializers import product_dict, transaction_dict
 from ..utils import clean_payload, minutes, today, valid_date
 
@@ -20,7 +21,7 @@ PRODUCT_FIELDS = {"name", "name_en", "category", "price", "original_price", "val
 
 @router.get("/products")
 def list_products(db: Session = Depends(get_db), _: User = Depends(require_read)):
-    return {"items": [product_dict(row) for row in db.query(CardProduct).order_by(CardProduct.id).all()]}
+    return {"items": [product_dict(row) for row in db.query(CardProduct).filter(CardProduct.deleted_at.is_(None)).order_by(CardProduct.id).all()]}
 
 
 @router.post("/products")
@@ -41,7 +42,7 @@ def create_product(payload: dict = Body(...), db: Session = Depends(get_db), use
 @router.patch("/products/{product_id}")
 def update_product(product_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_finance)):
     row = db.get(CardProduct, product_id)
-    if not row:
+    if not row or row.deleted_at is not None:
         raise HTTPException(404, "产品不存在")
     for key, value in clean_payload(payload, PRODUCT_FIELDS).items():
         setattr(row, key, value)
@@ -54,7 +55,7 @@ def update_product(product_id: int, payload: dict = Body(...), db: Session = Dep
 
 @router.get("/transactions")
 def list_transactions(date_from: str = Query(""), date_to: str = Query(""), category: str = Query(""), member_id: int = Query(0), db: Session = Depends(get_db), _: User = Depends(require_read)):
-    query = db.query(Transaction)
+    query = db.query(Transaction).filter(Transaction.deleted_at.is_(None))
     if date_from:
         query = query.filter(Transaction.occurred_at >= datetime.fromisoformat(f"{valid_date(date_from)}T00:00:00"))
     if date_to:
@@ -83,10 +84,38 @@ def manual_transaction(payload: dict = Body(...), db: Session = Depends(get_db),
     return transaction_dict(row)
 
 
+@router.patch("/transactions/{transaction_id}")
+def update_manual_transaction(transaction_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_finance)):
+    row = db.get(Transaction, transaction_id)
+    if not row or row.kind != "manual" or row.deleted_at is not None:
+        raise HTTPException(404, "手工入账不存在")
+    changes = clean_payload(payload, {"member_id", "category", "amount", "payment_method", "note"})
+    if "amount" in changes:
+        changes["amount"] = round(float(changes["amount"]), 2)
+        if changes["amount"] == 0:
+            raise HTTPException(400, "入账金额不能为 0")
+    member_id = changes.get("member_id", row.member_id) or None
+    if member_id:
+        member = db.get(Member, int(member_id))
+        if not member or member.deleted_at is not None:
+            raise HTTPException(404, "会员不存在")
+    changes["member_id"] = member_id
+    for key, value in changes.items():
+        setattr(row, key, value)
+    audit(db, user, "finance", "update_manual_entry", "transaction", transaction_id, changes)
+    db.commit()
+    return transaction_dict(row)
+
+
+@router.delete("/transactions/{transaction_id}")
+def delete_manual_transaction(transaction_id: int, db: Session = Depends(get_db), user: User = Depends(require_finance)):
+    return move_to_recycle(db, "transactions", transaction_id, user)
+
+
 @router.post("/transactions/{transaction_id}/refund")
 def refund_transaction(transaction_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_finance)):
     original = db.get(Transaction, transaction_id)
-    if not original or original.status != "paid" or original.amount <= 0:
+    if not original or original.status != "paid" or original.amount <= 0 or original.deleted_at is not None:
         raise HTTPException(400, "该流水不可退款")
     amount = float(payload.get("amount", original.amount))
     if amount <= 0 or amount > original.amount:
@@ -108,7 +137,7 @@ def refund_transaction(transaction_id: int, payload: dict = Body(...), db: Sessi
 @router.post("/orders/redeem")
 def redeem_order(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
     code = str(payload.get("redemption_code", "")).strip().upper()
-    order = db.query(Transaction).filter(Transaction.redemption_code == code).first()
+    order = db.query(Transaction).filter(Transaction.redemption_code == code, Transaction.deleted_at.is_(None)).first()
     if not order or order.status != "pending" or not order.product_id or not order.member_id:
         raise HTTPException(404, "待核销电子码不存在")
     claimed = db.query(Transaction).filter(Transaction.id == order.id, Transaction.status == "pending").update({"status": "paid"}, synchronize_session=False)
@@ -134,9 +163,9 @@ def reports(date_from: str = Query(""), date_to: str = Query(""), db: Session = 
     end = valid_date(date_to or today(), "结束日期")
     if end < start:
         raise HTTPException(400, "开始日期不能晚于结束日期")
-    sessions = db.query(ClassSession).filter(ClassSession.session_date >= start, ClassSession.session_date <= end).all()
+    sessions = db.query(ClassSession).filter(ClassSession.session_date >= start, ClassSession.session_date <= end, ClassSession.deleted_at.is_(None)).all()
     session_ids = [row.id for row in sessions]
-    bookings = db.query(Booking).filter(Booking.session_id.in_(session_ids)).all() if session_ids else []
+    bookings = db.query(Booking).filter(Booking.session_id.in_(session_ids), Booking.deleted_at.is_(None)).all() if session_ids else []
     revenue = recognized_revenue(db, start, end)
     course_stats = defaultdict(lambda: {"sessions": 0, "cancelled": 0, "attendees": 0, "bookings": 0})
     teacher_stats = defaultdict(lambda: {"sessions": 0, "minutes": 0, "attendees": 0, "cancelled": 0})
@@ -161,8 +190,8 @@ def reports(date_from: str = Query(""), date_to: str = Query(""), db: Session = 
         teacher_stats[teacher_name]["attendees"] += attendees
         weekday[datetime.fromisoformat(session.session_date).weekday()] += attendees
         hour[session.start_time[:2]] += attendees
-    rooms = db.query(Room).order_by(Room.floor, Room.sort_order, Room.id).all()
-    reservations = db.query(RoomReservation).filter(RoomReservation.reservation_date >= start, RoomReservation.reservation_date <= end, RoomReservation.status == "active").all()
+    rooms = db.query(Room).filter(Room.deleted_at.is_(None)).order_by(Room.floor, Room.sort_order, Room.id).all()
+    reservations = db.query(RoomReservation).filter(RoomReservation.reservation_date >= start, RoomReservation.reservation_date <= end, RoomReservation.status == "active", RoomReservation.deleted_at.is_(None)).all()
     days = (datetime.fromisoformat(end) - datetime.fromisoformat(start)).days + 1
     room_usage = []
     for room in rooms:

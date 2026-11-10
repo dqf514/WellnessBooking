@@ -7,6 +7,7 @@ from ..deps import require_staff
 from ..log_util import audit
 from ..membership_service import reminder_dict, voucher_dict
 from ..models import Booking, CardProduct, ExperienceVoucher, Member, MemberCard, MemberCardShare, MemberReminder, Transaction, User
+from ..recycle_service import move_to_recycle
 from ..serializers import card_dict
 from ..utils import add_days, today, valid_date
 
@@ -15,7 +16,7 @@ router = APIRouter(prefix="/api/admin", tags=["member-benefits"])
 
 def _active_card(db: Session, card_id: int) -> MemberCard:
     card = db.get(MemberCard, card_id)
-    if not card or card.status != "active":
+    if not card or card.status != "active" or card.deleted_at is not None:
         raise HTTPException(400, "仅正常会员卡可执行此操作")
     return card
 
@@ -48,9 +49,9 @@ def upgrade_card(card_id: int, payload: dict = Body(...), db: Session = Depends(
 def transfer_card(card_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
     card = _active_card(db, card_id)
     target = db.get(Member, int(payload.get("target_member_id", 0)))
-    if not target or not target.active or target.id == card.member_id:
+    if not target or not target.active or target.deleted_at is not None or target.id == card.member_id:
         raise HTTPException(400, "请选择有效的接收会员")
-    pending = db.query(Booking).filter(Booking.member_card_id == card.id, Booking.consumed.is_(False), Booking.status.in_(["booked", "checked_in"])).count()
+    pending = db.query(Booking).filter(Booking.member_card_id == card.id, Booking.consumed.is_(False), Booking.status.in_(["booked", "checked_in"]), Booking.deleted_at.is_(None)).count()
     if pending:
         raise HTTPException(400, "该卡仍关联未消课预约，请先取消或调整原会员预约")
     previous = card.member.name
@@ -66,9 +67,9 @@ def transfer_card(card_id: int, payload: dict = Body(...), db: Session = Depends
 def share_card(card_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
     card = _active_card(db, card_id)
     target = db.get(Member, int(payload.get("target_member_id", 0)))
-    if not target or not target.active or target.id == card.member_id:
+    if not target or not target.active or target.deleted_at is not None or target.id == card.member_id:
         raise HTTPException(400, "请选择有效的共享会员")
-    if db.query(MemberCardShare).filter(MemberCardShare.card_id == card.id, MemberCardShare.member_id == target.id).first():
+    if db.query(MemberCardShare).filter(MemberCardShare.card_id == card.id, MemberCardShare.member_id == target.id, MemberCardShare.deleted_at.is_(None)).first():
         raise HTTPException(400, "该卡已共享给此会员")
     share = MemberCardShare(card_id=card.id, member_id=target.id, created_by=user.username)
     db.add(share)
@@ -79,21 +80,18 @@ def share_card(card_id: int, payload: dict = Body(...), db: Session = Depends(ge
 
 @router.delete("/cards/{card_id}/shares/{member_id}")
 def unshare_card(card_id: int, member_id: int, db: Session = Depends(get_db), user: User = Depends(require_staff)):
-    share = db.query(MemberCardShare).filter(MemberCardShare.card_id == card_id, MemberCardShare.member_id == member_id).first()
+    share = db.query(MemberCardShare).filter(MemberCardShare.card_id == card_id, MemberCardShare.member_id == member_id, MemberCardShare.deleted_at.is_(None)).first()
     if not share:
         raise HTTPException(404, "共享关系不存在")
-    pending = db.query(Booking).filter(Booking.member_card_id == card_id, Booking.member_id == member_id, Booking.consumed.is_(False), Booking.status.in_(["booked", "checked_in"])).count()
+    pending = db.query(Booking).filter(Booking.member_card_id == card_id, Booking.member_id == member_id, Booking.consumed.is_(False), Booking.status.in_(["booked", "checked_in"]), Booking.deleted_at.is_(None)).count()
     if pending:
         raise HTTPException(400, "共享会员仍有关联预约，请先取消后再移除共享")
-    db.delete(share)
-    audit(db, user, "member_card", "unshare", "member_card", card_id, {"target_member_id": member_id})
-    db.commit()
-    return {"ok": True}
+    return move_to_recycle(db, "shares", share.id, user)
 
 
 @router.post("/members/{member_id}/reminders")
 def create_reminder(member_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
-    if not db.get(Member, member_id):
+    if not (member := db.get(Member, member_id)) or member.deleted_at is not None:
         raise HTTPException(404, "会员不存在")
     content = str(payload.get("content", "")).strip()
     if not content:
@@ -111,7 +109,7 @@ def create_reminder(member_id: int, payload: dict = Body(...), db: Session = Dep
 @router.patch("/reminders/{reminder_id}")
 def update_reminder(reminder_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
     row = db.get(MemberReminder, reminder_id)
-    if not row:
+    if not row or row.deleted_at is not None:
         raise HTTPException(404, "提醒不存在")
     if "active" in payload:
         row.active = bool(payload["active"])
@@ -124,7 +122,7 @@ def update_reminder(reminder_id: int, payload: dict = Body(...), db: Session = D
 
 @router.post("/members/{member_id}/vouchers")
 def create_voucher(member_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
-    if not db.get(Member, member_id):
+    if not (member := db.get(Member, member_id)) or member.deleted_at is not None:
         raise HTTPException(404, "会员不存在")
     course_type = str(payload.get("course_type", "group"))
     if course_type not in {"all", "group", "private", "assessment", "workshop", "training"}:
@@ -146,7 +144,7 @@ def create_voucher(member_id: int, payload: dict = Body(...), db: Session = Depe
 @router.patch("/vouchers/{voucher_id}")
 def update_voucher(voucher_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
     row = db.get(ExperienceVoucher, voucher_id)
-    if not row:
+    if not row or row.deleted_at is not None:
         raise HTTPException(404, "体验券不存在")
     if "status" in payload:
         if payload["status"] not in {"active", "cancelled"}:

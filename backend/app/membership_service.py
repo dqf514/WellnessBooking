@@ -16,7 +16,7 @@ def reminder_dict(row: MemberReminder) -> dict:
 
 def due_reminders(db: Session, member: Member) -> list[str]:
     current = datetime.fromisoformat(today()).date()
-    alerts = [row.content for row in db.query(MemberReminder).filter(MemberReminder.member_id == member.id, MemberReminder.active.is_(True)).order_by(MemberReminder.remind_on, MemberReminder.id).all() if not row.remind_on or row.remind_on <= today()]
+    alerts = [row.content for row in db.query(MemberReminder).filter(MemberReminder.member_id == member.id, MemberReminder.active.is_(True), MemberReminder.deleted_at.is_(None)).order_by(MemberReminder.remind_on, MemberReminder.id).all() if not row.remind_on or row.remind_on <= today()]
     if member.birth_date:
         try:
             birth = datetime.fromisoformat(member.birth_date).date()
@@ -32,4 +32,4 @@ def due_reminders(db: Session, member: Member) -> list[str]:
 
 
 def find_available_voucher(db: Session, member: Member, course_type: str, on_date: str) -> ExperienceVoucher | None:
-    return db.query(ExperienceVoucher).filter(ExperienceVoucher.member_id == member.id, ExperienceVoucher.status == "active", ExperienceVoucher.course_type.in_([course_type, "all"]), ExperienceVoucher.expires_on >= on_date, ExperienceVoucher.remaining_sessions > 0).order_by(ExperienceVoucher.expires_on, ExperienceVoucher.id).first()
+    return db.query(ExperienceVoucher).filter(ExperienceVoucher.member_id == member.id, ExperienceVoucher.status == "active", ExperienceVoucher.course_type.in_([course_type, "all"]), ExperienceVoucher.expires_on >= on_date, ExperienceVoucher.remaining_sessions > 0, ExperienceVoucher.deleted_at.is_(None)).order_by(ExperienceVoucher.expires_on, ExperienceVoucher.id).first()

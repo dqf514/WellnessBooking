@@ -9,7 +9,7 @@ from .models import Booking, ClassSession, Course, MemberCard, Transaction
 def recognized_revenue(db: Session, start: str, end: str) -> dict:
     range_start = datetime.fromisoformat(start).date()
     range_end = datetime.fromisoformat(end).date()
-    transactions = db.query(Transaction).filter(Transaction.occurred_at >= datetime.fromisoformat(f"{start}T00:00:00"), Transaction.occurred_at <= datetime.fromisoformat(f"{end}T23:59:59"), Transaction.status.in_(["paid", "refunded"])).all()
+    transactions = db.query(Transaction).filter(Transaction.occurred_at >= datetime.fromisoformat(f"{start}T00:00:00"), Transaction.occurred_at <= datetime.fromisoformat(f"{end}T23:59:59"), Transaction.status.in_(["paid", "refunded"]), Transaction.deleted_at.is_(None)).all()
     revenue = defaultdict(float)
     annual_revenue = 0.0
     for row in transactions:
@@ -30,7 +30,7 @@ def recognized_revenue(db: Session, start: str, end: str) -> dict:
         else:
             revenue[row.category] += row.amount
     private_revenue = 0.0
-    consumed = db.query(Booking).join(ClassSession).join(Course).filter(ClassSession.session_date >= start, ClassSession.session_date <= end, Course.course_type == "private", Booking.consumed.is_(True), Booking.status.in_(["checked_in", "completed"])).all()
+    consumed = db.query(Booking).join(ClassSession).join(Course).filter(ClassSession.session_date >= start, ClassSession.session_date <= end, ClassSession.deleted_at.is_(None), Course.course_type == "private", Booking.consumed.is_(True), Booking.status.in_(["checked_in", "completed"]), Booking.deleted_at.is_(None)).all()
     for booking in consumed:
         card = booking.member_card
         if not card or card.product.category != "private" or not card.total_sessions:

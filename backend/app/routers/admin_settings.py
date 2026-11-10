@@ -12,6 +12,7 @@ from ..database import get_db
 from ..deps import require_admin, require_read
 from ..log_util import audit, sms_log
 from ..models import AppSettings, OperationLog, SmsSendLog, SmsSettings, User
+from ..recycle_service import move_to_recycle
 from ..security import hash_password
 from ..serializers import user_dict
 from ..sms_gateway import query_balance, send_sms_batch
@@ -75,9 +76,6 @@ def reset_branding_image(kind: str, db: Session = Depends(get_db), user: User = 
         raise HTTPException(404, "不支持的品牌图片类型")
     row = db.get(AppSettings, 1)
     setattr(row, f"{kind}_url", "")
-    path = UPLOAD_DIR / "branding" / f"{kind}.png"
-    if path.exists():
-        path.unlink()
     audit(db, user, "settings", "reset_branding", "app_settings", 1, {"kind": kind})
     db.commit()
     return _settings_dict(row)
@@ -85,7 +83,7 @@ def reset_branding_image(kind: str, db: Session = Depends(get_db), user: User = 
 
 @router.get("/users")
 def list_users(db: Session = Depends(get_db), _: User = Depends(require_admin)):
-    return {"items": [user_dict(row) for row in db.query(User).order_by(User.id).all()]}
+    return {"items": [user_dict(row) for row in db.query(User).filter(User.deleted_at.is_(None)).order_by(User.id).all()]}
 
 
 @router.post("/users")
@@ -113,7 +111,7 @@ def create_user(payload: dict = Body(...), db: Session = Depends(get_db), user: 
 @router.patch("/users/{user_id}")
 def update_user(user_id: int, payload: dict = Body(...), db: Session = Depends(get_db), actor: User = Depends(require_admin)):
     row = db.get(User, user_id)
-    if not row:
+    if not row or row.deleted_at is not None:
         raise HTTPException(404, "账号不存在")
     if "role" in payload:
         if payload["role"] not in {"admin", "finance", "frontdesk", "teacher", "viewer"}:
@@ -137,6 +135,11 @@ def update_user(user_id: int, payload: dict = Body(...), db: Session = Depends(g
     audit(db, actor, "account", "update", "user", user_id, {key: value for key, value in payload.items() if key != "password"})
     db.commit()
     return user_dict(row)
+
+
+@router.delete("/users/{user_id}")
+def delete_user(user_id: int, db: Session = Depends(get_db), actor: User = Depends(require_admin)):
+    return move_to_recycle(db, "users", user_id, actor)
 
 
 def _sms_public(row: SmsSettings) -> dict:

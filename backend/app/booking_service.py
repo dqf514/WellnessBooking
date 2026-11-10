@@ -14,7 +14,7 @@ ACTIVE_BOOKING_STATUSES = {"booked", "checked_in", "completed", "no_show"}
 
 
 def active_booking_count(session: ClassSession) -> int:
-    return sum(1 for item in session.bookings if item.status in ACTIVE_BOOKING_STATUSES)
+    return sum(1 for item in session.bookings if item.status in ACTIVE_BOOKING_STATUSES and item.deleted_at is None)
 
 
 def _card_quantity_for(card: MemberCard, course_type: str) -> int | None:
@@ -28,7 +28,7 @@ def _card_quantity_for(card: MemberCard, course_type: str) -> int | None:
 
 
 def _card_usable(card: MemberCard, course_type: str, on_date: str) -> bool:
-    if card.status != "active" or card.expires_on < on_date or card.starts_on > on_date:
+    if card.deleted_at is not None or card.status != "active" or card.expires_on < on_date or card.starts_on > on_date:
         return False
     if card.frozen_until and card.frozen_until >= on_date:
         return False
@@ -37,9 +37,9 @@ def _card_usable(card: MemberCard, course_type: str, on_date: str) -> bool:
 
 
 def find_available_card(db: Session, member: Member, course_type: str, on_date: str) -> MemberCard | None:
-    filters = [MemberCard.status == "active", MemberCard.expires_on >= on_date]
+    filters = [MemberCard.status == "active", MemberCard.expires_on >= on_date, MemberCard.deleted_at.is_(None)]
     own = db.query(MemberCard).filter(MemberCard.member_id == member.id, *filters).all()
-    shared = db.query(MemberCard).join(MemberCardShare, MemberCardShare.card_id == MemberCard.id).filter(MemberCardShare.member_id == member.id, *filters).all()
+    shared = db.query(MemberCard).join(MemberCardShare, MemberCardShare.card_id == MemberCard.id).filter(MemberCardShare.member_id == member.id, MemberCardShare.deleted_at.is_(None), *filters).all()
     for card in sorted({card.id: card for card in [*own, *shared]}.values(), key=lambda item: (item.expires_on, item.id)):
         if _card_usable(card, course_type, on_date):
             return card
@@ -51,11 +51,11 @@ def has_available_entitlement(db: Session, member: Member, course_type: str, on_
 
 
 def create_booking(db: Session, *, session: ClassSession, member: Member, source: str, public: bool = False) -> Booking:
-    if not member.active:
+    if not member.active or member.deleted_at is not None:
         raise HTTPException(400, "会员账号已停用，请联系前台")
-    if session.status != "scheduled":
+    if session.deleted_at is not None or session.status != "scheduled":
         raise HTTPException(400, "该课程已取消，无法预约")
-    if not session.course.active or not session.teacher.active or not session.room.active:
+    if not session.course.active or not session.teacher.active or not session.room.active or session.course.deleted_at or session.teacher.deleted_at or session.room.deleted_at:
         raise HTTPException(400, "课程、教练或教室已停用")
     starts = session_datetime(session.session_date, session.start_time)
     if starts <= datetime.now():
@@ -67,7 +67,7 @@ def create_booking(db: Session, *, session: ClassSession, member: Member, source
             raise HTTPException(400, f"开课前 {cutoff // 60} 小时内请联前台预约")
         if member.no_show_blocked_until and member.no_show_blocked_until >= today():
             raise HTTPException(400, f"爽约限制至 {member.no_show_blocked_until}，请联系前台")
-    duplicate = db.query(Booking).filter(Booking.session_id == session.id, Booking.member_id == member.id, Booking.status.in_(ACTIVE_BOOKING_STATUSES)).first()
+    duplicate = db.query(Booking).filter(Booking.session_id == session.id, Booking.member_id == member.id, Booking.status.in_(ACTIVE_BOOKING_STATUSES), Booking.deleted_at.is_(None)).first()
     if duplicate:
         raise HTTPException(400, "该会员已预约此课程")
     if session.reserved_count >= session.capacity:
@@ -194,6 +194,8 @@ def _release_session_slot(db: Session, booking: Booking) -> None:
 
 
 def transition_booking(db: Session, booking: Booking, action: str, actor_name: str) -> Booking:
+    if booking.deleted_at is not None:
+        raise HTTPException(400, "该预约已移入回收站，请先由管理员恢复")
     if action == "check_in":
         if booking.status != "booked":
             raise HTTPException(400, "仅待签到预约可签到")
@@ -236,9 +238,9 @@ def transition_booking(db: Session, booking: Booking, action: str, actor_name: s
 
 
 def reconcile_booking_inventory(db: Session) -> None:
-    duplicates = db.query(Booking.session_id, Booking.member_id).filter(Booking.status.in_(ACTIVE_BOOKING_STATUSES)).group_by(Booking.session_id, Booking.member_id).having(func.count(Booking.id) > 1).all()
+    duplicates = db.query(Booking.session_id, Booking.member_id).filter(Booking.status.in_(ACTIVE_BOOKING_STATUSES), Booking.deleted_at.is_(None)).group_by(Booking.session_id, Booking.member_id).having(func.count(Booking.id) > 1).all()
     for session_id, member_id in duplicates:
-        rows = db.query(Booking).filter(Booking.session_id == session_id, Booking.member_id == member_id, Booking.status.in_(ACTIVE_BOOKING_STATUSES)).order_by(Booking.id).all()
+        rows = db.query(Booking).filter(Booking.session_id == session_id, Booking.member_id == member_id, Booking.status.in_(ACTIVE_BOOKING_STATUSES), Booking.deleted_at.is_(None)).order_by(Booking.id).all()
         for booking in rows[1:]:
             restore_consumption(db, booking)
             booking.status = "cancelled"

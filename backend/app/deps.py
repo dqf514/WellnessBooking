@@ -38,7 +38,7 @@ def get_current_user(request: Request, creds: HTTPAuthorizationCredentials | Non
     if not subject.startswith("staff:"):
         raise HTTPException(status_code=403, detail="需要员工账号")
     user = db.get(User, int(subject.split(":", 1)[1]))
-    if not user or not user.active:
+    if not user or not user.active or user.deleted_at is not None:
         raise HTTPException(status_code=401, detail="账号不存在或已停用")
     request.state.auth_kind = "jwt"
     return user
@@ -50,7 +50,7 @@ def get_current_member(creds: HTTPAuthorizationCredentials | None = Depends(bear
     if not subject.startswith("member:"):
         raise HTTPException(status_code=403, detail="需要会员账号")
     member = db.get(Member, int(subject.split(":", 1)[1]))
-    if not member or not member.active:
+    if not member or not member.active or member.deleted_at is not None:
         raise HTTPException(status_code=401, detail="会员账号不存在或已停用")
     return member
 

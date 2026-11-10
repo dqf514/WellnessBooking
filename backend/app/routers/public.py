@@ -37,7 +37,7 @@ def public_sessions(date_from: str = Query(default=""), date_to: str = Query(def
     end = valid_date(date_to or add_days(start, 6))
     if end < start or (datetime.fromisoformat(end) - datetime.fromisoformat(start)).days > 31:
         raise HTTPException(400, "查询范围不合法，单次最多 31 天")
-    query = db.query(ClassSession).options(joinedload(ClassSession.course), joinedload(ClassSession.teacher), joinedload(ClassSession.room), joinedload(ClassSession.bookings)).filter(ClassSession.session_date >= start, ClassSession.session_date <= end, ClassSession.status == "scheduled")
+    query = db.query(ClassSession).options(joinedload(ClassSession.course), joinedload(ClassSession.teacher), joinedload(ClassSession.room), joinedload(ClassSession.bookings)).filter(ClassSession.session_date >= start, ClassSession.session_date <= end, ClassSession.status == "scheduled", ClassSession.deleted_at.is_(None))
     if course_type:
         query = query.join(Course).filter(Course.course_type == course_type)
     rows = query.order_by(ClassSession.session_date, ClassSession.start_time).all()
@@ -68,10 +68,10 @@ def member_login(payload: dict = Body(...), db: Session = Depends(get_db)):
 
 @router.get("/me")
 def member_me(db: Session = Depends(get_db), member: Member = Depends(get_current_member)):
-    bookings = db.query(Booking).filter(Booking.member_id == member.id).order_by(Booking.booked_at.desc()).all()
-    transactions = db.query(Transaction).filter(Transaction.member_id == member.id).order_by(Transaction.occurred_at.desc()).all()
-    shared = db.query(MemberCard).join(MemberCardShare, MemberCardShare.card_id == MemberCard.id).filter(MemberCardShare.member_id == member.id).all()
-    vouchers = db.query(ExperienceVoucher).filter(ExperienceVoucher.member_id == member.id, ExperienceVoucher.status == "active").all()
+    bookings = db.query(Booking).filter(Booking.member_id == member.id, Booking.deleted_at.is_(None)).order_by(Booking.booked_at.desc()).all()
+    transactions = db.query(Transaction).filter(Transaction.member_id == member.id, Transaction.deleted_at.is_(None)).order_by(Transaction.occurred_at.desc()).all()
+    shared = db.query(MemberCard).join(MemberCardShare, MemberCardShare.card_id == MemberCard.id).filter(MemberCardShare.member_id == member.id, MemberCardShare.deleted_at.is_(None), MemberCard.deleted_at.is_(None)).all()
+    vouchers = db.query(ExperienceVoucher).filter(ExperienceVoucher.member_id == member.id, ExperienceVoucher.status == "active", ExperienceVoucher.deleted_at.is_(None)).all()
     return {"member": member_dict(member), "cards": [card_dict(card) for card in [*member.cards, *shared]], "vouchers": [voucher_dict(row) for row in vouchers], "bookings": [booking_dict(row) for row in bookings], "transactions": [transaction_dict(row) for row in transactions]}
 
 
@@ -89,7 +89,7 @@ def member_create_booking(payload: dict = Body(...), db: Session = Depends(get_d
 
 @router.delete("/bookings/{booking_id}")
 def member_cancel_booking(booking_id: int, db: Session = Depends(get_db), member: Member = Depends(get_current_member)):
-    booking = db.query(Booking).filter(Booking.id == booking_id, Booking.member_id == member.id).first()
+    booking = db.query(Booking).filter(Booking.id == booking_id, Booking.member_id == member.id, Booking.deleted_at.is_(None)).first()
     if not booking:
         raise HTTPException(404, "预约不存在")
     if booking.status not in {"booked", "checked_in"}:
@@ -104,7 +104,7 @@ def member_cancel_booking(booking_id: int, db: Session = Depends(get_db), member
 
 @router.get("/bookings/{booking_id}/calendar.ics")
 def booking_calendar(booking_id: int, db: Session = Depends(get_db), member: Member = Depends(get_current_member)):
-    booking = db.query(Booking).filter(Booking.id == booking_id, Booking.member_id == member.id).first()
+    booking = db.query(Booking).filter(Booking.id == booking_id, Booking.member_id == member.id, Booking.deleted_at.is_(None)).first()
     if not booking:
         raise HTTPException(404, "预约不存在")
     session = booking.session

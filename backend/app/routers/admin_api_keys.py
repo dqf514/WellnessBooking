@@ -11,6 +11,7 @@ from ..database import get_db
 from ..deps import require_interactive_admin
 from ..log_util import audit
 from ..models import ApiKey, ApiKeyUsageLog, User
+from ..recycle_service import move_to_recycle
 from ..utils import dt
 
 router = APIRouter(prefix="/api/admin", tags=["api-keys"])
@@ -75,7 +76,7 @@ def _expires_at(value, *, default_90_days: bool = False) -> datetime | None:
 
 @router.get("/api-keys")
 def list_api_keys(db: Session = Depends(get_db), _: User = Depends(require_interactive_admin)):
-    rows = db.query(ApiKey).order_by(ApiKey.id.desc()).all()
+    rows = db.query(ApiKey).filter(ApiKey.deleted_at.is_(None)).order_by(ApiKey.id.desc()).all()
     return {
         "items": [_key_dict(db, row) for row in rows],
         "scope_options": [{"id": scope, "description": description} for scope, description in API_KEY_SCOPES.items()],
@@ -106,7 +107,7 @@ def create_api_key(payload: dict = Body(...), db: Session = Depends(get_db), use
 @router.patch("/api-keys/{key_id}")
 def update_api_key(key_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_interactive_admin)):
     row = db.get(ApiKey, key_id)
-    if not row:
+    if not row or row.deleted_at is not None:
         raise HTTPException(404, "API Key 不存在")
     changes = {}
     if "name" in payload:
@@ -130,7 +131,7 @@ def update_api_key(key_id: int, payload: dict = Body(...), db: Session = Depends
 @router.post("/api-keys/{key_id}/rotate")
 def rotate_api_key(key_id: int, db: Session = Depends(get_db), user: User = Depends(require_interactive_admin)):
     row = db.get(ApiKey, key_id)
-    if not row:
+    if not row or row.deleted_at is not None:
         raise HTTPException(404, "API Key 不存在")
     raw, prefix, suffix, key_hash = generate_api_key()
     row.key_prefix = prefix
@@ -144,13 +145,7 @@ def rotate_api_key(key_id: int, db: Session = Depends(get_db), user: User = Depe
 
 @router.delete("/api-keys/{key_id}")
 def delete_api_key(key_id: int, db: Session = Depends(get_db), user: User = Depends(require_interactive_admin)):
-    row = db.get(ApiKey, key_id)
-    if not row:
-        raise HTTPException(404, "API Key 不存在")
-    audit(db, user, "api_key", "delete", "api_key", key_id, {"name": row.name, "key_prefix": row.key_prefix})
-    db.delete(row)
-    db.commit()
-    return {"ok": True}
+    return move_to_recycle(db, "api-keys", key_id, user)
 
 
 @router.get("/api-key-logs")

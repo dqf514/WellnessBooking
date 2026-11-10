@@ -137,7 +137,7 @@ def send_due_reminders(db: Session) -> int:
     hours = settings.reminder_hours if settings else 24
     now = datetime.now()
     end = now + timedelta(hours=hours)
-    rows = db.query(Booking).join(ClassSession).filter(Booking.status == "booked").all()
+    rows = db.query(Booking).join(ClassSession).filter(Booking.status == "booked", Booking.deleted_at.is_(None), ClassSession.status == "scheduled", ClassSession.deleted_at.is_(None)).all()
     sent = 0
     for booking in rows:
         starts = datetime.fromisoformat(f"{booking.session.session_date}T{booking.session.start_time}:00")

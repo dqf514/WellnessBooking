@@ -40,7 +40,7 @@ def authenticate_api_key(db: Session, raw: str) -> ApiKey:
     if not raw.startswith("yyk_") or len(raw) > 200:
         raise HTTPException(401, "API Key 无效、已停用或已过期")
     row = db.query(ApiKey).filter(ApiKey.key_hash == hash_api_key(raw)).first()
-    if not row or not row.active or (row.expires_at and row.expires_at <= datetime.now()) or not row.creator or not row.creator.active:
+    if not row or row.deleted_at is not None or not row.active or (row.expires_at and row.expires_at <= datetime.now()) or not row.creator or not row.creator.active or row.creator.deleted_at is not None:
         raise HTTPException(401, "API Key 无效、已停用或已过期")
     return row
 

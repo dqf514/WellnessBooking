@@ -11,7 +11,13 @@ class TimestampMixin:
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, onupdate=datetime.now)
 
 
-class User(Base, TimestampMixin):
+class SoftDeleteMixin:
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    deleted_by: Mapped[str] = mapped_column(String(80), default="")
+    deleted_state_json: Mapped[str] = mapped_column(Text, default="{}")
+
+
+class User(Base, TimestampMixin, SoftDeleteMixin):
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(primary_key=True)
     username: Mapped[str] = mapped_column(String(80), unique=True, index=True)
@@ -22,7 +28,7 @@ class User(Base, TimestampMixin):
     active: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
-class Member(Base, TimestampMixin):
+class Member(Base, TimestampMixin, SoftDeleteMixin):
     __tablename__ = "members"
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(120), index=True)
@@ -43,7 +49,7 @@ class Member(Base, TimestampMixin):
     cards: Mapped[list["MemberCard"]] = relationship(back_populates="member")
 
 
-class Teacher(Base, TimestampMixin):
+class Teacher(Base, TimestampMixin, SoftDeleteMixin):
     __tablename__ = "teachers"
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
@@ -60,7 +66,7 @@ class Teacher(Base, TimestampMixin):
     active: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
-class Room(Base, TimestampMixin):
+class Room(Base, TimestampMixin, SoftDeleteMixin):
     __tablename__ = "rooms"
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(120))
@@ -72,7 +78,7 @@ class Room(Base, TimestampMixin):
     active: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
-class Course(Base, TimestampMixin):
+class Course(Base, TimestampMixin, SoftDeleteMixin):
     __tablename__ = "courses"
     id: Mapped[int] = mapped_column(primary_key=True)
     course_type: Mapped[str] = mapped_column(String(24), index=True)
@@ -87,7 +93,7 @@ class Course(Base, TimestampMixin):
     active: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
-class ClassSession(Base, TimestampMixin):
+class ClassSession(Base, TimestampMixin, SoftDeleteMixin):
     __tablename__ = "class_sessions"
     id: Mapped[int] = mapped_column(primary_key=True)
     course_id: Mapped[int] = mapped_column(ForeignKey("courses.id"), index=True)
@@ -107,7 +113,7 @@ class ClassSession(Base, TimestampMixin):
     bookings: Mapped[list["Booking"]] = relationship(back_populates="session")
 
 
-class CardProduct(Base, TimestampMixin):
+class CardProduct(Base, TimestampMixin, SoftDeleteMixin):
     __tablename__ = "card_products"
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(160))
@@ -124,7 +130,7 @@ class CardProduct(Base, TimestampMixin):
     active: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
-class MemberCard(Base, TimestampMixin):
+class MemberCard(Base, TimestampMixin, SoftDeleteMixin):
     __tablename__ = "member_cards"
     id: Mapped[int] = mapped_column(primary_key=True)
     member_id: Mapped[int] = mapped_column(ForeignKey("members.id"), index=True)
@@ -146,7 +152,7 @@ class MemberCard(Base, TimestampMixin):
     product: Mapped[CardProduct] = relationship()
 
 
-class Booking(Base):
+class Booking(Base, SoftDeleteMixin):
     __tablename__ = "bookings"
     id: Mapped[int] = mapped_column(primary_key=True)
     session_id: Mapped[int] = mapped_column(ForeignKey("class_sessions.id"), index=True)
@@ -169,7 +175,7 @@ class Booking(Base):
     experience_voucher: Mapped["ExperienceVoucher | None"] = relationship()
 
 
-class MemberCardShare(Base):
+class MemberCardShare(Base, SoftDeleteMixin):
     __tablename__ = "member_card_shares"
     id: Mapped[int] = mapped_column(primary_key=True)
     card_id: Mapped[int] = mapped_column(ForeignKey("member_cards.id"), index=True)
@@ -180,7 +186,7 @@ class MemberCardShare(Base):
     member: Mapped[Member] = relationship()
 
 
-class ExperienceVoucher(Base):
+class ExperienceVoucher(Base, SoftDeleteMixin):
     __tablename__ = "experience_vouchers"
     id: Mapped[int] = mapped_column(primary_key=True)
     member_id: Mapped[int] = mapped_column(ForeignKey("members.id"), index=True)
@@ -196,7 +202,7 @@ class ExperienceVoucher(Base):
     member: Mapped[Member] = relationship()
 
 
-class MemberReminder(Base):
+class MemberReminder(Base, SoftDeleteMixin):
     __tablename__ = "member_reminders"
     id: Mapped[int] = mapped_column(primary_key=True)
     member_id: Mapped[int] = mapped_column(ForeignKey("members.id"), index=True)
@@ -208,7 +214,7 @@ class MemberReminder(Base):
     member: Mapped[Member] = relationship()
 
 
-class RoomReservation(Base, TimestampMixin):
+class RoomReservation(Base, TimestampMixin, SoftDeleteMixin):
     __tablename__ = "room_reservations"
     id: Mapped[int] = mapped_column(primary_key=True)
     room_id: Mapped[int] = mapped_column(ForeignKey("rooms.id"), index=True)
@@ -223,7 +229,7 @@ class RoomReservation(Base, TimestampMixin):
     room: Mapped[Room] = relationship()
 
 
-class MemberRecord(Base):
+class MemberRecord(Base, SoftDeleteMixin):
     __tablename__ = "member_records"
     id: Mapped[int] = mapped_column(primary_key=True)
     member_id: Mapped[int] = mapped_column(ForeignKey("members.id"), index=True)
@@ -236,7 +242,7 @@ class MemberRecord(Base):
     teacher: Mapped[Teacher | None] = relationship()
 
 
-class MemberDocument(Base):
+class MemberDocument(Base, SoftDeleteMixin):
     __tablename__ = "member_documents"
     id: Mapped[int] = mapped_column(primary_key=True)
     member_id: Mapped[int] = mapped_column(ForeignKey("members.id"), index=True)
@@ -249,7 +255,7 @@ class MemberDocument(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
 
-class Transaction(Base):
+class Transaction(Base, SoftDeleteMixin):
     __tablename__ = "transactions"
     id: Mapped[int] = mapped_column(primary_key=True)
     member_id: Mapped[int | None] = mapped_column(ForeignKey("members.id"), nullable=True, index=True)
@@ -349,7 +355,7 @@ class BackupPlanSettings(Base):
     last_run_date: Mapped[str] = mapped_column(String(10), default="")
 
 
-class ApiKey(Base, TimestampMixin):
+class ApiKey(Base, TimestampMixin, SoftDeleteMixin):
     __tablename__ = "api_keys"
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(100))

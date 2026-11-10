@@ -177,13 +177,13 @@ def put_backup_plan(payload: dict = Body(...), db: Session = Depends(get_db), us
 @router.get("/export/{kind}.csv")
 def export_csv(kind: str, db: Session = Depends(get_db), user: User = Depends(require_admin)):
     if kind == "members":
-        rows = [{"id": row.id, "name": row.name, "name_en": row.name_en, "phone": row.phone, "gender": row.gender, "birth_date": row.birth_date, "source": row.source, "wechat": row.wechat, "emergency_phone": row.emergency_phone, "notes": row.notes, "created_at": dt(row.created_at)} for row in db.query(Member).order_by(Member.id).all()]
+        rows = [{"id": row.id, "name": row.name, "name_en": row.name_en, "phone": row.phone, "gender": row.gender, "birth_date": row.birth_date, "source": row.source, "wechat": row.wechat, "emergency_phone": row.emergency_phone, "notes": row.notes, "created_at": dt(row.created_at)} for row in db.query(Member).filter(Member.deleted_at.is_(None)).order_by(Member.id).all()]
         fields = ["id", "name", "name_en", "phone", "gender", "birth_date", "source", "wechat", "emergency_phone", "notes", "created_at"]
     elif kind == "bookings":
-        rows = [{"id": row.id, "member": row.member.name, "phone": row.member.phone, "course": row.session.course.name, "teacher": row.session.teacher.name, "room": row.session.room.name, "date": row.session.session_date, "start_time": row.session.start_time, "end_time": row.session.end_time, "status": row.status, "source": row.source, "booked_at": dt(row.booked_at), "cancelled_at": dt(row.cancelled_at), "cancelled_by": row.cancelled_by} for row in db.query(Booking).order_by(Booking.id).all()]
+        rows = [{"id": row.id, "member": row.member.name, "phone": row.member.phone, "course": row.session.course.name, "teacher": row.session.teacher.name, "room": row.session.room.name, "date": row.session.session_date, "start_time": row.session.start_time, "end_time": row.session.end_time, "status": row.status, "source": row.source, "booked_at": dt(row.booked_at), "cancelled_at": dt(row.cancelled_at), "cancelled_by": row.cancelled_by} for row in db.query(Booking).filter(Booking.deleted_at.is_(None)).order_by(Booking.id).all()]
         fields = ["id", "member", "phone", "course", "teacher", "room", "date", "start_time", "end_time", "status", "source", "booked_at", "cancelled_at", "cancelled_by"]
     elif kind == "transactions":
-        rows = [{"id": row.id, "member": row.member.name if row.member else "", "category": row.category, "kind": row.kind, "amount": row.amount, "payment_method": row.payment_method, "status": row.status, "occurred_at": dt(row.occurred_at), "note": row.note, "redemption_code": row.redemption_code} for row in db.query(Transaction).order_by(Transaction.id).all()]
+        rows = [{"id": row.id, "member": row.member.name if row.member else "", "category": row.category, "kind": row.kind, "amount": row.amount, "payment_method": row.payment_method, "status": row.status, "occurred_at": dt(row.occurred_at), "note": row.note, "redemption_code": row.redemption_code} for row in db.query(Transaction).filter(Transaction.deleted_at.is_(None)).order_by(Transaction.id).all()]
         fields = ["id", "member", "category", "kind", "amount", "payment_method", "status", "occurred_at", "note", "redemption_code"]
     else:
         raise HTTPException(404, "不支持的导出类型")
@@ -224,6 +224,9 @@ def import_members(duplicate_strategy: str = Query("skip", pattern="^(skip|updat
         row = db.query(Member).filter(Member.phone == data["phone"]).first()
         if row and duplicate_strategy == "skip":
             skipped += 1
+            continue
+        if row and row.deleted_at is not None:
+            errors.append(f"第 {line} 行：该会员在回收站，请先由管理员恢复")
             continue
         if row:
             for key, value in data.items():

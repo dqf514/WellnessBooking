@@ -25,3 +25,4 @@ export interface SmsSettings { enabled: boolean; sp_id: string; password_set: bo
 export interface ApiKey { id: number; name: string; key_prefix: string; key_suffix: string; masked_key: string; scopes: string[]; active: boolean; expired: boolean; expires_at?: string; created_by: number; creator_name: string; created_at: string; updated_at: string; rotated_at?: string; last_used_at?: string; last_used_ip: string; usage_count: number }
 export interface ApiScopeOption { id: string; description: string }
 export interface ApiKeyLog { id: number; api_key_id?: number; key_name: string; key_prefix: string; method: string; path: string; status_code: number; ip: string; user_agent: string; created_at: string }
+export interface RecycleItem { id: number; resource: string; resource_label: string; title: string; subtitle: string; deleted_at: string; deleted_by: string; days_in_recycle: number; purge_after: string; can_purge: boolean }

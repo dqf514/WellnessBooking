@@ -1,7 +1,7 @@
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Body, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
@@ -10,6 +10,7 @@ from ..database import get_db
 from ..deps import require_read, require_staff
 from ..log_util import audit
 from ..models import Member, MemberDocument, User
+from ..recycle_service import move_to_recycle
 from ..utils import dt
 
 router = APIRouter(prefix="/api/admin", tags=["member-documents"])
@@ -22,9 +23,10 @@ def document_dict(row: MemberDocument) -> dict:
 
 @router.get("/members/{member_id}/documents")
 def list_documents(member_id: int, category: str = "", db: Session = Depends(get_db), _: User = Depends(require_read)):
-    if not db.get(Member, member_id):
+    member = db.get(Member, member_id)
+    if not member or member.deleted_at is not None:
         raise HTTPException(404, "会员不存在")
-    query = db.query(MemberDocument).filter(MemberDocument.member_id == member_id)
+    query = db.query(MemberDocument).filter(MemberDocument.member_id == member_id, MemberDocument.deleted_at.is_(None))
     if category:
         query = query.filter(MemberDocument.category == category)
     rows = query.order_by(MemberDocument.id.desc()).all()
@@ -33,7 +35,7 @@ def list_documents(member_id: int, category: str = "", db: Session = Depends(get
 
 @router.post("/members/{member_id}/documents")
 def upload_document(member_id: int, file: UploadFile = File(...), category: str = Form("contract"), db: Session = Depends(get_db), user: User = Depends(require_staff)):
-    if not db.get(Member, member_id):
+    if not (member := db.get(Member, member_id)) or member.deleted_at is not None:
         raise HTTPException(404, "会员不存在")
     if category not in {"contract", "assessment"}:
         raise HTTPException(400, "资料类别不合法")
@@ -56,10 +58,42 @@ def upload_document(member_id: int, file: UploadFile = File(...), category: str 
     return document_dict(row)
 
 
+@router.get("/documents/{document_id}")
+def get_document(document_id: int, db: Session = Depends(get_db), _: User = Depends(require_read)):
+    row = db.get(MemberDocument, document_id)
+    if not row or row.deleted_at is not None:
+        raise HTTPException(404, "文件不存在")
+    return document_dict(row)
+
+
+@router.patch("/documents/{document_id}")
+def update_document(document_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+    row = db.get(MemberDocument, document_id)
+    if not row or row.deleted_at is not None:
+        raise HTTPException(404, "文件不存在")
+    if "category" in payload:
+        if payload["category"] not in {"contract", "assessment"}:
+            raise HTTPException(400, "资料类别不合法")
+        row.category = payload["category"]
+    if "original_name" in payload:
+        name = Path(str(payload["original_name"])).name.strip()
+        if not name or Path(name).suffix.lower() not in ALLOWED_EXTENSIONS:
+            raise HTTPException(400, "文件名称或扩展名不合法")
+        row.original_name = name
+    audit(db, user, "member_document", "update", "member_document", document_id, {"category": row.category, "original_name": row.original_name})
+    db.commit()
+    return document_dict(row)
+
+
+@router.delete("/documents/{document_id}")
+def delete_document(document_id: int, db: Session = Depends(get_db), user: User = Depends(require_staff)):
+    return move_to_recycle(db, "documents", document_id, user)
+
+
 @router.get("/documents/{document_id}/download")
 def download_document(document_id: int, db: Session = Depends(get_db), _: User = Depends(require_read)):
     row = db.get(MemberDocument, document_id)
-    if not row:
+    if not row or row.deleted_at is not None:
         raise HTTPException(404, "文件不存在")
     path = UPLOAD_DIR / row.stored_name
     if not path.exists():

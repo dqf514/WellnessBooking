@@ -9,7 +9,7 @@ def user_dict(row: User) -> dict:
 def member_dict(row: Member, include_cards: bool = False) -> dict:
     data = {"id": row.id, "name": row.name, "name_en": row.name_en, "phone": row.phone, "gender": row.gender, "id_number": row.id_number, "birth_date": row.birth_date, "source": row.source, "advisor_id": row.advisor_id, "advisor_name": row.advisor.full_name if row.advisor else "", "emergency_phone": row.emergency_phone, "wechat": row.wechat, "notes": row.notes, "no_show_blocked_until": row.no_show_blocked_until, "active": row.active, "created_at": dt(row.created_at)}
     if include_cards:
-        data["cards"] = [card_dict(card) for card in sorted(row.cards, key=lambda item: item.id, reverse=True)]
+        data["cards"] = [card_dict(card) for card in sorted(row.cards, key=lambda item: item.id, reverse=True) if card.deleted_at is None]
     return data
 
 
@@ -31,7 +31,7 @@ def product_dict(row: CardProduct) -> dict:
 
 def card_dict(row: MemberCard) -> dict:
     expired = bool(row.expires_on and row.expires_on < today())
-    shares = getattr(row, "shares", [])
+    shares = [share for share in getattr(row, "shares", []) if share.deleted_at is None]
     return {"id": row.id, "member_id": row.member_id, "product_id": row.product_id, "product_name": row.product.name, "product_name_en": row.product.name_en, "category": row.product.category, "card_no": row.card_no, "purchase_price": row.purchase_price, "purchased_at": row.purchased_at, "starts_on": row.starts_on, "expires_on": row.expires_on, "total_sessions": row.total_sessions, "remaining_sessions": row.remaining_sessions, "benefits": json_loads(row.benefits_json, []), "status": "expired" if expired and row.status == "active" else row.status, "frozen_until": row.frozen_until, "note": row.note, "shared_with": [{"id": share.member_id, "name": share.member.name, "phone": share.member.phone} for share in shares]}
 
 
@@ -39,7 +39,7 @@ def session_dict(row: ClassSession, detailed: bool = False) -> dict:
     occupied = row.reserved_count
     data = {"id": row.id, "course_id": row.course_id, "teacher_id": row.teacher_id, "room_id": row.room_id, "session_date": row.session_date, "start_time": row.start_time, "end_time": row.end_time, "capacity": row.capacity, "status": row.status, "notes": row.notes, "booked_count": occupied, "available": max(0, row.capacity - occupied), "course": course_dict(row.course), "teacher": teacher_dict(row.teacher), "room": room_dict(row.room)}
     if detailed:
-        data["bookings"] = [booking_dict(booking, include_session=False) for booking in sorted(row.bookings, key=lambda item: (item.status == "cancelled", item.booked_at), reverse=False)]
+        data["bookings"] = [booking_dict(booking, include_session=False) for booking in sorted(row.bookings, key=lambda item: (item.status == "cancelled", item.booked_at), reverse=False) if booking.deleted_at is None]
     return data
 
 

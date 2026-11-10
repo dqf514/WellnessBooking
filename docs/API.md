@@ -1,6 +1,6 @@
 # 音昱 Wellness API 对接文档
 
-> 版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 **95 个 HTTP 接口**。
+> 版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 **107 个 HTTP 接口**。
 >
 > 文档更新：2026-11-10 · 功能基线：预约排课、会员权益与营收业务闭环。
 >
@@ -113,6 +113,14 @@ FastAPI 参数校验错误格式：
 - 财务流水按时间倒序最多返回 1000 条；其他列表当前没有分页参数。
 - 会员端课表单次跨度最多 31 天；后台课表不限制跨度，但调用方应主动控制范围。
 - 开发环境 CORS 仅允许 `127.0.0.1` / `localhost` 的 `38733`、`38735` 端口；生产跨域部署需调整服务端 CORS 配置。
+
+### 1.7 回收站与数据保留
+
+- 可删除资料采用软删除：写入 `deleted_at`、`deleted_by` 和删除前状态，日常列表、会员端、预约权益、报表、导出和短信任务均排除已删除数据；数据库备份仍保留这些数据。
+- 普通业务角色只能删除自己有写入权限的资源；恢复和彻底删除仅接受管理员 JWT 登录会话，API Key 不能管理回收站。
+- 彻底删除必须满足 `deleted_at + 180 天 <= 服务器当前时间`，提前调用返回 `400`。附件文件在回收站期间保留，只有到期彻底删除时才清理。
+- 取消课程、取消预约、销卡、停用和退款是业务状态操作，不等于移入回收站。购买、升卡和退款流水不可删除；手工入账可编辑和软删除。
+- 有关联未消课预约的会员或会员卡、有未来正常排课的课程/教练/教室、含有效预约或到课历史的排课不可直接删除；只有已取消预约可移入回收站。
 
 ## 2. 通用数据结构
 
@@ -367,7 +375,7 @@ curl -X POST "$API/api/auth/login" \
 - **响应**：`courses`、`rooms`、`teachers`、`products`、`users` 五个完整数组，包括停用项。
 - 用于表单选项和关联展示；接口含全部员工账号，前端不应把响应暴露给非授权用户。
 
-## 6. 会员档案、会员卡、权益与爽约（18）
+## 6. 会员档案、会员卡、权益与爽约（20）
 
 ### 6.1 查询会员列表
 
@@ -539,7 +547,21 @@ curl -X POST "$API/api/auth/login" \
 - **权限**：前台；**Body**：`status=cancelled` 停用，`status=active` 恢复。
 - **响应**：更新后的体验券。停用不影响历史核销记录；恢复后仍受有效期和剩余次数限制。
 
-## 7. 会员合同与评估文件（3）
+### 6.19 读取单条会员记录
+
+#### GET /api/admin/records/{record_id}
+
+- **权限**：只读；**响应**：`id`、`record_type`、`title`、`content`、`record_date`、`teacher_id`、`teacher_name`。
+- 已移入回收站的记录返回 `404`。
+
+### 6.20 编辑会员记录
+
+#### PATCH /api/admin/records/{record_id}
+
+- **权限**：前台；**Body**：`teacher_id`、`record_type`、`title`、`content`、`record_date` 任意子集。
+- **响应**：更新后的会员记录。标题不能为空，日期必须为 `YYYY-MM-DD`；删除使用第 16 章回收站接口。
+
+## 7. 会员合同与评估文件（6）
 
 ### 7.1 文件列表
 
@@ -561,7 +583,27 @@ curl -X POST "$API/api/auth/login" \
 #### GET /api/admin/documents/{document_id}/download
 
 - **权限**：只读；**响应**：原始文件流及附件文件名。
-- 数据记录不存在或磁盘文件已移除均返回 `404`。
+- 数据记录不存在、已在回收站或磁盘文件已移除均返回 `404`。
+
+### 7.4 读取附件元数据
+
+#### GET /api/admin/documents/{document_id}
+
+- **权限**：只读；**响应**：DocumentMeta，不含存储路径和文件内容。
+
+### 7.5 编辑附件名称与分类
+
+#### PATCH /api/admin/documents/{document_id}
+
+- **权限**：前台；**Body**：`original_name`、`category=contract|assessment` 任意子集。
+- **响应**：更新后的 DocumentMeta。文件名必须保留允许的扩展名；此接口不替换文件内容。
+
+### 7.6 附件移入回收站
+
+#### DELETE /api/admin/documents/{document_id}
+
+- **权限**：前台；**响应**：`{ ok, item, message }`。
+- 记录和文件保留 180 天，期间不可列表或下载，可由管理员恢复；到期彻底删除见第 16 章。
 
 ## 8. 排课、预约、教室与目录（21）
 
@@ -718,12 +760,12 @@ curl -X POST "$API/api/auth/login" \
 
 课程必须是 `private` 或 `assessment`，教练、教室冲突返回 `409`，课程已开始返回 `400`。成功响应包含 `session` 和 `booking`，任一失败则整体不保存。发送预约通知的规则与普通后台预约一致，保存后仍是 `booked`，签到时才扣次。
 
-### 8.18 永久删除空排课
+### 8.18 空排课移入回收站
 
 #### DELETE /api/admin/sessions/{session_id}/permanent
 
-- **权限**：前台；**Body**：无；**响应**：`{ ok: true }`。
-- 仅从未产生任何预约的排课可物理删除。已有预约（包括已取消预约）返回 `400`，应改用 `DELETE /api/admin/sessions/{session_id}` 取消课程并保留历史。
+- **权限**：前台；**Body**：无；**响应**：`{ ok, item, message }`。
+- 路径名为历史兼容保留，实际执行软删除而非物理删除。仅从未产生任何预约的排课可通过此入口删除；已有预约（包括已取消预约）返回 `400`，应使用取消课程保留历史。恢复与到期彻底删除见第 16 章。
 
 ### 8.19 编辑教室占用
 
@@ -751,7 +793,7 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 - **权限**：管理员；`multipart/form-data` 上传字段名为 `file`，支持 PNG、JPG、WebP，最大 4 MiB。
 - **响应**：更新后的 Teacher。服务端校验真实文件头，`image_url` 为 `/uploads/teachers/...` 路径；上传文件需与数据库一起备份。
 
-## 9. 产品、财务与报表（8）
+## 9. 产品、财务与报表（10）
 
 ### 9.1 产品列表
 
@@ -823,7 +865,21 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 - `weekday.label` 为 0–6（周一至周日），`hour.label` 为两位小时；`value` 是实际到课人次。
 - 教室统计含 `used_hours`、`internal_hours`、`utilization`；利用率分母按范围内每天 12 小时计算。
 
-## 10. 场馆、品牌与账号（7）
+### 9.9 编辑手工入账
+
+#### PATCH /api/admin/transactions/{transaction_id}
+
+- **权限**：财务；**Body**：`member_id`、`category`、`amount`、`payment_method`、`note` 任意子集。
+- **响应**：更新后的 Transaction。只允许 `kind=manual`，金额不能为 0；购买、升卡和退款流水返回 `404`。
+
+### 9.10 手工入账移入回收站
+
+#### DELETE /api/admin/transactions/{transaction_id}
+
+- **权限**：财务；**响应**：`{ ok, item, message }`。
+- 只允许手工入账。删除后立即从流水、现金实收、确认营收和导出中排除，恢复后重新计入；购买、升卡和退款流水不可删除。
+
+## 10. 场馆、品牌与账号（8）
 
 ### 10.1 读取系统设置
 
@@ -853,7 +909,7 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 #### DELETE /api/admin/settings/branding/{kind}
 
 - **权限**：管理员；**Body**：无。
-- **响应**：AppSettings；清空对应 URL 并删除服务器上的品牌文件。
+- **响应**：AppSettings；清空对应 URL 并恢复默认图标，不物理删除服务器文件。此操作是品牌设置变更，不进入回收站。
 
 ### 10.5 员工账号列表
 
@@ -878,7 +934,14 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 - **响应**：User。新密码至少 8 位；不能停用当前登录的自己。
 - 修改密码不会在此响应中返回密码，也不会吊销其他已登录 Token。
 
-### 10.8 品牌静态文件
+### 10.8 员工账号移入回收站
+
+#### DELETE /api/admin/users/{user_id}
+
+- **权限**：管理员；**响应**：`{ ok, item, message }`。
+- 删除后账号立即不能登录，已签发 Token 也不能继续使用。不能删除当前登录账号或最后一个有效管理员；可由管理员恢复。
+
+### 10.9 品牌静态文件
 
 上传后的图片通过 `GET /uploads/branding/logo.png` 或 `GET /uploads/branding/favicon.png` 访问，属于静态资源而不是 `/api` 业务接口。实际使用时应采用 AppSettings 返回的带版本 URL。
 
@@ -988,8 +1051,8 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 #### DELETE /api/admin/api-keys/{key_id}
 
 - **权限**：管理员登录会话；**Body**：无。
-- **响应**：`{ ok: true }`；删除后调用返回 `401`。
-- 使用日志保留当时的密钥 ID、名称和前缀快照，此操作不可撤销。
+- **响应**：`{ ok, item, message }`；移入回收站后调用返回 `401`。
+- 使用日志保留当时的密钥 ID、名称和前缀快照。管理员可在回收站恢复，满 180 天后才可彻底删除。
 
 ### 12.6 查询 API Key 使用日志
 
@@ -1184,3 +1247,39 @@ const dashboard = await api("/api/admin/dashboard", {
 - 生产环境更换默认 JWT 密钥、停用演示数据与开发验证码，并限制文档和后台的公网访问。
 - 密钥、短信密码、数据库和合同文件不得提交到前端代码或公开仓库。
 - 备份数据库的同时备份上传目录，并定期实际验证恢复流程。
+
+## 16. 回收站与 180 天保留（4）
+
+回收站资源标识：`users`、`members`、`teachers`、`rooms`、`courses`、`sessions`、`products`、`cards`、`bookings`、`shares`、`vouchers`、`reminders`、`room-reservations`、`records`、`documents`、`transactions`、`api-keys`。
+
+删除接口按调用者当前角色和资源写入权限校验；读取回收站、恢复和彻底删除仅允许管理员 JWT 会话。`RecycleItem` 包含 `id`、`resource`、`resource_label`、`title`、`subtitle`、`deleted_at`、`deleted_by`、`days_in_recycle`、`purge_after`、`can_purge`。
+
+### 16.1 查询回收站
+
+#### GET /api/admin/recycle
+
+- **权限**：管理员登录会话；**Query**：`resource`（可选资源标识）、`q`（按名称、说明、删除人或类型搜索）。
+- **响应**：`{ items: RecycleItem[], total, retention_days: 180 }`，按删除时间倒序，最多返回 500 条。
+
+### 16.2 移入回收站
+
+#### DELETE /api/admin/recycle/{resource}/{entity_id}
+
+- **权限**：管理员，或具有该资源写入权限的前台/财务角色；不接受 API Key。
+- **响应**：`{ ok, item, message }`。已删除或不存在返回 `404`，关联业务或角色限制返回 `400` / `403`。
+- 课程、教室、教练、产品、会员、会员卡、共享、提醒、体验券、会员记录、附件、手工入账等按第 1.7 节规则软删除。
+
+### 16.3 恢复数据
+
+#### POST /api/admin/recycle/{resource}/{entity_id}/restore
+
+- **权限**：管理员登录会话；**Body**：无；**响应**：`{ ok, message }`。
+- 恢复删除前的 `active`、`status`、`visible` 状态，并重新检查所属会员/教室、共享唯一性、排课及教室时段冲突；冲突返回 `400` 或 `409`，不会强行恢复。
+
+### 16.4 到期彻底删除
+
+#### DELETE /api/admin/recycle/{resource}/{entity_id}/permanent
+
+- **权限**：管理员登录会话；**Body**：无；**响应**：`{ ok, message }`。
+- 只有服务器确认删除时间已满 180 天才执行，提前返回 `400` 和可删除时间。外键关联未清理时返回 `409`。
+- 合同/评估附件会同时删除磁盘文件；其他业务记录删除后不可恢复，操作写入审计日志。

@@ -47,6 +47,13 @@ def ensure_schema():
             "bookings": {"experience_voucher_id": "INTEGER REFERENCES experience_vouchers(id)"},
             "member_documents": {"category": "VARCHAR(24) DEFAULT 'contract'"},
         }
+        soft_delete_tables = {"users", "members", "teachers", "rooms", "courses", "class_sessions", "card_products", "member_cards", "bookings", "member_card_shares", "experience_vouchers", "member_reminders", "room_reservations", "member_records", "member_documents", "transactions", "api_keys"}
+        for table in soft_delete_tables:
+            additions.setdefault(table, {}).update({
+                "deleted_at": "DATETIME",
+                "deleted_by": "VARCHAR(80) DEFAULT ''",
+                "deleted_state_json": "TEXT DEFAULT '{}'",
+            })
         for table, columns_to_add in additions.items():
             existing = {column["name"] for column in inspect(connection).get_columns(table)}
             for name, definition in columns_to_add.items():
