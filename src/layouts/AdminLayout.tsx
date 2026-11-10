@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { BrandLogo } from "@/components/BrandLogo";
 import { Icon, LogoutConfirm, type IconName } from "@/components/UI";
 import { useAuth } from "@/context/AuthContext";
@@ -9,13 +9,10 @@ interface NavChild { to: string; label: string; roles?: string[] }
 
 function NavGroup({ title, icon, links, onNavigate }: { title: string; icon: IconName; links: NavChild[]; onNavigate: () => void }) {
   const { user } = useAuth();
-  const location = useLocation();
   const visibleLinks = links.filter((link) => !link.roles || link.roles.includes(user?.role ?? ""));
-  const active = visibleLinks.some((link) => location.pathname.startsWith(link.to));
-  const [expanded, setExpanded] = useState(active);
   if (!visibleLinks.length) return null;
-  return <div className={`admin-nav-group ${expanded ? "expanded" : ""} ${active ? "has-active" : ""}`}>
-    <button className="admin-nav-heading" type="button" aria-expanded={expanded} onClick={() => setExpanded((current) => !current)}><Icon name={icon}/><span>{title}</span><Icon name="chevron" size={14}/></button>
+  return <div className="admin-nav-group">
+    <div className="admin-nav-heading"><Icon name={icon}/><span>{title}</span></div>
     <div className="admin-nav-children">{visibleLinks.map((link) => <NavLink key={link.to} to={link.to} onClick={onNavigate}><span>{link.label}</span></NavLink>)}</div>
   </div>;
 }
