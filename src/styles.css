@@ -545,6 +545,37 @@ input[type="number"] { -moz-appearance: textfield; }
   .course-library-list article { grid-template-columns: 4px minmax(0, 1fr) auto; }
   .course-library-list article .badge { display: none; }
 }
+.member-checkin-panel, .staff-checkin-panel, .dynamic-qr-panel, .checkin-selection, .checkin-success { width: min(520px, 100%); margin: 0 auto; }
+.checkin-mode-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 24px; padding: 4px; border-radius: 6px; background: var(--paper); }
+.checkin-mode-switch button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 46px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: 13px; }
+.checkin-mode-switch button.active { background: #fff; color: var(--pine-900); box-shadow: var(--shadow-sm); font-weight: 600; }
+.dynamic-qr-panel { display: grid; gap: 16px; }
+.qr-panel-heading { text-align: center; }.qr-panel-heading h3 { margin: 7px 0 9px; color: var(--pine-950); font-family: var(--font-display); font-size: 24px; font-weight: 600; }.qr-panel-heading p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.8; }
+.qr-code-frame { display: grid; place-items: center; width: min(320px, 100%); aspect-ratio: 1; margin: 0 auto; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; box-shadow: 0 12px 34px rgba(16,46,39,.08); }
+.qr-code-frame img { display: block; width: 100%; height: 100%; }.qr-code-frame .loading-state { min-height: 240px; padding: 20px; }.qr-code-frame > p { max-width: 240px; color: var(--red); font-size: 13px; line-height: 1.8; text-align: center; }
+.qr-code-expired { position: relative; }.qr-code-expired .qr-code-frame img { opacity: .25; filter: blur(3px); }.qr-refresh-overlay { position: absolute; top: 50%; left: 50%; width: max-content; max-width: calc(100% - 32px); transform: translate(-50%,-50%); }
+.qr-code-meta { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px 14px; color: var(--muted); }.qr-code-meta > span { display: inline-flex; align-items: center; gap: 5px; color: var(--pine-700); font-size: 13px; font-weight: 600; }.qr-code-meta > span.expiring { color: var(--red); }.qr-code-meta small { font-size: 11px; }
+.qr-privacy-note { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.8; text-align: center; }
+.qr-scanner-panel { display: grid; gap: 15px; margin-top: 18px; }.qr-scanner-view { position: relative; display: grid; place-items: center; min-height: 300px; overflow: hidden; border-radius: 8px; background: var(--pine-950); }.qr-scanner-view:empty::before { color: var(--sage-300); font-size: 11px; letter-spacing: .15em; content: "CAMERA"; }.qr-scanner-view video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
+.scanner-camera-note { display: flex; align-items: flex-start; gap: 9px; margin: 0; padding: 12px 14px; border-left: 3px solid var(--amber); background: var(--amber-soft); color: var(--amber); font-size: 12px; line-height: 1.7; }.scanner-camera-note svg { flex: 0 0 auto; margin-top: 2px; }
+.manual-code-form { display: grid; gap: 8px; }.manual-code-form > label { color: var(--muted); font-size: 12px; line-height: 1.6; }.manual-code-form > div { display: flex; gap: 8px; }.manual-code-form input { min-width: 0; flex: 1; }.manual-code-form .button { flex: 0 0 auto; }
+.checkin-error { margin: 14px 0 0; padding: 12px 14px; border-left: 3px solid var(--red); background: var(--red-soft); color: var(--red); font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }.checkin-progress { margin: 0; color: var(--pine-700); font-size: 12px; text-align: center; }
+.checkin-success { padding: 12px 0; text-align: center; }.checkin-success-icon { display: grid; place-items: center; width: 68px; height: 68px; margin: 0 auto 20px; border-radius: 50%; background: var(--sage-100); color: var(--pine-700); }.checkin-success h3 { margin: 9px 0 18px; color: var(--pine-950); font-family: var(--font-display); font-size: 26px; }.checkin-success > p { margin: 7px 0; color: var(--muted); font-size: 13px; line-height: 1.8; }.checkin-success > small { display: block; margin: 18px 0 24px; color: var(--muted); font-size: 12px; line-height: 1.8; }.checkin-success .checkin-reminder { display: flex; align-items: flex-start; gap: 8px; padding: 12px; background: var(--amber-soft); color: var(--amber); text-align: left; }
+.checkin-selection > h3 { margin: 8px 0 12px; font-family: var(--font-display); font-size: 24px; }.checkin-selection > p { color: var(--muted); font-size: 12px; line-height: 1.8; }.checkin-selection > div { display: grid; gap: 9px; margin: 20px 0; }.checkin-choice { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 70px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 5px; background: #fff; color: var(--pine-900); text-align: left; }.checkin-choice:hover { border-color: var(--sage-500); background: var(--sage-100); }.checkin-choice strong, .checkin-choice small { display: block; }.checkin-choice small { margin-top: 5px; color: var(--muted); font-size: 11px; }
+.me-tabs button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+.order-confirmation h3 { margin: 0 0 12px; color: var(--pine-950); font-family: var(--font-display); font-size: 25px; }.order-confirmation-details { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px 16px; margin: 15px 0 20px; color: var(--muted); font-size: 12px; }.order-confirmation-details span:first-child { color: var(--pine-900); font-family: var(--font-display); font-size: 27px; }.order-confirmation > p { line-height: 1.9; }.me-list article .redeem-code { margin: 7px 0; }.me-list article > div > small { display: block; max-width: 520px; line-height: 1.7; }
+@media (max-width: 700px) {
+  .me-tabs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .me-tabs button { font-size: 11px; }
+  .qr-code-frame { width: min(290px, 100%); }
+  .qr-scanner-view { min-height: min(310px, 72vw); }
+  .manual-code-form > div { align-items: stretch; }
+  .manual-code-form .button { padding-right: 12px; padding-left: 12px; }
+}
+@media (max-width: 360px) {
+  .checkin-mode-switch button { gap: 4px; font-size: 12px; }
+  .manual-code-form > div { flex-direction: column; }
+}
 @media (prefers-reduced-motion: reduce) {
   .modal-drawer { animation: none; }
 }

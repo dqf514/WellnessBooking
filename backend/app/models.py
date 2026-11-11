@@ -270,6 +270,8 @@ class Transaction(Base, SoftDeleteMixin):
     note: Mapped[str] = mapped_column(Text, default="")
     redemption_code: Mapped[str | None] = mapped_column(String(30), unique=True, nullable=True)
     redeemed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    cancelled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    cancelled_by: Mapped[str] = mapped_column(String(80), default="")
     member: Mapped[Member | None] = relationship()
     product: Mapped[CardProduct | None] = relationship()
 

@@ -1,8 +1,8 @@
 # 音昱 Wellness API 对接文档
 
-> 版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 **108 个 HTTP 接口**。
+> 版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 **113 个 HTTP 接口**。
 >
-> 文档更新：2026-11-10 · 功能基线：预约排课、会员权益与营收业务闭环。
+> 文档更新：2026-11-11 · 功能基线：预约排课、动态二维码签到、购卡申请取消、会员权益与营收业务闭环。
 >
 > 在线交互文档：`/docs`（Swagger UI）、`/redoc`（ReDoc）；原始 OpenAPI 3 定义：`/openapi.json`。接口路径、方法、参数和实时响应结构以同版本 `/openapi.json` 为最终依据。
 
@@ -213,13 +213,14 @@ FastAPI 参数校验错误格式：
 | `kind` | string | `purchase` / `manual` / `refund` / `upgrade` |
 | `amount` | number | 入账为正，退款为负 |
 | `payment_method` | string | 结账方式，例如 `cash`、`wechat`、`alipay` |
-| `status` | string | `pending` / `paid` / `refunded` |
+| `status` | string | `pending` / `paid` / `cancelled` / `refunded` |
 | `occurred_at` | string | 业务发生时间 |
 | `note` | string | 备注 |
 | `redemption_code` | string / null | 线上购卡电子码 |
 | `redeemed_at` | string / null | 核销时间 |
+| `cancelled_at`、`cancelled_by` | string / null | 购卡申请取消时间与操作来源 |
 
-线上申请初始为 `pending`，核销后原单改为 `paid`，不会再新增一条购买流水。退款会新增负数 `refund` 流水，原正数单改为 `refunded`。
+线上申请初始为 `pending`，核销后原单改为 `paid`，不会再新增一条购买流水。待核销申请可取消为 `cancelled`，电子码保留用于审计但立即失效；取消不开卡、不计实收。退款会新增负数 `refund` 流水，原正数单改为 `refunded`。
 
 ## 3. 健康检查与员工认证（6）
 
@@ -277,7 +278,7 @@ curl -X POST "$API/api/auth/login" \
 - 新密码至少 8 位；原密码错误返回 `400`。
 - **响应**：`{ "ok": true }`。只更新当前 Token 对应员工。
 
-## 4. 会员端接口（9）
+## 4. 会员端接口（12）
 
 ### 4.1 会员端初始化数据
 
@@ -355,6 +356,36 @@ curl -X POST "$API/api/auth/login" \
 - **响应**：`pending` 状态 Transaction，含唯一 `redemption_code`。
 - 仅启用、`online_sale=true` 且价格不超过 5000 元的产品可线上申请；其他产品提示到店购买。
 - 此步不直接开卡、不计为已入账；支付和开卡在后台核销时完成。
+
+### 4.10 获取会员动态签到码
+
+#### GET /api/public/me/check-in-code
+
+- **权限**：会员；**请求**：无。
+- **响应**：`{ token, expires_at, expires_in, refresh_after }`；`token` 以 `YYM1.` 开头，`expires_at` 为 Unix 秒时间戳。
+- 二维码内容由前端根据 `token` 生成，不把会员手机号写入码中。签名用途与登录 JWT 不同，码有效期 60 秒，建议每 30 秒重新获取。
+
+### 4.11 会员扫描课程码自助签到
+
+#### POST /api/public/check-in/scan
+
+- **权限**：会员，只能签到自己的预约；**Body**：`{ token }`，`token` 为前台课程码的完整 `YYS1....` 内容。
+- **响应**：最新 Booking，并增加 `already_checked_in`、`check_in_method=session_code`、`member_reminders=[]`。
+- 仅接受签名有效且未过期的课程码；会员必须有该课程的 `booked` / `checked_in` / `completed` 预约。其他会员无法使用同一预约签到。
+- 开课前 30 分钟至课程结束可签到；重复扫码返回 `already_checked_in=true`，不会再次扣次。
+
+```json
+{ "token": "YYS1.eyJzaWQiOjM5LCJleHAiOjE3OTQzNjAwMDB9.signature" }
+```
+
+### 4.12 取消待核销购卡申请
+
+#### DELETE /api/public/orders/{order_id}
+
+- **权限**：会员，只能取消自己的待核销申请；**Body**：无。
+- **响应**：取消后的 Transaction，`status=cancelled`，包含 `cancelled_at`、`cancelled_by=会员自主取消`。
+- 仅 `pending` 可取消；他人订单返回 `404`，已核销或已取消订单返回 `400`，并发状态变化返回 `409`。
+- 取消采用条件原子更新，与电子码核销互斥。取消后原电子码永久失效，不开卡、不计实收、不删除历史记录；重复取消不会成功。
 
 ## 5. 经营概览与基础元数据（2）
 
@@ -605,7 +636,7 @@ curl -X POST "$API/api/auth/login" \
 - **权限**：前台；**响应**：`{ ok, item, message }`。
 - 记录和文件保留 180 天，期间不可列表或下载，可由管理员恢复；到期彻底删除见第 16 章。
 
-## 8. 排课、预约、教室与目录（22）
+## 8. 排课、预约、教室与目录（24）
 
 ### 8.1 查询后台排课
 
@@ -801,6 +832,34 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 - **响应**：`{ date, start_time, end_time, rooms }`，按楼层和排序返回启用教室；每项在 Room 基础上增加 `available` 和 `conflicts`。
 - `conflicts[]` 同时包含重叠课程和内部占用：`kind=class|reservation`、`title`、`title_en`、`teacher_name`、`teacher_name_en`、`start_time`、`end_time`。
 - 结束时间必须晚于开始时间。此接口用于在排课编辑器中即时禁用并标注冲突教室；新建和修改排课仍会执行服务端最终冲突校验。
+
+### 8.23 获取课程动态签到码
+
+#### GET /api/admin/sessions/{session_id}/check-in-code
+
+- **权限**：前台（`admin`、`frontdesk`）；API Key 需要 `read`。
+- **响应**：`{ token, expires_at, expires_in, refresh_after, session }`；`token` 以 `YYS1.` 开头，前端据此生成供会员扫描的课程二维码。
+- 仅在开课前 30 分钟至课程结束提供签到码；未开放或已结束返回 `400`，取消或删除课程不可生成。
+- 二维码有效期 60 秒，建议每 30 秒刷新。课程码不能代替会员登录，会员扫描后仍需通过本人 Bearer Token 调用自助签到接口。
+
+### 8.24 前台扫描会员动态码签到
+
+#### POST /api/admin/check-in/scan
+
+- **权限**：前台（`admin`、`frontdesk`）；API Key 需要 `bookings:write`。
+- **Body**：`{ token, session_id? }`；`token` 为会员 `YYM1....` 动态码。存在多个可签到预约时，使用 `session_id` 完成指定课程签到。
+- **响应**：签到后的 Booking，增加 `already_checked_in`、`check_in_method=member_code`、`member_reminders`。
+- 系统只在当天的签到时段内自动匹配。仅一个待签到预约时直接消课；多个待签到预约时先返回以下选择响应且**不扣次**：
+
+```json
+{
+  "requires_selection": true,
+  "member": { "id": 7, "name": "会员姓名" },
+  "choices": [{ "id": 101, "session_id": 39, "session": { "id": 39, "start_time": "18:30" } }]
+}
+```
+
+- 重复扫描已消课预约返回 `already_checked_in=true`，不会重复扣次。无效、篡改或过期签到码返回 `400`；无匹配预约时转预约名单人工核对。
 
 ## 9. 产品、财务与报表（10）
 
@@ -1182,12 +1241,24 @@ GET  /api/admin/members/{member_id}                    -> 核对卡、共享卡�
 GET  /api/admin/reports                                -> 到课、现金实收与确认营收
 ```
 
-误签到使用 `undo_check_in` 返回 `booked` 并返还权益，误预约使用 `cancel` 释放席位；不要通过直接调整剩余次数掩盖状态错误。新流程不需要再调用 `complete`，该动作仅为旧数据兼容保留。
+双向二维码签到可替换上例中的人工 `check_in` 调用，最终状态与扣次逻辑完全一致：
+
+```text
+方式 A：GET  /api/public/me/check-in-code                 -> 会员出示 YYM1 动态码
+        POST /api/admin/check-in/scan                     -> 前台扫码，自动匹配并消课
+        POST /api/admin/check-in/scan + session_id        -> 多候选时确认指定课程
+
+方式 B：GET  /api/admin/sessions/{session_id}/check-in-code -> 前台展示 YYS1 课程码
+        POST /api/public/check-in/scan                      -> 会员扫码，本人预约消课
+```
+
+误签到使用 `undo_check_in` 返回 `booked` 并返还权益，误预约使用 `cancel` 释放席位；不要通过直接调整剩余次数掩盖状态错误。新流程不需要再调用 `complete`，该动作仅为旧数据兼容保留。二维码重复签到是幂等操作，返回 `already_checked_in=true`，无需再调用撤销接口。
 
 ### 14.3 电子码购卡闭环
 
 ```text
-会员：POST /api/public/orders                  -> pending + redemption_code
+会员：POST /api/public/orders                  -> pending + redemption_code（确认后创建）
+会员：DELETE /api/public/orders/{order_id}      -> cancelled（仅未核销且改变主意时）
 前台：POST /api/admin/orders/redeem            -> paid + card_id，只核销一次
 核对：GET  /api/admin/members/{member_id}
 财务：GET  /api/admin/transactions?member_id=<id>

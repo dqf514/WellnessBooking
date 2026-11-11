@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#173f35">
-  <meta name="description" content="音昱 Wellness 完整 API 对接文档，覆盖 108 个接口、权限、字段、业务规则与示例。">
+  <meta name="description" content="音昱 Wellness 完整 API 对接文档，覆盖 113 个接口、权限、字段、业务规则与示例。">
   <meta name="generator" content="docs/build_api_docs.py">
   <link id="api-favicon" rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Crect width='36' height='36' rx='18' fill='%23173f35'/%3E%3Cpath d='M28 6C15 7 8 13 8 23c7 1 15-2 20-17ZM8 29c3-8 8-12 16-17' fill='none' stroke='%23e9efe7' stroke-width='1.5'/%3E%3C/svg%3E">
   <title>API 对接文档 · 音昱 Wellness</title>
@@ -33,15 +33,15 @@
     <aside class="sidebar" aria-label="API 文档目录">
       <label class="search-label"><span>搜索接口、字段或业务规则</span><input class="search-input" id="api-search" type="search" placeholder="例如：签到、退款、bookings" autocomplete="off"><span class="search-hint">按 / 快速搜索，Esc 清空</span></label>
       <p class="search-results" id="search-results" aria-live="polite"></p>
-      <p class="toc-title">API REFERENCE · 108 ENDPOINTS</p>
+      <p class="toc-title">API REFERENCE · 113 ENDPOINTS</p>
       <nav><ul class="toc-list"><li><a href="#1-接入基础">1. 接入基础</a></li>
 <li><a href="#2-通用数据结构">2. 通用数据结构</a></li>
 <li><a href="#3-健康检查与员工认证-6">3. 健康检查与员工认证（6）</a></li>
-<li><a href="#4-会员端接口-9">4. 会员端接口（9）</a></li>
+<li><a href="#4-会员端接口-12">4. 会员端接口（12）</a></li>
 <li><a href="#5-经营概览与基础元数据-2">5. 经营概览与基础元数据（2）</a></li>
 <li><a href="#6-会员档案-会员卡-权益与爽约-20">6. 会员档案、会员卡、权益与爽约（20）</a></li>
 <li><a href="#7-会员合同与评估文件-6">7. 会员合同与评估文件（6）</a></li>
-<li><a href="#8-排课-预约-教室与目录-22">8. 排课、预约、教室与目录（22）</a></li>
+<li><a href="#8-排课-预约-教室与目录-24">8. 排课、预约、教室与目录（24）</a></li>
 <li><a href="#9-产品-财务与报表-10">9. 产品、财务与报表（10）</a></li>
 <li><a href="#10-场馆-品牌与账号-8">10. 场馆、品牌与账号（8）</a></li>
 <li><a href="#11-短信与审计日志-5">11. 短信与审计日志（5）</a></li>
@@ -56,11 +56,11 @@
       <label class="section-jump"><span>跳转到文档章节</span><select id="mobile-jump"><option value="1-接入基础">1. 接入基础</option>
 <option value="2-通用数据结构">2. 通用数据结构</option>
 <option value="3-健康检查与员工认证-6">3. 健康检查与员工认证（6）</option>
-<option value="4-会员端接口-9">4. 会员端接口（9）</option>
+<option value="4-会员端接口-12">4. 会员端接口（12）</option>
 <option value="5-经营概览与基础元数据-2">5. 经营概览与基础元数据（2）</option>
 <option value="6-会员档案-会员卡-权益与爽约-20">6. 会员档案、会员卡、权益与爽约（20）</option>
 <option value="7-会员合同与评估文件-6">7. 会员合同与评估文件（6）</option>
-<option value="8-排课-预约-教室与目录-22">8. 排课、预约、教室与目录（22）</option>
+<option value="8-排课-预约-教室与目录-24">8. 排课、预约、教室与目录（24）</option>
 <option value="9-产品-财务与报表-10">9. 产品、财务与报表（10）</option>
 <option value="10-场馆-品牌与账号-8">10. 场馆、品牌与账号（8）</option>
 <option value="11-短信与审计日志-5">11. 短信与审计日志（5）</option>
@@ -71,7 +71,7 @@
 <option value="16-回收站与-180-天保留-4">16. 回收站与 180 天保留（4）</option></select></label>
       <div class="search-empty" id="search-empty" hidden>没有匹配的接口。可尝试“预约”“卡”“settings”或清空搜索。</div>
       <h1 id="音昱-wellness-api-对接文档">音昱 Wellness API 对接文档<a class="anchor" href="#音昱-wellness-api-对接文档" aria-label="链接到此节">#</a></h1>
-<aside class="callout">版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 <strong>108 个 HTTP 接口</strong>。 文档更新：2026-11-10 · 功能基线：预约排课、会员权益与营收业务闭环。 在线交互文档：<code>/docs</code>（Swagger UI）、<code>/redoc</code>（ReDoc）；原始 OpenAPI 3 定义：<code>/openapi.json</code>。接口路径、方法、参数和实时响应结构以同版本 <code>/openapi.json</code> 为最终依据。</aside>
+<aside class="callout">版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 <strong>113 个 HTTP 接口</strong>。 文档更新：2026-11-11 · 功能基线：预约排课、动态二维码签到、购卡申请取消、会员权益与营收业务闭环。 在线交互文档：<code>/docs</code>（Swagger UI）、<code>/redoc</code>（ReDoc）；原始 OpenAPI 3 定义：<code>/openapi.json</code>。接口路径、方法、参数和实时响应结构以同版本 <code>/openapi.json</code> 为最终依据。</aside>
 <h2 id="1-接入基础">1. 接入基础<a class="anchor" href="#1-接入基础" aria-label="链接到此节">#</a></h2>
 <h3 id="1-1-服务地址">1.1 服务地址<a class="anchor" href="#1-1-服务地址" aria-label="链接到此节">#</a></h3>
 <div class="table-wrap"><table>
@@ -226,14 +226,15 @@
 <tr><td><code>kind</code></td><td>string</td><td><code>purchase</code> / <code>manual</code> / <code>refund</code> / <code>upgrade</code></td></tr>
 <tr><td><code>amount</code></td><td>number</td><td>入账为正，退款为负</td></tr>
 <tr><td><code>payment_method</code></td><td>string</td><td>结账方式，例如 <code>cash</code>、<code>wechat</code>、<code>alipay</code></td></tr>
-<tr><td><code>status</code></td><td>string</td><td><code>pending</code> / <code>paid</code> / <code>refunded</code></td></tr>
+<tr><td><code>status</code></td><td>string</td><td><code>pending</code> / <code>paid</code> / <code>cancelled</code> / <code>refunded</code></td></tr>
 <tr><td><code>occurred_at</code></td><td>string</td><td>业务发生时间</td></tr>
 <tr><td><code>note</code></td><td>string</td><td>备注</td></tr>
 <tr><td><code>redemption_code</code></td><td>string / null</td><td>线上购卡电子码</td></tr>
 <tr><td><code>redeemed_at</code></td><td>string / null</td><td>核销时间</td></tr>
+<tr><td><code>cancelled_at</code>、<code>cancelled_by</code></td><td>string / null</td><td>购卡申请取消时间与操作来源</td></tr>
 </tbody>
 </table></div>
-<p>线上申请初始为 <code>pending</code>，核销后原单改为 <code>paid</code>，不会再新增一条购买流水。退款会新增负数 <code>refund</code> 流水，原正数单改为 <code>refunded</code>。</p>
+<p>线上申请初始为 <code>pending</code>，核销后原单改为 <code>paid</code>，不会再新增一条购买流水。待核销申请可取消为 <code>cancelled</code>，电子码保留用于审计但立即失效；取消不开卡、不计实收。退款会新增负数 <code>refund</code> 流水，原正数单改为 <code>refunded</code>。</p>
 <h2 id="3-健康检查与员工认证-6">3. 健康检查与员工认证（6）<a class="anchor" href="#3-健康检查与员工认证-6" aria-label="链接到此节">#</a></h2>
 <h3 id="3-1-服务健康检查">3.1 服务健康检查<a class="anchor" href="#3-1-服务健康检查" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/health">
@@ -268,7 +269,7 @@
 <h4 id="post-api-auth-change-password"><span class="method method-post">POST</span><a href="#post-api-auth-change-password" class="route">/api/auth/change-password</a></h4>
 <ul><li><strong>权限</strong>：员工；<strong>Body</strong>：<code>old_password</code>、<code>new_password</code>。</li><li>新密码至少 8 位；原密码错误返回 <code>400</code>。</li><li><strong>响应</strong>：<code>{ &quot;ok&quot;: true }</code>。只更新当前 Token 对应员工。</li></ul>
 </section>
-<h2 id="4-会员端接口-9">4. 会员端接口（9）<a class="anchor" href="#4-会员端接口-9" aria-label="链接到此节">#</a></h2>
+<h2 id="4-会员端接口-12">4. 会员端接口（12）<a class="anchor" href="#4-会员端接口-12" aria-label="链接到此节">#</a></h2>
 <h3 id="4-1-会员端初始化数据">4.1 会员端初始化数据<a class="anchor" href="#4-1-会员端初始化数据" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/public/bootstrap">
 <h4 id="get-api-public-bootstrap"><span class="method method-get">GET</span><a href="#get-api-public-bootstrap" class="route">/api/public/bootstrap</a></h4>
@@ -313,6 +314,22 @@
 <section class="endpoint" data-search="post /api/public/orders">
 <h4 id="post-api-public-orders"><span class="method method-post">POST</span><a href="#post-api-public-orders" class="route">/api/public/orders</a></h4>
 <ul><li><strong>权限</strong>：会员；<strong>Body</strong>：<code>product_id</code>。</li><li><strong>响应</strong>：<code>pending</code> 状态 Transaction，含唯一 <code>redemption_code</code>。</li><li>仅启用、<code>online_sale=true</code> 且价格不超过 5000 元的产品可线上申请；其他产品提示到店购买。</li><li>此步不直接开卡、不计为已入账；支付和开卡在后台核销时完成。</li></ul>
+</section>
+<h3 id="4-10-获取会员动态签到码">4.10 获取会员动态签到码<a class="anchor" href="#4-10-获取会员动态签到码" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="get /api/public/me/check-in-code">
+<h4 id="get-api-public-me-check-in-code"><span class="method method-get">GET</span><a href="#get-api-public-me-check-in-code" class="route">/api/public/me/check-in-code</a></h4>
+<ul><li><strong>权限</strong>：会员；<strong>请求</strong>：无。</li><li><strong>响应</strong>：<code>{ token, expires_at, expires_in, refresh_after }</code>；<code>token</code> 以 <code>YYM1.</code> 开头，<code>expires_at</code> 为 Unix 秒时间戳。</li><li>二维码内容由前端根据 <code>token</code> 生成，不把会员手机号写入码中。签名用途与登录 JWT 不同，码有效期 60 秒，建议每 30 秒重新获取。</li></ul>
+</section>
+<h3 id="4-11-会员扫描课程码自助签到">4.11 会员扫描课程码自助签到<a class="anchor" href="#4-11-会员扫描课程码自助签到" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="post /api/public/check-in/scan">
+<h4 id="post-api-public-check-in-scan"><span class="method method-post">POST</span><a href="#post-api-public-check-in-scan" class="route">/api/public/check-in/scan</a></h4>
+<ul><li><strong>权限</strong>：会员，只能签到自己的预约；<strong>Body</strong>：<code>{ token }</code>，<code>token</code> 为前台课程码的完整 <code>YYS1....</code> 内容。</li><li><strong>响应</strong>：最新 Booking，并增加 <code>already_checked_in</code>、<code>check_in_method=session_code</code>、<code>member_reminders=[]</code>。</li><li>仅接受签名有效且未过期的课程码；会员必须有该课程的 <code>booked</code> / <code>checked_in</code> / <code>completed</code> 预约。其他会员无法使用同一预约签到。</li><li>开课前 30 分钟至课程结束可签到；重复扫码返回 <code>already_checked_in=true</code>，不会再次扣次。</li></ul>
+</section>
+<div class="code-block"><button class="copy-code" type="button">复制</button><pre><code class="language-json">{ &quot;token&quot;: &quot;YYS1.eyJzaWQiOjM5LCJleHAiOjE3OTQzNjAwMDB9.signature&quot; }</code></pre></div>
+<h3 id="4-12-取消待核销购卡申请">4.12 取消待核销购卡申请<a class="anchor" href="#4-12-取消待核销购卡申请" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="delete /api/public/orders/{order_id}">
+<h4 id="delete-api-public-orders-order-id"><span class="method method-delete">DELETE</span><a href="#delete-api-public-orders-order-id" class="route">/api/public/orders/{order_id}</a></h4>
+<ul><li><strong>权限</strong>：会员，只能取消自己的待核销申请；<strong>Body</strong>：无。</li><li><strong>响应</strong>：取消后的 Transaction，<code>status=cancelled</code>，包含 <code>cancelled_at</code>、<code>cancelled_by=会员自主取消</code>。</li><li>仅 <code>pending</code> 可取消；他人订单返回 <code>404</code>，已核销或已取消订单返回 <code>400</code>，并发状态变化返回 <code>409</code>。</li><li>取消采用条件原子更新，与电子码核销互斥。取消后原电子码永久失效，不开卡、不计实收、不删除历史记录；重复取消不会成功。</li></ul>
 </section>
 <h2 id="5-经营概览与基础元数据-2">5. 经营概览与基础元数据（2）<a class="anchor" href="#5-经营概览与基础元数据-2" aria-label="链接到此节">#</a></h2>
 <h3 id="5-1-今日经营概览">5.1 今日经营概览<a class="anchor" href="#5-1-今日经营概览" aria-label="链接到此节">#</a></h3>
@@ -481,7 +498,7 @@
 <h4 id="delete-api-admin-documents-document-id"><span class="method method-delete">DELETE</span><a href="#delete-api-admin-documents-document-id" class="route">/api/admin/documents/{document_id}</a></h4>
 <ul><li><strong>权限</strong>：前台；<strong>响应</strong>：<code>{ ok, item, message }</code>。</li><li>记录和文件保留 180 天，期间不可列表或下载，可由管理员恢复；到期彻底删除见第 16 章。</li></ul>
 </section>
-<h2 id="8-排课-预约-教室与目录-22">8. 排课、预约、教室与目录（22）<a class="anchor" href="#8-排课-预约-教室与目录-22" aria-label="链接到此节">#</a></h2>
+<h2 id="8-排课-预约-教室与目录-24">8. 排课、预约、教室与目录（24）<a class="anchor" href="#8-排课-预约-教室与目录-24" aria-label="链接到此节">#</a></h2>
 <h3 id="8-1-查询后台排课">8.1 查询后台排课<a class="anchor" href="#8-1-查询后台排课" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/sessions">
 <h4 id="get-api-admin-sessions"><span class="method method-get">GET</span><a href="#get-api-admin-sessions" class="route">/api/admin/sessions</a></h4>
@@ -616,6 +633,22 @@
 <h4 id="get-api-admin-rooms-availability"><span class="method method-get">GET</span><a href="#get-api-admin-rooms-availability" class="route">/api/admin/rooms/availability</a></h4>
 <ul><li><strong>权限</strong>：只读；<strong>Query</strong>：<code>date</code>、<code>start_time</code>、<code>end_time</code> 必填，<code>exclude_session_id</code> 可选（编辑排课时排除自身）。</li><li><strong>响应</strong>：<code>{ date, start_time, end_time, rooms }</code>，按楼层和排序返回启用教室；每项在 Room 基础上增加 <code>available</code> 和 <code>conflicts</code>。</li><li><code>conflicts[]</code> 同时包含重叠课程和内部占用：<code>kind=class|reservation</code>、<code>title</code>、<code>title_en</code>、<code>teacher_name</code>、<code>teacher_name_en</code>、<code>start_time</code>、<code>end_time</code>。</li><li>结束时间必须晚于开始时间。此接口用于在排课编辑器中即时禁用并标注冲突教室；新建和修改排课仍会执行服务端最终冲突校验。</li></ul>
 </section>
+<h3 id="8-23-获取课程动态签到码">8.23 获取课程动态签到码<a class="anchor" href="#8-23-获取课程动态签到码" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="get /api/admin/sessions/{session_id}/check-in-code">
+<h4 id="get-api-admin-sessions-session-id-check-in-code"><span class="method method-get">GET</span><a href="#get-api-admin-sessions-session-id-check-in-code" class="route">/api/admin/sessions/{session_id}/check-in-code</a></h4>
+<ul><li><strong>权限</strong>：前台（<code>admin</code>、<code>frontdesk</code>）；API Key 需要 <code>read</code>。</li><li><strong>响应</strong>：<code>{ token, expires_at, expires_in, refresh_after, session }</code>；<code>token</code> 以 <code>YYS1.</code> 开头，前端据此生成供会员扫描的课程二维码。</li><li>仅在开课前 30 分钟至课程结束提供签到码；未开放或已结束返回 <code>400</code>，取消或删除课程不可生成。</li><li>二维码有效期 60 秒，建议每 30 秒刷新。课程码不能代替会员登录，会员扫描后仍需通过本人 Bearer Token 调用自助签到接口。</li></ul>
+</section>
+<h3 id="8-24-前台扫描会员动态码签到">8.24 前台扫描会员动态码签到<a class="anchor" href="#8-24-前台扫描会员动态码签到" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="post /api/admin/check-in/scan">
+<h4 id="post-api-admin-check-in-scan"><span class="method method-post">POST</span><a href="#post-api-admin-check-in-scan" class="route">/api/admin/check-in/scan</a></h4>
+<ul><li><strong>权限</strong>：前台（<code>admin</code>、<code>frontdesk</code>）；API Key 需要 <code>bookings:write</code>。</li><li><strong>Body</strong>：<code>{ token, session_id? }</code>；<code>token</code> 为会员 <code>YYM1....</code> 动态码。存在多个可签到预约时，使用 <code>session_id</code> 完成指定课程签到。</li><li><strong>响应</strong>：签到后的 Booking，增加 <code>already_checked_in</code>、<code>check_in_method=member_code</code>、<code>member_reminders</code>。</li><li>系统只在当天的签到时段内自动匹配。仅一个待签到预约时直接消课；多个待签到预约时先返回以下选择响应且<strong>不扣次</strong>：</li></ul>
+</section>
+<div class="code-block"><button class="copy-code" type="button">复制</button><pre><code class="language-json">{
+  &quot;requires_selection&quot;: true,
+  &quot;member&quot;: { &quot;id&quot;: 7, &quot;name&quot;: &quot;会员姓名&quot; },
+  &quot;choices&quot;: [{ &quot;id&quot;: 101, &quot;session_id&quot;: 39, &quot;session&quot;: { &quot;id&quot;: 39, &quot;start_time&quot;: &quot;18:30&quot; } }]
+}</code></pre></div>
+<ul><li>重复扫描已消课预约返回 <code>already_checked_in=true</code>，不会重复扣次。无效、篡改或过期签到码返回 <code>400</code>；无匹配预约时转预约名单人工核对。</li></ul>
 <h2 id="9-产品-财务与报表-10">9. 产品、财务与报表（10）<a class="anchor" href="#9-产品-财务与报表-10" aria-label="链接到此节">#</a></h2>
 <h3 id="9-1-产品列表">9.1 产品列表<a class="anchor" href="#9-1-产品列表" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/products">
@@ -847,9 +880,17 @@ POST /api/admin/sessions/{session_id}/bookings         -&gt; booked，占 1 席�
 POST /api/admin/bookings/{booking_id}/check_in         -&gt; completed，扣 1 次并返回到店提醒
 GET  /api/admin/members/{member_id}                    -&gt; 核对卡、共享卡、预约、体验券和流水
 GET  /api/admin/reports                                -&gt; 到课、现金实收与确认营收</code></pre></div>
-<p>误签到使用 <code>undo_check_in</code> 返回 <code>booked</code> 并返还权益，误预约使用 <code>cancel</code> 释放席位；不要通过直接调整剩余次数掩盖状态错误。新流程不需要再调用 <code>complete</code>，该动作仅为旧数据兼容保留。</p>
+<p>双向二维码签到可替换上例中的人工 <code>check_in</code> 调用，最终状态与扣次逻辑完全一致：</p>
+<div class="code-block"><button class="copy-code" type="button">复制</button><pre><code class="language-text">方式 A：GET  /api/public/me/check-in-code                 -&gt; 会员出示 YYM1 动态码
+        POST /api/admin/check-in/scan                     -&gt; 前台扫码，自动匹配并消课
+        POST /api/admin/check-in/scan + session_id        -&gt; 多候选时确认指定课程
+
+方式 B：GET  /api/admin/sessions/{session_id}/check-in-code -&gt; 前台展示 YYS1 课程码
+        POST /api/public/check-in/scan                      -&gt; 会员扫码，本人预约消课</code></pre></div>
+<p>误签到使用 <code>undo_check_in</code> 返回 <code>booked</code> 并返还权益，误预约使用 <code>cancel</code> 释放席位；不要通过直接调整剩余次数掩盖状态错误。新流程不需要再调用 <code>complete</code>，该动作仅为旧数据兼容保留。二维码重复签到是幂等操作，返回 <code>already_checked_in=true</code>，无需再调用撤销接口。</p>
 <h3 id="14-3-电子码购卡闭环">14.3 电子码购卡闭环<a class="anchor" href="#14-3-电子码购卡闭环" aria-label="链接到此节">#</a></h3>
-<div class="code-block"><button class="copy-code" type="button">复制</button><pre><code class="language-text">会员：POST /api/public/orders                  -&gt; pending + redemption_code
+<div class="code-block"><button class="copy-code" type="button">复制</button><pre><code class="language-text">会员：POST /api/public/orders                  -&gt; pending + redemption_code（确认后创建）
+会员：DELETE /api/public/orders/{order_id}      -&gt; cancelled（仅未核销且改变主意时）
 前台：POST /api/admin/orders/redeem            -&gt; paid + card_id，只核销一次
 核对：GET  /api/admin/members/{member_id}
 财务：GET  /api/admin/transactions?member_id=&lt;id&gt;
@@ -919,7 +960,7 @@ const dashboard = await api(&quot;/api/admin/dashboard&quot;, {
 <h4 id="delete-api-admin-recycle-resource-entity-id-permanent"><span class="method method-delete">DELETE</span><a href="#delete-api-admin-recycle-resource-entity-id-permanent" class="route">/api/admin/recycle/{resource}/{entity_id}/permanent</a></h4>
 <ul><li><strong>权限</strong>：管理员登录会话；<strong>Body</strong>：无；<strong>响应</strong>：<code>{ ok, message }</code>。</li><li>只有服务器确认删除时间已满 180 天才执行，提前返回 <code>400</code> 和可删除时间。外键关联未清理时返回 <code>409</code>。</li><li>合同/评估附件会同时删除磁盘文件；其他业务记录删除后不可恢复，操作写入审计日志。</li></ul>
 </section>
-      <footer class="docs-footer"><span>音昱 Wellness · API v1.0.0 · 108 个业务接口</span><span><a href="/help.html">系统操作指南</a> · <a href="/openapi.json">OpenAPI 3</a> · 文档源：<a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md">docs/API.md</a></span></footer>
+      <footer class="docs-footer"><span>音昱 Wellness · API v1.0.0 · 113 个业务接口</span><span><a href="/help.html">系统操作指南</a> · <a href="/openapi.json">OpenAPI 3</a> · 文档源：<a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md">docs/API.md</a></span></footer>
     </main>
   </div>
   <script>

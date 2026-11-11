@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, joinedload
 from ..booking_service import create_booking, transition_booking
 from ..database import get_db
 from ..deps import get_current_member
+from ..log_util import audit
 from ..membership_service import voucher_dict
 from ..models import AppSettings, Booking, CardProduct, ClassSession, Course, ExperienceVoucher, Member, MemberCard, MemberCardShare, Teacher, Transaction
 from ..security import create_access_token
@@ -125,6 +126,27 @@ def create_order(payload: dict = Body(...), db: Session = Depends(get_db), membe
     code = f"YY{datetime.now().strftime('%y%m%d')}{random.randint(100000, 999999)}"
     row = Transaction(member_id=member.id, product_id=product.id, category=product.category, kind="purchase", amount=product.price, payment_method="offline_verify", status="pending", note=f"线上申请 {product.name}，到店核验后开卡", redemption_code=code)
     db.add(row)
+    db.flush()
+    audit(db, None, "finance", "create_order", "transaction", row.id, {"member_id": member.id, "product_id": product.id, "method": "member_self_service"})
     db.commit()
     db.refresh(row)
     return transaction_dict(row)
+
+
+@router.delete("/orders/{order_id}")
+def cancel_order(order_id: int, db: Session = Depends(get_db), member: Member = Depends(get_current_member)):
+    order = db.query(Transaction).filter(Transaction.id == order_id, Transaction.member_id == member.id, Transaction.deleted_at.is_(None)).first()
+    if not order:
+        raise HTTPException(404, "购卡申请不存在")
+    if order.status != "pending":
+        raise HTTPException(400, "仅待核销的购卡申请可以取消")
+    now = datetime.now()
+    claimed = db.query(Transaction).filter(Transaction.id == order.id, Transaction.member_id == member.id, Transaction.status == "pending").update({"status": "cancelled", "cancelled_at": now, "cancelled_by": "会员自主取消"}, synchronize_session=False)
+    if claimed != 1:
+        raise HTTPException(409, "订单状态刚刚发生变化，请刷新后重试")
+    order.status = "cancelled"
+    order.cancelled_at = now
+    order.cancelled_by = "会员自主取消"
+    audit(db, None, "finance", "cancel_order", "transaction", order.id, {"member_id": member.id, "method": "member_self_service"})
+    db.commit()
+    return transaction_dict(order)

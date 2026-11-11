@@ -13,7 +13,7 @@ from .api_key_service import record_api_key_usage
 from .booking_service import reconcile_booking_inventory
 from .config import UPLOAD_DIR
 from .database import Base, SessionLocal, engine, ensure_booking_constraints, ensure_schema
-from .routers import admin_api_keys, admin_core, admin_documents, admin_finance, admin_membership, admin_recycle, admin_schedule, admin_settings, auth, maintenance, public
+from .routers import admin_api_keys, admin_core, admin_documents, admin_finance, admin_membership, admin_recycle, admin_schedule, admin_settings, auth, checkin, maintenance, public
 from .scheduler import start_scheduler
 from .seed import run_seed
 
@@ -49,7 +49,7 @@ async def api_key_usage_middleware(request: Request, call_next):
         record_api_key_usage(request, status_code)
 
 
-for router in (auth.router, public.router, admin_core.router, admin_documents.router, admin_membership.router, admin_schedule.router, admin_finance.router, admin_settings.router, admin_api_keys.router, admin_recycle.router, maintenance.router):
+for router in (auth.router, public.router, checkin.router, admin_core.router, admin_documents.router, admin_membership.router, admin_schedule.router, admin_finance.router, admin_settings.router, admin_api_keys.router, admin_recycle.router, maintenance.router):
     app.include_router(router)
 
 

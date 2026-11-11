@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 
-export type IconName = "calendar" | "users" | "room" | "card" | "chart" | "settings" | "home" | "user" | "plus" | "search" | "close" | "arrow" | "check" | "clock" | "phone" | "logout" | "menu" | "download" | "money" | "book" | "bell" | "database" | "chevron" | "refresh";
+export type IconName = "calendar" | "users" | "room" | "card" | "chart" | "settings" | "home" | "user" | "plus" | "search" | "close" | "arrow" | "check" | "clock" | "phone" | "logout" | "menu" | "download" | "money" | "book" | "bell" | "database" | "chevron" | "refresh" | "qr" | "scan";
 const paths: Record<IconName, ReactNode> = {
   calendar: <><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></>,
   users: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></>,
@@ -23,6 +23,8 @@ const paths: Record<IconName, ReactNode> = {
   database: <><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></>,
   chevron: <path d="m9 18 6-6-6-6"/>,
   refresh: <><path d="M20 6v5h-5"/><path d="M19 11a7 7 0 1 0 1 5"/></>,
+  qr: <><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM18 18h3v3h-3zM18 14h3M14 20v1"/></>,
+  scan: <><path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3M7 12h10"/></>,
 };
 export function Icon({ name, size = 20 }: { name: IconName; size?: number }) { return <svg aria-hidden="true" viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{paths[name]}</svg>; }
 

@@ -2,11 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import { Link } from "react-router-dom";
 import { Empty, Icon, LogoutConfirm, Modal, Spinner } from "@/components/UI";
 import { BrandLogo } from "@/components/BrandLogo";
+import { MemberCheckInPanel } from "@/components/CheckInPanels";
 import { useLanguage } from "@/context/LanguageContext";
 import { apiFetch, downloadFile, getToken } from "@/lib/api";
 import { addDays, isoDate, money, shortDate, today, weekday, weekStart } from "@/lib/date";
 import { useSwipeNavigation } from "@/lib/useSwipeNavigation";
-import type { Booking, Bootstrap, CourseType, MemberMe, Product, Session } from "@/types";
+import type { Booking, Bootstrap, CourseType, MemberMe, Product, Session, Transaction } from "@/types";
 
 const types: Array<CourseType | "all"> = ["all", "group", "private", "assessment", "workshop", "training"];
 type ScheduleView = "day" | "week" | "month";
@@ -45,7 +46,7 @@ export function PublicHome() {
   const [loginOpen, setLoginOpen] = useState(false);
   const [meOpen, setMeOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
-  const [meTab, setMeTab] = useState<"bookings" | "cards" | "orders">("bookings");
+  const [meTab, setMeTab] = useState<"bookings" | "cards" | "orders" | "checkin">("bookings");
   const [me, setMe] = useState<MemberMe | null>(null);
   const [phone, setPhone] = useState("13900001001");
   const [name, setName] = useState("");
@@ -57,6 +58,8 @@ export function PublicHome() {
   const [error, setError] = useState("");
   const [pendingSession, setPendingSession] = useState<number | null>(null);
   const [pendingProduct, setPendingProduct] = useState<number | null>(null);
+  const [confirmProduct, setConfirmProduct] = useState<Product | null>(null);
+  const [cancelOrderTarget, setCancelOrderTarget] = useState<Transaction | null>(null);
   const scheduleSwipe = useSwipeNavigation(() => navigatePeriod(-1), () => navigatePeriod(1));
   const days = useMemo(() => {
     const start = weekStart(date);
@@ -166,14 +169,14 @@ export function PublicHome() {
     setBusy(true); setError("");
     try {
       const order = await apiFetch<{ redemption_code: string }>("/api/public/orders", { method: "POST", json: { product_id: productId }, tokenKind: "member" });
-      setMessage(`${t("orderCreated")} ${order.redemption_code}`); await loadMe(); setMeTab("orders"); setMeOpen(true);
+      setMessage(`${t("orderCreated")} ${order.redemption_code}`); setConfirmProduct(null); await loadMe(); setMeTab("orders"); setMeOpen(true);
     } catch (err) { setError(err instanceof Error ? err.message : t("error")); }
     finally { setBusy(false); }
   }
 
   function requestOrder(product: Product) {
     if (!getToken("member")) { setPendingProduct(product.id); setLoginOpen(true); return; }
-    void completeOrder(product.id);
+    setConfirmProduct(product);
   }
 
   async function sendCode() {
@@ -192,7 +195,11 @@ export function PublicHome() {
       localStorage.setItem("wellness_member_token", result.access_token);
       await loadMe(); setLoginOpen(false);
       if (pendingSession) { await completeBooking(pendingSession); setPendingSession(null); }
-      if (pendingProduct) { await completeOrder(pendingProduct); setPendingProduct(null); }
+      if (pendingProduct) {
+        const product = data?.products.find((item) => item.id === pendingProduct);
+        if (product) setConfirmProduct(product);
+        setPendingProduct(null);
+      }
     } catch (err) { setError(err instanceof Error ? err.message : t("error")); }
     finally { setBusy(false); }
   }
@@ -211,6 +218,21 @@ export function PublicHome() {
       await apiFetch(`/api/public/bookings/${booking.id}`, { method: "DELETE", tokenKind: "member" });
       setMessage(t("cancelledBooking")); await Promise.all([loadMe(), loadSessions()]);
     } catch (err) { setError(err instanceof Error ? err.message : t("error")); }
+  }
+
+  async function cancelOrder() {
+    if (!cancelOrderTarget) return;
+    setBusy(true); setError("");
+    try {
+      await apiFetch<Transaction>(`/api/public/orders/${cancelOrderTarget.id}`, { method: "DELETE", tokenKind: "member" });
+      setMessage(local("购卡申请已取消，电子码已失效", "Card request cancelled. The redemption code is no longer valid."));
+      setCancelOrderTarget(null); await loadMe();
+    } catch (err) { setError(err instanceof Error ? err.message : t("error")); setCancelOrderTarget(null); }
+    finally { setBusy(false); }
+  }
+
+  function orderStatusLabel(status: string) {
+    return status === "pending" ? local("待核销", "Pending redemption") : status === "paid" ? local("已核销", "Redeemed") : status === "cancelled" ? local("已取消", "Cancelled") : status === "refunded" ? local("已退款", "Refunded") : status;
   }
 
   function isPast(session: Session) {
@@ -316,11 +338,14 @@ export function PublicHome() {
 
     {loginOpen && <Modal title={t("login")} onClose={() => { setLoginOpen(false); setPendingSession(null); setPendingProduct(null); }}><form className="auth-form" onSubmit={login}><p>{local("新会员验证手机号后会自动建立档案。演示会员可使用 13900001001。", "New members are registered automatically after phone verification. Demo member: 13900001001.")}</p><label>{t("phone")}<input required pattern="1[0-9]{10}" inputMode="numeric" value={phone} onChange={(event) => setPhone(event.target.value)}/></label><label>{t("name")}<input value={name} onChange={(event) => setName(event.target.value)} placeholder={local("新会员填写", "For new members")}/></label><label>{t("code")}<div className="code-input"><input required inputMode="numeric" maxLength={6} value={code} onChange={(event) => setCode(event.target.value)}/><button className="button button-outline" type="button" disabled={busy || cooldown > 0} onClick={() => void sendCode()}>{cooldown > 0 ? `${cooldown}s` : t("sendCode")}</button></div></label>{devCode && <p className="dev-code">{t("devCode")}: <strong>{devCode}</strong></p>}<button className="button button-primary button-full" disabled={busy} type="submit">{busy ? t("loading") : t("submit")}</button></form></Modal>}
 
-    {meOpen && <Modal title={`${local("你好", "Hello")}，${me?.member.name ?? ""}`} wide onClose={() => setMeOpen(false)}><div className="me-tabs"><button className={meTab === "bookings" ? "active" : ""} onClick={() => setMeTab("bookings")} type="button">{t("myBookings")}</button><button className={meTab === "cards" ? "active" : ""} onClick={() => setMeTab("cards")} type="button">{t("myCards")}</button><button className={meTab === "orders" ? "active" : ""} onClick={() => setMeTab("orders")} type="button">{t("myOrders")}</button><button className="logout-link" type="button" onClick={() => setLogoutOpen(true)}>{t("logout")}</button></div>
+    {meOpen && <Modal title={`${local("你好", "Hello")}，${me?.member.name ?? ""}`} wide onClose={() => setMeOpen(false)}><div className="me-tabs"><button className={meTab === "bookings" ? "active" : ""} onClick={() => setMeTab("bookings")} type="button">{t("myBookings")}</button><button className={meTab === "cards" ? "active" : ""} onClick={() => setMeTab("cards")} type="button">{t("myCards")}</button><button className={meTab === "orders" ? "active" : ""} onClick={() => setMeTab("orders")} type="button">{t("myOrders")}</button><button className={meTab === "checkin" ? "active" : ""} onClick={() => setMeTab("checkin")} type="button"><Icon name="qr" size={16}/>{local("到店签到", "Check in")}</button><button className="logout-link" type="button" onClick={() => setLogoutOpen(true)}>{t("logout")}</button></div>
       {meTab === "bookings" && <div className="me-list">{!me?.bookings.length ? <Empty>{t("noBookings")}</Empty> : me.bookings.map((booking) => <article key={booking.id} className={booking.status === "cancelled" ? "muted" : ""}><div><span className={`status-dot status-${booking.status}`}/><h3>{local(booking.session!.course.name, booking.session!.course.name_en)}</h3><p>{booking.session!.session_date} · {booking.session!.start_time}–{booking.session!.end_time}</p><small>{local(booking.session!.teacher.name, booking.session!.teacher.name_en)} · {local(booking.session!.room.name, booking.session!.room.name_en)}</small></div><div><span className="booking-status">{statusLabel(booking.status)}</span>{booking.status === "booked" && <><button className="text-button" type="button" onClick={() => void downloadFile(`/api/public/bookings/${booking.id}/calendar.ics`, `booking-${booking.id}.ics`, "member")}>{t("addCalendar")}</button><button className="text-button danger" type="button" onClick={() => void cancelBooking(booking)}>{t("cancel")}</button></>}</div></article>)}</div>}
       {meTab === "cards" && <div className="member-card-grid">{!me?.cards.length ? <Empty>{t("noCards")}</Empty> : me.cards.map((card) => <article className="member-pass" key={card.id}><span>{card.card_no}</span><h3>{local(card.product_name, card.product_name_en)}</h3><strong>{card.remaining_sessions ?? t("unlimited")}<small>{card.remaining_sessions !== null ? ` ${t("sessions")}` : ""}</small></strong><p>{t("expires")} {card.expires_on}</p><div className="pass-benefits">{card.benefits.map((benefit) => <span key={benefit.course_type}>{t(benefit.course_type as CourseType)} {benefit.remaining ?? benefit.quantity}</span>)}</div></article>)}</div>}
-      {meTab === "orders" && <div className="me-list">{me?.transactions.map((order) => <article key={order.id}><div><h3>{order.note}</h3><p>{order.occurred_at} · {order.status}</p>{order.redemption_code && <strong className="redeem-code">{order.redemption_code}</strong>}</div><strong>{money(order.amount)}</strong></article>)}</div>}
+      {meTab === "orders" && <div className="me-list">{!me?.transactions.length ? <Empty>{local("暂无购卡申请", "No card requests yet")}</Empty> : me.transactions.map((order) => <article key={order.id} className={order.status === "cancelled" ? "muted" : ""}><div><h3>{local(order.product_name || order.note, order.product_name_en)}</h3><p>{order.occurred_at} · {orderStatusLabel(order.status)}</p>{order.cancelled_at && <small>{local("取消于", "Cancelled at")} {order.cancelled_at}</small>}{order.redemption_code && <strong className="redeem-code">{order.redemption_code}</strong>}{order.status === "pending" && <small>{local("到店支付并出示此码核销；未核销前可取消。", "Pay in store and show this code. You can cancel before redemption.")}</small>}</div><div><strong>{money(order.amount)}</strong>{order.status === "pending" && <button className="text-button danger" type="button" disabled={busy} onClick={() => setCancelOrderTarget(order)}>{local("取消申请", "Cancel request")}</button>}</div></article>)}</div>}
+      {meTab === "checkin" && <MemberCheckInPanel onChecked={loadMe}/>}
     </Modal>}
+    {confirmProduct && <Modal title={local("确认购卡申请", "Confirm card request")} onClose={() => { if (!busy) setConfirmProduct(null); }}><div className="logout-confirmation order-confirmation"><span className="logout-confirmation-icon"><Icon name="card" size={26}/></span><h3>{local(confirmProduct.name, confirmProduct.name_en)}</h3><div className="order-confirmation-details"><span>{money(confirmProduct.price)}</span><span>{confirmProduct.total_sessions ? local(`${confirmProduct.total_sessions} 次`, `${confirmProduct.total_sessions} sessions`) : local("不限次", "Unlimited")} · {local(`${confirmProduct.validity_days} 天有效`, `${confirmProduct.validity_days} days validity`)}</span></div><p>{local("提交后将生成待核销电子码。请到店支付并出示电子码，核销成功后会员卡才会开通；未核销前可取消申请。", "A pending redemption code will be generated. Pay in store and present the code; your card activates only after redemption. You may cancel before then.")}</p><div className="logout-confirmation-actions"><button className="button button-outline" type="button" disabled={busy} onClick={() => setConfirmProduct(null)}>{local("再想想", "Not now")}</button><button className="button button-primary" type="button" disabled={busy} onClick={() => void completeOrder(confirmProduct.id)}><Icon name="check" size={17}/>{busy ? local("提交中…", "Submitting…") : local("确认申请", "Confirm request")}</button></div></div></Modal>}
+    {cancelOrderTarget && <Modal title={local("取消购卡申请", "Cancel card request")} onClose={() => { if (!busy) setCancelOrderTarget(null); }}><div className="logout-confirmation order-confirmation"><span className="logout-confirmation-icon"><Icon name="card" size={26}/></span><h3>{local(cancelOrderTarget.product_name || cancelOrderTarget.note, cancelOrderTarget.product_name_en)}</h3><p>{local(`取消后电子码 ${cancelOrderTarget.redemption_code || ""} 将立即失效，且不能恢复。确定取消这笔待核销申请吗？`, `Redemption code ${cancelOrderTarget.redemption_code || ""} will immediately become invalid and cannot be restored. Cancel this pending request?`)}</p><div className="logout-confirmation-actions"><button className="button button-outline" type="button" disabled={busy} onClick={() => setCancelOrderTarget(null)}>{local("保留申请", "Keep request")}</button><button className="button button-primary" type="button" disabled={busy} onClick={() => void cancelOrder()}>{busy ? local("取消中…", "Cancelling…") : local("确认取消", "Confirm cancellation")}</button></div></div></Modal>}
     {logoutOpen && <LogoutConfirm title={t("logout")} description={local("退出后需要重新验证手机号，才能查看预约、会员卡与购卡记录。", "Sign in with your mobile number again to view your bookings, membership and orders.")} cancelLabel={local("取消", "Cancel")} confirmLabel={local("确认退出", "Sign out")} onClose={() => setLogoutOpen(false)} onConfirm={logout}/>}
   </div>;
 }

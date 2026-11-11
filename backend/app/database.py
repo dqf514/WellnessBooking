@@ -46,6 +46,7 @@ def ensure_schema():
             "rooms": {"floor": "VARCHAR(30) DEFAULT '1F'", "sort_order": "INTEGER DEFAULT 0"},
             "bookings": {"experience_voucher_id": "INTEGER REFERENCES experience_vouchers(id)"},
             "member_documents": {"category": "VARCHAR(24) DEFAULT 'contract'"},
+            "transactions": {"cancelled_at": "DATETIME", "cancelled_by": "VARCHAR(80) DEFAULT ''"},
         }
         soft_delete_tables = {"users", "members", "teachers", "rooms", "courses", "class_sessions", "card_products", "member_cards", "bookings", "member_card_shares", "experience_vouchers", "member_reminders", "room_reservations", "member_records", "member_documents", "transactions", "api_keys"}
         for table in soft_delete_tables:

@@ -59,7 +59,7 @@ def required_api_key_scope(request: Request) -> str | None:
     if request.method in {"GET", "HEAD", "OPTIONS"}:
         return "read"
     path = request.url.path
-    if "/bookings/" in path or path == "/api/admin/private-bookings" or re.fullmatch(r"/api/admin/sessions/\d+/bookings", path):
+    if "/bookings/" in path or path in {"/api/admin/private-bookings", "/api/admin/check-in/scan"} or re.fullmatch(r"/api/admin/sessions/\d+/bookings", path):
         return "bookings:write"
     if path.startswith(("/api/admin/members", "/api/admin/cards", "/api/admin/no-shows", "/api/admin/documents", "/api/admin/reminders", "/api/admin/vouchers")):
         return "members:write"
