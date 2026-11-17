@@ -23,13 +23,15 @@ def _active_card(db: Session, card_id: int) -> MemberCard:
 
 @router.post("/cards/{card_id}/upgrade")
 def upgrade_card(card_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+    from ..finance_service import default_revenue_mode, normalized_category
+
     card = _active_card(db, card_id)
     product = db.get(CardProduct, int(payload.get("product_id", 0)))
     if not product or not product.active:
         raise HTTPException(404, "升级产品不存在或已停用")
     if product.id == card.product_id:
         raise HTTPException(400, "请选择不同的升级产品")
-    if product.category != card.product.category and "annual" not in {product.category, card.product.category}:
+    if normalized_category(product.category) != normalized_category(card.product.category):
         raise HTTPException(400, "仅支持同类别卡课升级")
     difference = float(payload.get("price", max(0, product.price - card.purchase_price)))
     if difference < 0:
@@ -38,8 +40,11 @@ def upgrade_card(card_id: int, payload: dict = Body(...), db: Session = Depends(
     card.status = "upgraded"
     card.note = f"已升级为 {product.name}；{payload.get('note', '')}".strip("；")
     card.version += 1
-    new_card = issue_card(db, member=card.member, product=product, price=product.price, payment_method=str(payload.get("payment_method", "wechat")), starts_on=str(payload.get("starts_on") or today()), note=f"由原卡 {old_no} 补差升级", record_transaction=False)
-    db.add(Transaction(member_id=card.member_id, member_card_id=new_card.id, product_id=product.id, category=product.category, kind="upgrade", amount=difference, payment_method=str(payload.get("payment_method", "wechat")), status="paid", note=f"原卡 {old_no} 升级为 {product.name}"))
+
+    starts_on = str(payload.get("starts_on") or today())
+    mode = default_revenue_mode(product)
+    new_card = issue_card(db, member=card.member, product=product, price=product.price, payment_method=str(payload.get("payment_method", "wechat")), starts_on=starts_on, note=f"由原卡 {old_no} 补差升级", record_transaction=False)
+    db.add(Transaction(member_id=card.member_id, member_card_id=new_card.id, product_id=product.id, category=product.category, kind="upgrade", amount=difference, payment_method=str(payload.get("payment_method", "wechat")), status="paid", revenue_mode=mode, revenue_start_on=starts_on if mode == "amortized" else "", revenue_days=product.validity_days if mode == "amortized" else 0, created_by=user.full_name or user.username, note=f"原卡 {old_no} 升级为 {product.name}"))
     audit(db, user, "member_card", "upgrade", "member_card", card_id, {"new_card_id": new_card.id, "difference": difference})
     db.commit()
     return {"old_card": card_dict(card), "card": card_dict(new_card), "difference": difference}

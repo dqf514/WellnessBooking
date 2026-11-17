@@ -33,7 +33,7 @@ export function AdminLayout() {
       <NavLink to="/admin" end onClick={closeMenu}><Icon name="home"/><span>{a("经营概览")}</span></NavLink>
       <NavLink to="/admin/rooms" onClick={closeMenu}><Icon name="room"/><span>{a("教室总览")}</span></NavLink>
       <NavGroup title={a("预约与签到")} icon="check" onNavigate={closeMenu} links={[{ to: "/admin/bookings/group", label: local("团课预约", "Group bookings") }, { to: "/admin/bookings/private", label: local("私教预约", "PT bookings") }, { to: "/admin/bookings/workshop", label: local("工作坊预约", "Workshop bookings") }]}/>
-      <NavGroup title={a("排课中心")} icon="calendar" onNavigate={closeMenu} links={[{ to: "/admin/schedule/group", label: local("团课排课", "Group schedule") }, { to: "/admin/schedule/private", label: local("私教排课", "PT schedule") }, { to: "/admin/schedule/workshop", label: local("工作坊排课", "Workshop schedule") }]}/>
+      <NavGroup title={a("排课中心")} icon="calendar" onNavigate={closeMenu} links={[{ to: "/admin/schedule/group", label: local("团课排课", "Group schedule") }, { to: "/admin/schedule/workshop", label: local("工作坊排课", "Workshop schedule") }]}/>
       <NavLink to="/admin/members" onClick={closeMenu}><Icon name="users"/><span>{a("会员管理")}</span></NavLink>
       <NavGroup title={a("资源管理")} icon="database" onNavigate={closeMenu} links={[{ to: "/admin/products", label: local("卡课产品", "Cards & products"), roles: ["admin", "finance"] }, { to: "/admin/resources/rooms", label: local("教室管理", "Room management"), roles: ["admin"] }, { to: "/admin/resources/teachers", label: local("教练管理", "Instructor management"), roles: ["admin"] }]}/>
       {canFinance && <NavLink to="/admin/finance" onClick={closeMenu}><Icon name="money"/><span>{a("财务入账")}</span></NavLink>}

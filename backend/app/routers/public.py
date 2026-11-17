@@ -124,7 +124,10 @@ def create_order(payload: dict = Body(...), db: Session = Depends(get_db), membe
     if not product.online_sale or product.price > 5000:
         raise HTTPException(400, "该产品请联前台购买")
     code = f"YY{datetime.now().strftime('%y%m%d')}{random.randint(100000, 999999)}"
-    row = Transaction(member_id=member.id, product_id=product.id, category=product.category, kind="purchase", amount=product.price, payment_method="offline_verify", status="pending", note=f"线上申请 {product.name}，到店核验后开卡", redemption_code=code)
+    from ..finance_service import default_revenue_mode
+
+    mode = default_revenue_mode(product)
+    row = Transaction(member_id=member.id, product_id=product.id, category=product.category, kind="purchase", amount=product.price, payment_method="offline_verify", status="pending", revenue_mode=mode, revenue_start_on=today() if mode == "amortized" else "", revenue_days=product.validity_days if mode == "amortized" else 0, note=f"线上申请 {product.name}，到店核验后开卡", redemption_code=code)
     db.add(row)
     db.flush()
     audit(db, None, "finance", "create_order", "transaction", row.id, {"member_id": member.id, "product_id": product.id, "method": "member_self_service"})

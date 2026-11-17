@@ -5,11 +5,12 @@ from datetime import datetime
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from .finance_service import default_revenue_mode
 from .models import CardProduct, Member, MemberCard, Transaction
 from .utils import add_days, today
 
 
-def issue_card(db: Session, *, member: Member, product: CardProduct, price: float, payment_method: str, starts_on: str = "", note: str = "", record_transaction: bool = True) -> MemberCard:
+def issue_card(db: Session, *, member: Member, product: CardProduct, price: float, payment_method: str, starts_on: str = "", note: str = "", record_transaction: bool = True, record_cash: bool = True, revenue_mode: str = "legacy", created_by: str = "") -> MemberCard:
     if not product.active:
         raise HTTPException(400, "该卡课产品已停用")
     start = starts_on or today()
@@ -29,5 +30,21 @@ def issue_card(db: Session, *, member: Member, product: CardProduct, price: floa
     db.add(card)
     db.flush()
     if record_transaction:
-        db.add(Transaction(member_id=member.id, member_card_id=card.id, product_id=product.id, category=product.category, kind="purchase", amount=price, payment_method=payment_method, status="paid", note=note or product.name))
+        mode = revenue_mode or default_revenue_mode(product)
+        db.add(Transaction(
+            member_id=member.id,
+            member_card_id=card.id,
+            product_id=product.id,
+            category=product.category,
+            kind="purchase",
+            amount=price,
+            payment_method=payment_method,
+            status="paid",
+            cash_basis=record_cash,
+            revenue_mode=mode,
+            revenue_start_on=start if mode == "amortized" else "",
+            revenue_days=product.validity_days if mode == "amortized" else 0,
+            created_by=created_by,
+            note=note or product.name,
+        ))
     return card

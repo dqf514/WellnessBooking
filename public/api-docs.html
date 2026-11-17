@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#173f35">
-  <meta name="description" content="音昱 Wellness 完整 API 对接文档，覆盖 113 个接口、权限、字段、业务规则与示例。">
+  <meta name="description" content="音昱 Wellness 完整 API 对接文档，覆盖 120 个接口、权限、字段、业务规则与示例。">
   <meta name="generator" content="docs/build_api_docs.py">
   <link id="api-favicon" rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Crect width='36' height='36' rx='18' fill='%23173f35'/%3E%3Cpath d='M28 6C15 7 8 13 8 23c7 1 15-2 20-17ZM8 29c3-8 8-12 16-17' fill='none' stroke='%23e9efe7' stroke-width='1.5'/%3E%3C/svg%3E">
   <title>API 对接文档 · 音昱 Wellness</title>
@@ -33,15 +33,15 @@
     <aside class="sidebar" aria-label="API 文档目录">
       <label class="search-label"><span>搜索接口、字段或业务规则</span><input class="search-input" id="api-search" type="search" placeholder="例如：签到、退款、bookings" autocomplete="off"><span class="search-hint">按 / 快速搜索，Esc 清空</span></label>
       <p class="search-results" id="search-results" aria-live="polite"></p>
-      <p class="toc-title">API REFERENCE · 113 ENDPOINTS</p>
+      <p class="toc-title">API REFERENCE · 120 ENDPOINTS</p>
       <nav><ul class="toc-list"><li><a href="#1-接入基础">1. 接入基础</a></li>
 <li><a href="#2-通用数据结构">2. 通用数据结构</a></li>
 <li><a href="#3-健康检查与员工认证-6">3. 健康检查与员工认证（6）</a></li>
 <li><a href="#4-会员端接口-12">4. 会员端接口（12）</a></li>
 <li><a href="#5-经营概览与基础元数据-2">5. 经营概览与基础元数据（2）</a></li>
 <li><a href="#6-会员档案-会员卡-权益与爽约-20">6. 会员档案、会员卡、权益与爽约（20）</a></li>
-<li><a href="#7-会员合同与评估文件-6">7. 会员合同与评估文件（6）</a></li>
-<li><a href="#8-排课-预约-教室与目录-24">8. 排课、预约、教室与目录（24）</a></li>
+<li><a href="#7-会员合同与评估文件-7">7. 会员合同与评估文件（7）</a></li>
+<li><a href="#8-排课-预约-教室与目录-26">8. 排课、预约、教室与目录（26）</a></li>
 <li><a href="#9-产品-财务与报表-10">9. 产品、财务与报表（10）</a></li>
 <li><a href="#10-场馆-品牌与账号-8">10. 场馆、品牌与账号（8）</a></li>
 <li><a href="#11-短信与审计日志-5">11. 短信与审计日志（5）</a></li>
@@ -49,7 +49,8 @@
 <li><a href="#13-数据导出-备份与恢复-10">13. 数据导出、备份与恢复（10）</a></li>
 <li><a href="#14-典型业务调用顺序">14. 典型业务调用顺序</a></li>
 <li><a href="#15-对接检查清单">15. 对接检查清单</a></li>
-<li><a href="#16-回收站与-180-天保留-4">16. 回收站与 180 天保留（4）</a></li></ul></nav>
+<li><a href="#16-回收站与-180-天保留-4">16. 回收站与 180 天保留（4）</a></li>
+<li><a href="#15-品牌-pdf-导出与账单-4">15. 品牌 PDF 导出与账单（4）</a></li></ul></nav>
       <div class="sidebar-bottom"><a href="/openapi.json" target="_blank" rel="noreferrer">下载 OpenAPI JSON ↗</a><a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md" target="_blank" rel="noreferrer">GitHub Markdown 源文档 ↗</a><a href="/help.html">← 返回系统操作指南</a></div>
     </aside>
     <main class="docs-main" id="api-content">
@@ -59,8 +60,8 @@
 <option value="4-会员端接口-12">4. 会员端接口（12）</option>
 <option value="5-经营概览与基础元数据-2">5. 经营概览与基础元数据（2）</option>
 <option value="6-会员档案-会员卡-权益与爽约-20">6. 会员档案、会员卡、权益与爽约（20）</option>
-<option value="7-会员合同与评估文件-6">7. 会员合同与评估文件（6）</option>
-<option value="8-排课-预约-教室与目录-24">8. 排课、预约、教室与目录（24）</option>
+<option value="7-会员合同与评估文件-7">7. 会员合同与评估文件（7）</option>
+<option value="8-排课-预约-教室与目录-26">8. 排课、预约、教室与目录（26）</option>
 <option value="9-产品-财务与报表-10">9. 产品、财务与报表（10）</option>
 <option value="10-场馆-品牌与账号-8">10. 场馆、品牌与账号（8）</option>
 <option value="11-短信与审计日志-5">11. 短信与审计日志（5）</option>
@@ -68,10 +69,11 @@
 <option value="13-数据导出-备份与恢复-10">13. 数据导出、备份与恢复（10）</option>
 <option value="14-典型业务调用顺序">14. 典型业务调用顺序</option>
 <option value="15-对接检查清单">15. 对接检查清单</option>
-<option value="16-回收站与-180-天保留-4">16. 回收站与 180 天保留（4）</option></select></label>
+<option value="16-回收站与-180-天保留-4">16. 回收站与 180 天保留（4）</option>
+<option value="15-品牌-pdf-导出与账单-4">15. 品牌 PDF 导出与账单（4）</option></select></label>
       <div class="search-empty" id="search-empty" hidden>没有匹配的接口。可尝试“预约”“卡”“settings”或清空搜索。</div>
       <h1 id="音昱-wellness-api-对接文档">音昱 Wellness API 对接文档<a class="anchor" href="#音昱-wellness-api-对接文档" aria-label="链接到此节">#</a></h1>
-<aside class="callout">版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 <strong>113 个 HTTP 接口</strong>。 文档更新：2026-11-11 · 功能基线：预约排课、动态二维码签到、购卡申请取消、会员权益与营收业务闭环。 在线交互文档：<code>/docs</code>（Swagger UI）、<code>/redoc</code>（ReDoc）；原始 OpenAPI 3 定义：<code>/openapi.json</code>。接口路径、方法、参数和实时响应结构以同版本 <code>/openapi.json</code> 为最终依据。</aside>
+<aside class="callout">版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 <strong>120 个 HTTP 接口</strong>。 文档更新：2026-11-11 · 功能基线：预约排课、动态二维码签到、购卡申请取消、会员权益与营收业务闭环。 在线交互文档：<code>/docs</code>（Swagger UI）、<code>/redoc</code>（ReDoc）；原始 OpenAPI 3 定义：<code>/openapi.json</code>。接口路径、方法、参数和实时响应结构以同版本 <code>/openapi.json</code> 为最终依据。</aside>
 <h2 id="1-接入基础">1. 接入基础<a class="anchor" href="#1-接入基础" aria-label="链接到此节">#</a></h2>
 <h3 id="1-1-服务地址">1.1 服务地址<a class="anchor" href="#1-1-服务地址" aria-label="链接到此节">#</a></h3>
 <div class="table-wrap"><table>
@@ -214,19 +216,24 @@
 <tr><td><code>bookings</code></td><td>Booking[]</td><td>仅后台 <code>detailed=true</code> 或写排课时返回</td></tr>
 </tbody>
 </table></div>
-<p><strong>Booking</strong>：<code>id</code>、<code>session_id</code>、<code>member_id</code>、<code>member</code>、<code>member_card_id</code>、<code>experience_voucher_id</code>、<code>card_name</code>、<code>status</code>、<code>source</code>、<code>booked_at</code>、<code>cancelled_at</code>、<code>cancelled_by</code>、<code>checked_in_at</code>、<code>completed_at</code>、<code>consumed</code>、<code>notes</code>；除嵌套在排课详情中时，还包含完整 <code>session</code>。使用体验券消课时 <code>card_name</code> 为“免费体验券”。</p>
+<p><strong>Booking</strong>：<code>id</code>、<code>session_id</code>、<code>member_id</code>、<code>member</code>、<code>member_card_id</code>、<code>experience_voucher_id</code>、<code>card_name</code>、<code>consumption_amount</code>、<code>status</code>、<code>source</code>、<code>booked_at</code>、<code>cancelled_at</code>、<code>cancelled_by</code>、<code>checked_in_at</code>、<code>completed_at</code>、<code>consumed</code>、<code>notes</code>；除嵌套在排课详情中时，还包含完整 <code>session</code>。使用体验券消课时 <code>card_name</code> 为“免费体验券”；<code>consumption_amount</code> 是“卡实购价 ÷ 总次数”的建议消课营收，无可用卡次数时为 0。</p>
 <p>预约状态为 <code>booked</code>（待上课）、<code>checked_in</code>（历史已签到状态）、<code>completed</code>（已签到消课）、<code>cancelled</code>（已取消）、<code>no_show</code>（爽约）。来源为 <code>public</code> 或 <code>admin</code>。新签到直接写入 <code>completed</code>；<code>consumed=true</code> 表示已经扣除一次卡或体验券权益，重复完成不会再次扣减。</p>
 <h3 id="2-6-transaction-财务流水">2.6 Transaction 财务流水<a class="anchor" href="#2-6-transaction-财务流水" aria-label="链接到此节">#</a></h3>
 <div class="table-wrap"><table>
 <thead><tr><th>字段</th><th>类型</th><th>含义</th></tr></thead>
 <tbody>
-<tr><td><code>id</code>、<code>member_id</code>、<code>member_card_id</code>、<code>product_id</code></td><td>integer / null</td><td>关联资源 ID</td></tr>
+<tr><td><code>id</code>、<code>member_id</code>、<code>member_card_id</code>、<code>product_id</code>、<code>booking_id</code></td><td>integer / null</td><td>关联资源 ID；消课营收通过 <code>booking_id</code> 关联预约</td></tr>
 <tr><td><code>member_name</code>、<code>product_name</code>、<code>product_name_en</code></td><td>string</td><td>展示名称</td></tr>
-<tr><td><code>category</code></td><td>string</td><td>课程类别或 <code>misc</code> 等自定义类别</td></tr>
-<tr><td><code>kind</code></td><td>string</td><td><code>purchase</code> / <code>manual</code> / <code>refund</code> / <code>upgrade</code></td></tr>
-<tr><td><code>amount</code></td><td>number</td><td>入账为正，退款为负</td></tr>
-<tr><td><code>payment_method</code></td><td>string</td><td>结账方式，例如 <code>cash</code>、<code>wechat</code>、<code>alipay</code></td></tr>
+<tr><td><code>category</code></td><td>string</td><td><code>group</code> / <code>private</code> / <code>annual</code> / <code>workshop</code> / <code>training</code> / <code>enterprise</code> / <code>misc</code>；历史 <code>assessment</code>、<code>package</code> 展示时分别归入 <code>private</code>、<code>annual</code></td></tr>
+<tr><td><code>kind</code></td><td>string</td><td><code>purchase</code> / <code>manual</code> / <code>refund</code> / <code>upgrade</code> / <code>consumption</code> / <code>consumption_reversal</code></td></tr>
+<tr><td><code>amount</code></td><td>number</td><td>入账为正，退款或冲销为负</td></tr>
+<tr><td><code>payment_method</code></td><td>string</td><td>结账方式，例如 <code>cash</code>、<code>wechat</code>、<code>alipay</code>、<code>fitness_member</code>（健身会员）</td></tr>
 <tr><td><code>status</code></td><td>string</td><td><code>pending</code> / <code>paid</code> / <code>cancelled</code> / <code>refunded</code></td></tr>
+<tr><td><code>cash_basis</code></td><td>boolean</td><td>是否计入现金流水；历史数据默认为 <code>true</code></td></tr>
+<tr><td><code>revenue_mode</code></td><td>string</td><td><code>none</code>（不计营收）/ <code>immediate</code>（即时营收）/ <code>amortized</code>（每日均摊）/ <code>legacy</code>（历史规则）</td></tr>
+<tr><td><code>revenue_start_on</code>、<code>revenue_days</code></td><td>string / integer</td><td>每日均摊开始日期和天数</td></tr>
+<tr><td><code>revenue_sequence</code></td><td>integer</td><td>同一预约第几次消课营收周期，配合唯一索引防止重复入账</td></tr>
+<tr><td><code>created_by</code></td><td>string</td><td>入账员工显示名</td></tr>
 <tr><td><code>occurred_at</code></td><td>string</td><td>业务发生时间</td></tr>
 <tr><td><code>note</code></td><td>string</td><td>备注</td></tr>
 <tr><td><code>redemption_code</code></td><td>string / null</td><td>线上购卡电子码</td></tr>
@@ -234,7 +241,7 @@
 <tr><td><code>cancelled_at</code>、<code>cancelled_by</code></td><td>string / null</td><td>购卡申请取消时间与操作来源</td></tr>
 </tbody>
 </table></div>
-<p>线上申请初始为 <code>pending</code>，核销后原单改为 <code>paid</code>，不会再新增一条购买流水。待核销申请可取消为 <code>cancelled</code>，电子码保留用于审计但立即失效；取消不开卡、不计实收。退款会新增负数 <code>refund</code> 流水，原正数单改为 <code>refunded</code>。</p>
+<p>线上申请初始为 <code>pending</code>，核销后原单改为 <code>paid</code>，不会再新增一条购买流水。待核销申请可取消为 <code>cancelled</code>，电子码保留用于审计但立即失效；取消不开卡、不计实收。退款会新增负数 <code>refund</code> 流水，原正数单改为 <code>refunded</code>。私教/评估消课营收使用 <code>consumption</code>，取消签到或取消已消课预约会自动新增对应 <code>consumption_reversal</code>，不删除历史。</p>
 <h2 id="3-健康检查与员工认证-6">3. 健康检查与员工认证（6）<a class="anchor" href="#3-健康检查与员工认证-6" aria-label="链接到此节">#</a></h2>
 <h3 id="3-1-服务健康检查">3.1 服务健康检查<a class="anchor" href="#3-1-服务健康检查" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/health">
@@ -366,7 +373,7 @@
 <h3 id="6-5-到店购卡并开卡">6.5 到店购卡并开卡<a class="anchor" href="#6-5-到店购卡并开卡" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/members/{member_id}/cards">
 <h4 id="post-api-admin-members-member-id-cards"><span class="method method-post">POST</span><a href="#post-api-admin-members-member-id-cards" class="route">/api/admin/members/{member_id}/cards</a></h4>
-<ul><li><strong>权限</strong>：前台。</li><li><strong>Body</strong>：<code>product_id</code> 必填；<code>price</code>（默认产品价，不能为负）、<code>payment_method</code>（默认 <code>cash</code>）、<code>starts_on</code>（默认今日）、<code>note</code> 可选。</li><li><strong>响应</strong>：MemberCard。</li><li>同一事务创建活动会员卡和正数 <code>purchase</code> 已入账流水。有效期为 <code>starts_on + validity_days</code>，初始次数与权益复制自产品。</li></ul>
+<ul><li><strong>权限</strong>：前台。</li><li><strong>Body</strong>：<code>product_id</code> 必填；<code>price</code>（默认产品价，不能为负）、<code>payment_method</code>（默认 <code>cash</code>）、<code>starts_on</code>（默认今日）、<code>note</code> 可选。</li><li><strong>入账选项</strong>：<code>record_cash</code>（默认 <code>true</code>）、<code>revenue_mode</code>（<code>none</code> / <code>immediate</code> / <code>amortized</code>）；均摊时可传 <code>revenue_start_on</code>、<code>revenue_days</code>，默认使用开卡日期和产品有效期。</li><li><strong>响应</strong>：MemberCard。</li><li>同一事务创建活动会员卡和正数 <code>purchase</code> 流水。有效期为 <code>starts_on + validity_days</code>，初始次数与权益复制自产品。入流水与入营收至少选择一项。</li><li>私教/评估产品购买只允许 <code>revenue_mode=none</code>，营收须在实际消课后通过专用接口确认；团课等默认即时营收，年卡/组合套餐及 365 天产品默认每日均摊。</li></ul>
 </section>
 <h3 id="6-6-维护单张会员卡">6.6 维护单张会员卡<a class="anchor" href="#6-6-维护单张会员卡" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="patch /api/admin/cards/{card_id}">
@@ -467,7 +474,7 @@
 <h4 id="patch-api-admin-records-record-id"><span class="method method-patch">PATCH</span><a href="#patch-api-admin-records-record-id" class="route">/api/admin/records/{record_id}</a></h4>
 <ul><li><strong>权限</strong>：前台；<strong>Body</strong>：<code>teacher_id</code>、<code>record_type</code>、<code>title</code>、<code>content</code>、<code>record_date</code> 任意子集。</li><li><strong>响应</strong>：更新后的会员记录。标题不能为空，日期必须为 <code>YYYY-MM-DD</code>；删除使用第 16 章回收站接口。</li></ul>
 </section>
-<h2 id="7-会员合同与评估文件-6">7. 会员合同与评估文件（6）<a class="anchor" href="#7-会员合同与评估文件-6" aria-label="链接到此节">#</a></h2>
+<h2 id="7-会员合同与评估文件-7">7. 会员合同与评估文件（7）<a class="anchor" href="#7-会员合同与评估文件-7" aria-label="链接到此节">#</a></h2>
 <h3 id="7-1-文件列表">7.1 文件列表<a class="anchor" href="#7-1-文件列表" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/members/{member_id}/documents">
 <h4 id="get-api-admin-members-member-id-documents"><span class="method method-get">GET</span><a href="#get-api-admin-members-member-id-documents" class="route">/api/admin/members/{member_id}/documents</a></h4>
@@ -498,7 +505,12 @@
 <h4 id="delete-api-admin-documents-document-id"><span class="method method-delete">DELETE</span><a href="#delete-api-admin-documents-document-id" class="route">/api/admin/documents/{document_id}</a></h4>
 <ul><li><strong>权限</strong>：前台；<strong>响应</strong>：<code>{ ok, item, message }</code>。</li><li>记录和文件保留 180 天，期间不可列表或下载，可由管理员恢复；到期彻底删除见第 16 章。</li></ul>
 </section>
-<h2 id="8-排课-预约-教室与目录-24">8. 排课、预约、教室与目录（24）<a class="anchor" href="#8-排课-预约-教室与目录-24" aria-label="链接到此节">#</a></h2>
+<h3 id="7-7-在线查看文件">7.7 在线查看文件<a class="anchor" href="#7-7-在线查看文件" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="get /api/admin/documents/{document_id}/view">
+<h4 id="get-api-admin-documents-document-id-view"><span class="method method-get">GET</span><a href="#get-api-admin-documents-document-id-view" class="route">/api/admin/documents/{document_id}/view</a></h4>
+<ul><li><strong>权限</strong>：只读；<strong>响应</strong>：原始文件流，<code>Content-Disposition: inline</code>。</li><li>用于浏览器直接预览 PDF 和图片；Office、CSV 等格式是否可直接显示由浏览器决定。鉴权方式与下载接口相同。</li></ul>
+</section>
+<h2 id="8-排课-预约-教室与目录-26">8. 排课、预约、教室与目录（26）<a class="anchor" href="#8-排课-预约-教室与目录-26" aria-label="链接到此节">#</a></h2>
 <h3 id="8-1-查询后台排课">8.1 查询后台排课<a class="anchor" href="#8-1-查询后台排课" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/sessions">
 <h4 id="get-api-admin-sessions"><span class="method method-get">GET</span><a href="#get-api-admin-sessions" class="route">/api/admin/sessions</a></h4>
@@ -649,6 +661,16 @@
   &quot;choices&quot;: [{ &quot;id&quot;: 101, &quot;session_id&quot;: 39, &quot;session&quot;: { &quot;id&quot;: 39, &quot;start_time&quot;: &quot;18:30&quot; } }]
 }</code></pre></div>
 <ul><li>重复扫描已消课预约返回 <code>already_checked_in=true</code>，不会重复扣次。无效、篡改或过期签到码返回 <code>400</code>；无匹配预约时转预约名单人工核对。</li></ul>
+<h3 id="8-25-私教-评估消课营收入账">8.25 私教/评估消课营收入账<a class="anchor" href="#8-25-私教-评估消课营收入账" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="post /api/admin/bookings/{booking_id}/revenue">
+<h4 id="post-api-admin-bookings-booking-id-revenue"><span class="method method-post">POST</span><a href="#post-api-admin-bookings-booking-id-revenue" class="route">/api/admin/bookings/{booking_id}/revenue</a></h4>
+<ul><li><strong>权限</strong>：前台；<strong>Body</strong>：<code>amount</code>（大于 0，必填）、<code>payment_method</code>（默认 <code>fitness_member</code>）、<code>note</code> 可选。</li><li><strong>响应</strong>：<code>kind=consumption</code>、<code>cash_basis=false</code>、<code>revenue_mode=immediate</code> 的 Transaction。</li><li>仅已签到消课的私教/评估预约可用。金额可参考 Booking 的 <code>consumption_amount</code>，也允许按财务口径修改；本接口只入营收，不重复计入现金流水。</li><li>同一预约当前存在未冲销营收时返回 <code>409</code>，不得重复入账。<code>booking_id + revenue_sequence + kind</code> 唯一索引防止并发重复；取消签到后自动冲销，再次签到可开启新的营收周期。</li></ul>
+</section>
+<h3 id="8-26-上传课程图片">8.26 上传课程图片<a class="anchor" href="#8-26-上传课程图片" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="post /api/admin/courses/{course_id}/image">
+<h4 id="post-api-admin-courses-course-id-image"><span class="method method-post">POST</span><a href="#post-api-admin-courses-course-id-image" class="route">/api/admin/courses/{course_id}/image</a></h4>
+<ul><li><strong>权限</strong>：管理员；<strong>multipart</strong>：字段 <code>file</code>。</li><li>支持 PNG、JPG、WebP，最大 6 MiB，校验文件签名；<strong>响应</strong>：更新后的 Course，<code>image_url</code> 指向 <code>/uploads/courses/</code>。</li><li>新建课程时先保存课程取得 <code>course_id</code>，再调用本接口；也可在课程表单中仅填写已有图片 URL。</li></ul>
+</section>
 <h2 id="9-产品-财务与报表-10">9. 产品、财务与报表（10）<a class="anchor" href="#9-产品-财务与报表-10" aria-label="链接到此节">#</a></h2>
 <h3 id="9-1-产品列表">9.1 产品列表<a class="anchor" href="#9-1-产品列表" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/products">
@@ -668,32 +690,32 @@
 <h3 id="9-4-查询财务流水">9.4 查询财务流水<a class="anchor" href="#9-4-查询财务流水" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/transactions">
 <h4 id="get-api-admin-transactions"><span class="method method-get">GET</span><a href="#get-api-admin-transactions" class="route">/api/admin/transactions</a></h4>
-<ul><li><strong>权限</strong>：只读。</li><li><strong>Query</strong>：<code>date_from</code>、<code>date_to</code>、<code>category</code>、<code>member_id</code>，均可选。</li><li><strong>响应</strong>：<code>{ items: Transaction[]（最多1000）, total_amount }</code>。</li><li><code>total_amount</code> 仅汇总结果中 <code>paid</code>、<code>refunded</code> 流水；<code>pending</code> 不计入。</li></ul>
+<ul><li><strong>权限</strong>：只读。</li><li><strong>Query</strong>：<code>date_from</code>、<code>date_to</code>、<code>category</code>、<code>member_id</code>，均可选。</li><li><strong>响应</strong>：<code>{ items: Transaction[]（最多1000）, total_amount }</code>。</li><li><code>total_amount</code> 仅汇总 <code>cash_basis=true</code> 且状态为 <code>paid</code>、<code>refunded</code> 的记录；仅营收和待核销记录不计入。类别筛选 <code>private</code> 包含历史 <code>assessment</code>，<code>annual</code> 包含历史 <code>package</code>。</li></ul>
 </section>
 <h3 id="9-5-手工入账">9.5 手工入账<a class="anchor" href="#9-5-手工入账" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/transactions/manual">
 <h4 id="post-api-admin-transactions-manual"><span class="method method-post">POST</span><a href="#post-api-admin-transactions-manual" class="route">/api/admin/transactions/manual</a></h4>
-<ul><li><strong>权限</strong>：财务。</li><li><strong>Body</strong>：<code>amount</code>（非零，必填）、<code>member_id</code>（可空）、<code>category</code>（默认 <code>misc</code>）、<code>payment_method</code>（默认 <code>cash</code>）、<code>note</code>。</li><li><strong>响应</strong>：<code>kind=manual</code>、<code>status=paid</code> 的 Transaction。不会自动开卡或修改权益。</li></ul>
+<ul><li><strong>权限</strong>：财务。</li><li><strong>Body</strong>：<code>amount</code>（非零，必填）、<code>member_id</code>（可空）、<code>category</code>（默认 <code>misc</code>）、<code>payment_method</code>（默认 <code>cash</code>）、<code>note</code>。</li><li><strong>入账选项</strong>：<code>record_cash</code>、<code>revenue_mode=none|immediate|amortized</code>，至少选择流水或一种营收方式；均摊必须提供有效的 <code>revenue_start_on</code> 和 1–3650 天的 <code>revenue_days</code>。</li><li><strong>响应</strong>：<code>kind=manual</code>、<code>status=paid</code> 的 Transaction。不会自动开卡或修改权益。仅入营收时 <code>cash_basis=false</code>，不影响现金实收。</li></ul>
 </section>
 <h3 id="9-6-退款">9.6 退款<a class="anchor" href="#9-6-退款" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/transactions/{transaction_id}/refund">
 <h4 id="post-api-admin-transactions-transaction-id-refund"><span class="method method-post">POST</span><a href="#post-api-admin-transactions-transaction-id-refund" class="route">/api/admin/transactions/{transaction_id}/refund</a></h4>
-<ul><li><strong>权限</strong>：财务；<strong>Body</strong>：<code>amount</code>（默认原单全额）、<code>note</code>。</li><li><strong>响应</strong>：新建的负数 <code>refund</code> 流水。</li><li>原单必须 <code>paid</code> 且金额为正；退款金额须大于 0 且不超过原单金额。</li><li>原单改为 <code>refunded</code>，不能再次退款，部分退款同样如此。若关联会员卡且全额退款，卡状态改为 <code>cancelled</code>；不会返还历史已消耗次数，也不会自动删除预约。</li></ul>
+<ul><li><strong>权限</strong>：财务；<strong>Body</strong>：<code>amount</code>（默认原单全额）、<code>note</code>。</li><li><strong>响应</strong>：新建的负数 <code>refund</code> 流水，继承原单的流水与营收设置。</li><li>原单必须 <code>paid</code> 且金额为正，仅限 <code>purchase</code>、<code>upgrade</code>、<code>manual</code>；退款金额须大于 0 且不超过原单金额。</li><li>原单改为 <code>refunded</code>，不能再次退款，部分退款同样如此。若关联会员卡且全额退款，卡状态改为 <code>cancelled</code>；不会返还历史已消耗次数，也不会自动删除预约。</li></ul>
 </section>
 <h3 id="9-7-核销购卡电子码">9.7 核销购卡电子码<a class="anchor" href="#9-7-核销购卡电子码" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/orders/redeem">
 <h4 id="post-api-admin-orders-redeem"><span class="method method-post">POST</span><a href="#post-api-admin-orders-redeem" class="route">/api/admin/orders/redeem</a></h4>
-<ul><li><strong>权限</strong>：前台；<strong>Body</strong>：<code>redemption_code</code>，自动去空格并转大写。</li><li><strong>响应</strong>：<code>{ ok, card_id, order }</code>。</li><li>通过条件更新抢占 <code>pending</code> 原单，避免并发重复核销；随后开卡、原单改为 <code>paid</code>、关联 <code>member_card_id</code> 并记录核销时间，不重复入账。</li></ul>
+<ul><li><strong>权限</strong>：前台；<strong>Body</strong>：<code>redemption_code</code>，自动去空格并转大写。</li><li><strong>响应</strong>：<code>{ ok, card_id, order }</code>。</li><li>通过条件更新抢占 <code>pending</code> 原单，避免并发重复核销；随后开卡、原单改为 <code>paid</code>、关联 <code>member_card_id</code> 并记录核销时间和入账人，不重复入账。年卡/套餐均摊从实际开卡日期开始。</li></ul>
 </section>
 <h3 id="9-8-综合经营报表">9.8 综合经营报表<a class="anchor" href="#9-8-综合经营报表" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/reports">
 <h4 id="get-api-admin-reports"><span class="method method-get">GET</span><a href="#get-api-admin-reports" class="route">/api/admin/reports</a></h4>
-<ul><li><strong>权限</strong>：只读；<strong>Query</strong>：<code>date_from</code>（默认本月 1 日）、<code>date_to</code>（默认今日）。</li><li><strong>响应</strong>：<code>range</code>、<code>summary</code>、<code>amortized_revenue</code>、<code>private_recognized_revenue</code>、<code>revenue_by_category</code>、<code>course_stats</code>、<code>teacher_stats</code>、<code>weekday</code>、<code>hour</code>、<code>room_usage</code>。</li><li><code>summary</code> 含 <code>revenue</code>（确认营收）、<code>cash_received</code>（现金实收）、<code>sessions</code>、<code>cancelled_sessions</code>、<code>attendees</code>、<code>booking_count</code>、<code>cancelled_bookings</code>。</li><li>现金实收按查询范围内 <code>paid</code> / <code>refunded</code> 流水净额计算，含负数退款；待核销订单不计入。确认营收不等于现金实收：</li><li><code>category=annual|package|group</code> 且 <code>validity_days=365</code> 的产品，从卡 <code>starts_on</code> 起按 365 天直线分摊，取与查询范围重叠的天数；<code>amortized_revenue</code> 是这部分确认营收。</li><li>私教购买和升卡流水只计现金，不提前确认营收；有效私教消课按“卡实购价 ÷ 卡总次数”确认，计入 <code>private_recognized_revenue</code>。取消签到后记录不再处于已消课状态，因此不再计入。</li><li>其他已支付类别按流水发生时直接确认，退款负数流水按同一类别口径冲减。</li><li><code>revenue_by_category</code> 是 <code>{ label, value }[]</code>；课程统计含 <code>sessions</code>、<code>cancelled</code>、<code>attendees</code>、<code>bookings</code>，教练统计另含 <code>minutes</code>、<code>hours</code>。</li><li><code>weekday.label</code> 为 0–6（周一至周日），<code>hour.label</code> 为两位小时；<code>value</code> 是实际到课人次。</li><li>教室统计含 <code>used_hours</code>、<code>internal_hours</code>、<code>utilization</code>；利用率分母按范围内每天 12 小时计算。</li></ul>
+<ul><li><strong>权限</strong>：只读；<strong>Query</strong>：<code>date_from</code>（默认本月 1 日）、<code>date_to</code>（默认今日）。</li><li><strong>响应</strong>：<code>range</code>、<code>summary</code>、<code>amortized_revenue</code>、<code>private_recognized_revenue</code>、<code>revenue_by_category</code>、<code>cash_by_category</code>、<code>course_stats</code>、<code>teacher_stats</code>、<code>weekday</code>、<code>hour</code>、<code>room_usage</code>。</li><li><code>summary</code> 含 <code>revenue</code>（确认营收）、<code>cash_received</code>（现金实收）、<code>sessions</code>、<code>cancelled_sessions</code>、<code>attendees</code>、<code>booking_count</code>、<code>cancelled_bookings</code>。</li><li>现金实收只统计查询范围内 <code>cash_basis=true</code> 的 <code>paid</code> / <code>refunded</code> 记录净额；<code>cash_by_category</code> 与 <code>revenue_by_category</code> 分别展示流水和营收分类。</li><li><code>revenue_mode=immediate</code> 在发生时全额确认；<code>amortized</code> 按 <code>revenue_start_on + revenue_days</code> 直线分摊，查询未来期间也会计算重叠天数；<code>none</code> 不确认营收。</li><li>私教/评估购买只入流水，实际消课后通过 <code>consumption</code> 记录营收；<code>consumption_reversal</code> 负向冲销。历史 <code>legacy</code> 数据保持原 365 天分摊、私教自动消课和其他即时营收规则，避免重复计算。</li><li><code>weekday.label</code> 为 0–6（周一至周日），<code>hour.label</code> 为两位小时；<code>value</code> 是实际到课人次。</li><li>教室统计含 <code>used_hours</code>、<code>internal_hours</code>、<code>utilization</code>；利用率分母按范围内每天 07:00–20:00 的 13 小时计算。</li></ul>
 </section>
 <h3 id="9-9-编辑手工入账">9.9 编辑手工入账<a class="anchor" href="#9-9-编辑手工入账" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="patch /api/admin/transactions/{transaction_id}">
 <h4 id="patch-api-admin-transactions-transaction-id"><span class="method method-patch">PATCH</span><a href="#patch-api-admin-transactions-transaction-id" class="route">/api/admin/transactions/{transaction_id}</a></h4>
-<ul><li><strong>权限</strong>：财务；<strong>Body</strong>：<code>member_id</code>、<code>category</code>、<code>amount</code>、<code>payment_method</code>、<code>note</code> 任意子集。</li><li><strong>响应</strong>：更新后的 Transaction。只允许 <code>kind=manual</code>，金额不能为 0；购买、升卡和退款流水返回 <code>404</code>。</li></ul>
+<ul><li><strong>权限</strong>：财务；<strong>Body</strong>：<code>member_id</code>、<code>category</code>、<code>amount</code>、<code>payment_method</code>、<code>note</code>、<code>record_cash</code>、<code>revenue_mode</code>、<code>revenue_start_on</code>、<code>revenue_days</code> 任意子集。</li><li><strong>响应</strong>：更新后的 Transaction。只允许 <code>kind=manual</code> 且 <code>status=paid</code>，金额不能为 0；购买、升卡、退款及已退款手工单返回 <code>404</code>。修改后仍会校验流水/营收至少一项及均摊参数。</li></ul>
 </section>
 <h3 id="9-10-手工入账移入回收站">9.10 手工入账移入回收站<a class="anchor" href="#9-10-手工入账移入回收站" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="delete /api/admin/transactions/{transaction_id}">
@@ -878,6 +900,7 @@ POST /api/admin/members/{member_id}/cards             -&gt; 开卡 + purchase �
 POST /api/admin/sessions                              -&gt; scheduled 排课
 POST /api/admin/sessions/{session_id}/bookings         -&gt; booked，占 1 席，不扣次
 POST /api/admin/bookings/{booking_id}/check_in         -&gt; completed，扣 1 次并返回到店提醒
+POST /api/admin/bookings/{booking_id}/revenue          -&gt; 私教/评估：仅入营收，可选健身会员结账
 GET  /api/admin/members/{member_id}                    -&gt; 核对卡、共享卡、预约、体验券和流水
 GET  /api/admin/reports                                -&gt; 到课、现金实收与确认营收</code></pre></div>
 <p>双向二维码签到可替换上例中的人工 <code>check_in</code> 调用，最终状态与扣次逻辑完全一致：</p>
@@ -887,7 +910,7 @@ GET  /api/admin/reports                                -&gt; 到课、现金实�
 
 方式 B：GET  /api/admin/sessions/{session_id}/check-in-code -&gt; 前台展示 YYS1 课程码
         POST /api/public/check-in/scan                      -&gt; 会员扫码，本人预约消课</code></pre></div>
-<p>误签到使用 <code>undo_check_in</code> 返回 <code>booked</code> 并返还权益，误预约使用 <code>cancel</code> 释放席位；不要通过直接调整剩余次数掩盖状态错误。新流程不需要再调用 <code>complete</code>，该动作仅为旧数据兼容保留。二维码重复签到是幂等操作，返回 <code>already_checked_in=true</code>，无需再调用撤销接口。</p>
+<p>误签到使用 <code>undo_check_in</code> 返回 <code>booked</code>、返还权益并自动冲销已入消课营收，误预约使用 <code>cancel</code> 释放席位；不要通过直接调整剩余次数掩盖状态错误。新流程不需要再调用 <code>complete</code>，该动作仅为旧数据兼容保留。二维码重复签到是幂等操作，返回 <code>already_checked_in=true</code>，无需再调用撤销接口。</p>
 <h3 id="14-3-电子码购卡闭环">14.3 电子码购卡闭环<a class="anchor" href="#14-3-电子码购卡闭环" aria-label="链接到此节">#</a></h3>
 <div class="code-block"><button class="copy-code" type="button">复制</button><pre><code class="language-text">会员：POST /api/public/orders                  -&gt; pending + redemption_code（确认后创建）
 会员：DELETE /api/public/orders/{order_id}      -&gt; cancelled（仅未核销且改变主意时）
@@ -960,7 +983,29 @@ const dashboard = await api(&quot;/api/admin/dashboard&quot;, {
 <h4 id="delete-api-admin-recycle-resource-entity-id-permanent"><span class="method method-delete">DELETE</span><a href="#delete-api-admin-recycle-resource-entity-id-permanent" class="route">/api/admin/recycle/{resource}/{entity_id}/permanent</a></h4>
 <ul><li><strong>权限</strong>：管理员登录会话；<strong>Body</strong>：无；<strong>响应</strong>：<code>{ ok, message }</code>。</li><li>只有服务器确认删除时间已满 180 天才执行，提前返回 <code>400</code> 和可删除时间。外键关联未清理时返回 <code>409</code>。</li><li>合同/评估附件会同时删除磁盘文件；其他业务记录删除后不可恢复，操作写入审计日志。</li></ul>
 </section>
-      <footer class="docs-footer"><span>音昱 Wellness · API v1.0.0 · 113 个业务接口</span><span><a href="/help.html">系统操作指南</a> · <a href="/openapi.json">OpenAPI 3</a> · 文档源：<a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md">docs/API.md</a></span></footer>
+<h2 id="15-品牌-pdf-导出与账单-4">15. 品牌 PDF 导出与账单（4）<a class="anchor" href="#15-品牌-pdf-导出与账单-4" aria-label="链接到此节">#</a></h2>
+<p>以下接口均返回 <code>application/pdf</code> 文件流和 <code>Cache-Control: no-store</code>，权限为只读；可使用员工 Bearer Token 或具备 <code>read</code> 范围的 API Key。PDF 使用场馆名称、地址、电话和已上传 Logo；未上传时使用系统默认品牌标识。表格采用 A4 横向、重复表头、交替行底色、筛选条件和页码，适合直接发送或打印。</p>
+<h3 id="15-1-导出某日教室安排">15.1 导出某日教室安排<a class="anchor" href="#15-1-导出某日教室安排" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="get /api/admin/rooms/overview.pdf">
+<h4 id="get-api-admin-rooms-overview-pdf"><span class="method method-get">GET</span><a href="#get-api-admin-rooms-overview-pdf" class="route">/api/admin/rooms/overview.pdf</a></h4>
+<ul><li><strong>Query</strong>：<code>date</code>（默认今日）、<code>floor</code> 可选。</li><li>包含所选日期的团课、私教/评估、工作坊、培训及内部/公司/企业活动；列为课程/活动名称、类型、时间、教练、教室、预约人数和备注。</li><li>预约人数显示“已约/容量”，内部占用不显示人数；按开始时间、教室和名称排序。</li></ul>
+</section>
+<h3 id="15-2-导出财务流水-pdf">15.2 导出财务流水 PDF<a class="anchor" href="#15-2-导出财务流水-pdf" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="get /api/admin/transactions.pdf">
+<h4 id="get-api-admin-transactions-pdf"><span class="method method-get">GET</span><a href="#get-api-admin-transactions-pdf" class="route">/api/admin/transactions.pdf</a></h4>
+<ul><li><strong>Query</strong>：<code>date_from</code>、<code>date_to</code>、<code>category</code>、<code>member_id</code>，与流水列表一致。</li><li>包含编号/时间、会员、类别、业务、入账类型、结账方式、金额、状态和备注，并区分流水、流水+营收、营收、每日均摊及营收冲销。</li></ul>
+</section>
+<h3 id="15-3-导出经营分析-pdf">15.3 导出经营分析 PDF<a class="anchor" href="#15-3-导出经营分析-pdf" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="get /api/admin/reports.pdf">
+<h4 id="get-api-admin-reports-pdf"><span class="method method-get">GET</span><a href="#get-api-admin-reports-pdf" class="route">/api/admin/reports.pdf</a></h4>
+<ul><li><strong>Query</strong>：<code>date_from</code>（默认本月 1 日）、<code>date_to</code>（默认今日），开始日期不能晚于结束日期。</li><li>包含流水与营收汇总、分类汇总、课程经营、教练课时、教室使用及到课时段表格。</li></ul>
+</section>
+<h3 id="15-4-导出账单小票-pdf">15.4 导出账单小票 PDF<a class="anchor" href="#15-4-导出账单小票-pdf" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="get /api/admin/transactions/{transaction_id}/receipt.pdf">
+<h4 id="get-api-admin-transactions-transaction-id-receipt-pdf"><span class="method method-get">GET</span><a href="#get-api-admin-transactions-transaction-id-receipt-pdf" class="route">/api/admin/transactions/{transaction_id}/receipt.pdf</a></h4>
+<ul><li><strong>响应</strong>：单页 <strong>75 × 145 mm</strong> 小票；待核销或已取消记录返回 <code>400</code>。</li><li>包含 Octave/自定义品牌 Logo、健康管理 Wellness、日期时间、项目、金额、入账类型、客户、结账方式、备注、入账人、6% 增值税与去税金额、签字栏及场馆地址电话。</li><li>去税金额按“含税金额 ÷ 1.06”计算，增值税为含税金额减去去税金额；退款或冲销记录以负数展示。</li></ul>
+</section>
+      <footer class="docs-footer"><span>音昱 Wellness · API v1.0.0 · 120 个业务接口</span><span><a href="/help.html">系统操作指南</a> · <a href="/openapi.json">OpenAPI 3</a> · 文档源：<a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md">docs/API.md</a></span></footer>
     </main>
   </div>
   <script>

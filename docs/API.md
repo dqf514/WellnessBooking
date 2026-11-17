@@ -1,6 +1,6 @@
 # 音昱 Wellness API 对接文档
 
-> 版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 **113 个 HTTP 接口**。
+> 版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 **120 个 HTTP 接口**。
 >
 > 文档更新：2026-11-11 · 功能基线：预约排课、动态二维码签到、购卡申请取消、会员权益与营收业务闭环。
 >
@@ -199,7 +199,7 @@ FastAPI 参数校验错误格式：
 | `course`、`teacher`、`room` | object | 完整关联对象 |
 | `bookings` | Booking[] | 仅后台 `detailed=true` 或写排课时返回 |
 
-**Booking**：`id`、`session_id`、`member_id`、`member`、`member_card_id`、`experience_voucher_id`、`card_name`、`status`、`source`、`booked_at`、`cancelled_at`、`cancelled_by`、`checked_in_at`、`completed_at`、`consumed`、`notes`；除嵌套在排课详情中时，还包含完整 `session`。使用体验券消课时 `card_name` 为“免费体验券”。
+**Booking**：`id`、`session_id`、`member_id`、`member`、`member_card_id`、`experience_voucher_id`、`card_name`、`consumption_amount`、`status`、`source`、`booked_at`、`cancelled_at`、`cancelled_by`、`checked_in_at`、`completed_at`、`consumed`、`notes`；除嵌套在排课详情中时，还包含完整 `session`。使用体验券消课时 `card_name` 为“免费体验券”；`consumption_amount` 是“卡实购价 ÷ 总次数”的建议消课营收，无可用卡次数时为 0。
 
 预约状态为 `booked`（待上课）、`checked_in`（历史已签到状态）、`completed`（已签到消课）、`cancelled`（已取消）、`no_show`（爽约）。来源为 `public` 或 `admin`。新签到直接写入 `completed`；`consumed=true` 表示已经扣除一次卡或体验券权益，重复完成不会再次扣减。
 
@@ -207,20 +207,25 @@ FastAPI 参数校验错误格式：
 
 | 字段 | 类型 | 含义 |
 | --- | --- | --- |
-| `id`、`member_id`、`member_card_id`、`product_id` | integer / null | 关联资源 ID |
+| `id`、`member_id`、`member_card_id`、`product_id`、`booking_id` | integer / null | 关联资源 ID；消课营收通过 `booking_id` 关联预约 |
 | `member_name`、`product_name`、`product_name_en` | string | 展示名称 |
-| `category` | string | 课程类别或 `misc` 等自定义类别 |
-| `kind` | string | `purchase` / `manual` / `refund` / `upgrade` |
-| `amount` | number | 入账为正，退款为负 |
-| `payment_method` | string | 结账方式，例如 `cash`、`wechat`、`alipay` |
+| `category` | string | `group` / `private` / `annual` / `workshop` / `training` / `enterprise` / `misc`；历史 `assessment`、`package` 展示时分别归入 `private`、`annual` |
+| `kind` | string | `purchase` / `manual` / `refund` / `upgrade` / `consumption` / `consumption_reversal` |
+| `amount` | number | 入账为正，退款或冲销为负 |
+| `payment_method` | string | 结账方式，例如 `cash`、`wechat`、`alipay`、`fitness_member`（健身会员） |
 | `status` | string | `pending` / `paid` / `cancelled` / `refunded` |
+| `cash_basis` | boolean | 是否计入现金流水；历史数据默认为 `true` |
+| `revenue_mode` | string | `none`（不计营收）/ `immediate`（即时营收）/ `amortized`（每日均摊）/ `legacy`（历史规则） |
+| `revenue_start_on`、`revenue_days` | string / integer | 每日均摊开始日期和天数 |
+| `revenue_sequence` | integer | 同一预约第几次消课营收周期，配合唯一索引防止重复入账 |
+| `created_by` | string | 入账员工显示名 |
 | `occurred_at` | string | 业务发生时间 |
 | `note` | string | 备注 |
 | `redemption_code` | string / null | 线上购卡电子码 |
 | `redeemed_at` | string / null | 核销时间 |
 | `cancelled_at`、`cancelled_by` | string / null | 购卡申请取消时间与操作来源 |
 
-线上申请初始为 `pending`，核销后原单改为 `paid`，不会再新增一条购买流水。待核销申请可取消为 `cancelled`，电子码保留用于审计但立即失效；取消不开卡、不计实收。退款会新增负数 `refund` 流水，原正数单改为 `refunded`。
+线上申请初始为 `pending`，核销后原单改为 `paid`，不会再新增一条购买流水。待核销申请可取消为 `cancelled`，电子码保留用于审计但立即失效；取消不开卡、不计实收。退款会新增负数 `refund` 流水，原正数单改为 `refunded`。私教/评估消课营收使用 `consumption`，取消签到或取消已消课预约会自动新增对应 `consumption_reversal`，不删除历史。
 
 ## 3. 健康检查与员工认证（6）
 
@@ -449,8 +454,10 @@ curl -X POST "$API/api/auth/login" \
 
 - **权限**：前台。
 - **Body**：`product_id` 必填；`price`（默认产品价，不能为负）、`payment_method`（默认 `cash`）、`starts_on`（默认今日）、`note` 可选。
+- **入账选项**：`record_cash`（默认 `true`）、`revenue_mode`（`none` / `immediate` / `amortized`）；均摊时可传 `revenue_start_on`、`revenue_days`，默认使用开卡日期和产品有效期。
 - **响应**：MemberCard。
-- 同一事务创建活动会员卡和正数 `purchase` 已入账流水。有效期为 `starts_on + validity_days`，初始次数与权益复制自产品。
+- 同一事务创建活动会员卡和正数 `purchase` 流水。有效期为 `starts_on + validity_days`，初始次数与权益复制自产品。入流水与入营收至少选择一项。
+- 私教/评估产品购买只允许 `revenue_mode=none`，营收须在实际消课后通过专用接口确认；团课等默认即时营收，年卡/组合套餐及 365 天产品默认每日均摊。
 
 ### 6.6 维护单张会员卡
 
@@ -592,7 +599,7 @@ curl -X POST "$API/api/auth/login" \
 - **权限**：前台；**Body**：`teacher_id`、`record_type`、`title`、`content`、`record_date` 任意子集。
 - **响应**：更新后的会员记录。标题不能为空，日期必须为 `YYYY-MM-DD`；删除使用第 16 章回收站接口。
 
-## 7. 会员合同与评估文件（6）
+## 7. 会员合同与评估文件（7）
 
 ### 7.1 文件列表
 
@@ -636,7 +643,14 @@ curl -X POST "$API/api/auth/login" \
 - **权限**：前台；**响应**：`{ ok, item, message }`。
 - 记录和文件保留 180 天，期间不可列表或下载，可由管理员恢复；到期彻底删除见第 16 章。
 
-## 8. 排课、预约、教室与目录（24）
+### 7.7 在线查看文件
+
+#### GET /api/admin/documents/{document_id}/view
+
+- **权限**：只读；**响应**：原始文件流，`Content-Disposition: inline`。
+- 用于浏览器直接预览 PDF 和图片；Office、CSV 等格式是否可直接显示由浏览器决定。鉴权方式与下载接口相同。
+
+## 8. 排课、预约、教室与目录（26）
 
 ### 8.1 查询后台排课
 
@@ -861,6 +875,23 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 
 - 重复扫描已消课预约返回 `already_checked_in=true`，不会重复扣次。无效、篡改或过期签到码返回 `400`；无匹配预约时转预约名单人工核对。
 
+### 8.25 私教/评估消课营收入账
+
+#### POST /api/admin/bookings/{booking_id}/revenue
+
+- **权限**：前台；**Body**：`amount`（大于 0，必填）、`payment_method`（默认 `fitness_member`）、`note` 可选。
+- **响应**：`kind=consumption`、`cash_basis=false`、`revenue_mode=immediate` 的 Transaction。
+- 仅已签到消课的私教/评估预约可用。金额可参考 Booking 的 `consumption_amount`，也允许按财务口径修改；本接口只入营收，不重复计入现金流水。
+- 同一预约当前存在未冲销营收时返回 `409`，不得重复入账。`booking_id + revenue_sequence + kind` 唯一索引防止并发重复；取消签到后自动冲销，再次签到可开启新的营收周期。
+
+### 8.26 上传课程图片
+
+#### POST /api/admin/courses/{course_id}/image
+
+- **权限**：管理员；**multipart**：字段 `file`。
+- 支持 PNG、JPG、WebP，最大 6 MiB，校验文件签名；**响应**：更新后的 Course，`image_url` 指向 `/uploads/courses/`。
+- 新建课程时先保存课程取得 `course_id`，再调用本接口；也可在课程表单中仅填写已有图片 URL。
+
 ## 9. 产品、财务与报表（10）
 
 ### 9.1 产品列表
@@ -891,7 +922,7 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 - **权限**：只读。
 - **Query**：`date_from`、`date_to`、`category`、`member_id`，均可选。
 - **响应**：`{ items: Transaction[]（最多1000）, total_amount }`。
-- `total_amount` 仅汇总结果中 `paid`、`refunded` 流水；`pending` 不计入。
+- `total_amount` 仅汇总 `cash_basis=true` 且状态为 `paid`、`refunded` 的记录；仅营收和待核销记录不计入。类别筛选 `private` 包含历史 `assessment`，`annual` 包含历史 `package`。
 
 ### 9.5 手工入账
 
@@ -899,15 +930,16 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 
 - **权限**：财务。
 - **Body**：`amount`（非零，必填）、`member_id`（可空）、`category`（默认 `misc`）、`payment_method`（默认 `cash`）、`note`。
-- **响应**：`kind=manual`、`status=paid` 的 Transaction。不会自动开卡或修改权益。
+- **入账选项**：`record_cash`、`revenue_mode=none|immediate|amortized`，至少选择流水或一种营收方式；均摊必须提供有效的 `revenue_start_on` 和 1–3650 天的 `revenue_days`。
+- **响应**：`kind=manual`、`status=paid` 的 Transaction。不会自动开卡或修改权益。仅入营收时 `cash_basis=false`，不影响现金实收。
 
 ### 9.6 退款
 
 #### POST /api/admin/transactions/{transaction_id}/refund
 
 - **权限**：财务；**Body**：`amount`（默认原单全额）、`note`。
-- **响应**：新建的负数 `refund` 流水。
-- 原单必须 `paid` 且金额为正；退款金额须大于 0 且不超过原单金额。
+- **响应**：新建的负数 `refund` 流水，继承原单的流水与营收设置。
+- 原单必须 `paid` 且金额为正，仅限 `purchase`、`upgrade`、`manual`；退款金额须大于 0 且不超过原单金额。
 - 原单改为 `refunded`，不能再次退款，部分退款同样如此。若关联会员卡且全额退款，卡状态改为 `cancelled`；不会返还历史已消耗次数，也不会自动删除预约。
 
 ### 9.7 核销购卡电子码
@@ -916,29 +948,27 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 
 - **权限**：前台；**Body**：`redemption_code`，自动去空格并转大写。
 - **响应**：`{ ok, card_id, order }`。
-- 通过条件更新抢占 `pending` 原单，避免并发重复核销；随后开卡、原单改为 `paid`、关联 `member_card_id` 并记录核销时间，不重复入账。
+- 通过条件更新抢占 `pending` 原单，避免并发重复核销；随后开卡、原单改为 `paid`、关联 `member_card_id` 并记录核销时间和入账人，不重复入账。年卡/套餐均摊从实际开卡日期开始。
 
 ### 9.8 综合经营报表
 
 #### GET /api/admin/reports
 
 - **权限**：只读；**Query**：`date_from`（默认本月 1 日）、`date_to`（默认今日）。
-- **响应**：`range`、`summary`、`amortized_revenue`、`private_recognized_revenue`、`revenue_by_category`、`course_stats`、`teacher_stats`、`weekday`、`hour`、`room_usage`。
+- **响应**：`range`、`summary`、`amortized_revenue`、`private_recognized_revenue`、`revenue_by_category`、`cash_by_category`、`course_stats`、`teacher_stats`、`weekday`、`hour`、`room_usage`。
 - `summary` 含 `revenue`（确认营收）、`cash_received`（现金实收）、`sessions`、`cancelled_sessions`、`attendees`、`booking_count`、`cancelled_bookings`。
-- 现金实收按查询范围内 `paid` / `refunded` 流水净额计算，含负数退款；待核销订单不计入。确认营收不等于现金实收：
-  - `category=annual|package|group` 且 `validity_days=365` 的产品，从卡 `starts_on` 起按 365 天直线分摊，取与查询范围重叠的天数；`amortized_revenue` 是这部分确认营收。
-  - 私教购买和升卡流水只计现金，不提前确认营收；有效私教消课按“卡实购价 ÷ 卡总次数”确认，计入 `private_recognized_revenue`。取消签到后记录不再处于已消课状态，因此不再计入。
-  - 其他已支付类别按流水发生时直接确认，退款负数流水按同一类别口径冲减。
-- `revenue_by_category` 是 `{ label, value }[]`；课程统计含 `sessions`、`cancelled`、`attendees`、`bookings`，教练统计另含 `minutes`、`hours`。
+- 现金实收只统计查询范围内 `cash_basis=true` 的 `paid` / `refunded` 记录净额；`cash_by_category` 与 `revenue_by_category` 分别展示流水和营收分类。
+- `revenue_mode=immediate` 在发生时全额确认；`amortized` 按 `revenue_start_on + revenue_days` 直线分摊，查询未来期间也会计算重叠天数；`none` 不确认营收。
+- 私教/评估购买只入流水，实际消课后通过 `consumption` 记录营收；`consumption_reversal` 负向冲销。历史 `legacy` 数据保持原 365 天分摊、私教自动消课和其他即时营收规则，避免重复计算。
 - `weekday.label` 为 0–6（周一至周日），`hour.label` 为两位小时；`value` 是实际到课人次。
-- 教室统计含 `used_hours`、`internal_hours`、`utilization`；利用率分母按范围内每天 12 小时计算。
+- 教室统计含 `used_hours`、`internal_hours`、`utilization`；利用率分母按范围内每天 07:00–20:00 的 13 小时计算。
 
 ### 9.9 编辑手工入账
 
 #### PATCH /api/admin/transactions/{transaction_id}
 
-- **权限**：财务；**Body**：`member_id`、`category`、`amount`、`payment_method`、`note` 任意子集。
-- **响应**：更新后的 Transaction。只允许 `kind=manual`，金额不能为 0；购买、升卡和退款流水返回 `404`。
+- **权限**：财务；**Body**：`member_id`、`category`、`amount`、`payment_method`、`note`、`record_cash`、`revenue_mode`、`revenue_start_on`、`revenue_days` 任意子集。
+- **响应**：更新后的 Transaction。只允许 `kind=manual` 且 `status=paid`，金额不能为 0；购买、升卡、退款及已退款手工单返回 `404`。修改后仍会校验流水/营收至少一项及均摊参数。
 
 ### 9.10 手工入账移入回收站
 
@@ -1237,6 +1267,7 @@ POST /api/admin/members/{member_id}/cards             -> 开卡 + purchase 流�
 POST /api/admin/sessions                              -> scheduled 排课
 POST /api/admin/sessions/{session_id}/bookings         -> booked，占 1 席，不扣次
 POST /api/admin/bookings/{booking_id}/check_in         -> completed，扣 1 次并返回到店提醒
+POST /api/admin/bookings/{booking_id}/revenue          -> 私教/评估：仅入营收，可选健身会员结账
 GET  /api/admin/members/{member_id}                    -> 核对卡、共享卡、预约、体验券和流水
 GET  /api/admin/reports                                -> 到课、现金实收与确认营收
 ```
@@ -1252,7 +1283,7 @@ GET  /api/admin/reports                                -> 到课、现金实收�
         POST /api/public/check-in/scan                      -> 会员扫码，本人预约消课
 ```
 
-误签到使用 `undo_check_in` 返回 `booked` 并返还权益，误预约使用 `cancel` 释放席位；不要通过直接调整剩余次数掩盖状态错误。新流程不需要再调用 `complete`，该动作仅为旧数据兼容保留。二维码重复签到是幂等操作，返回 `already_checked_in=true`，无需再调用撤销接口。
+误签到使用 `undo_check_in` 返回 `booked`、返还权益并自动冲销已入消课营收，误预约使用 `cancel` 释放席位；不要通过直接调整剩余次数掩盖状态错误。新流程不需要再调用 `complete`，该动作仅为旧数据兼容保留。二维码重复签到是幂等操作，返回 `already_checked_in=true`，无需再调用撤销接口。
 
 ### 14.3 电子码购卡闭环
 
@@ -1363,3 +1394,38 @@ const dashboard = await api("/api/admin/dashboard", {
 - **权限**：管理员登录会话；**Body**：无；**响应**：`{ ok, message }`。
 - 只有服务器确认删除时间已满 180 天才执行，提前返回 `400` 和可删除时间。外键关联未清理时返回 `409`。
 - 合同/评估附件会同时删除磁盘文件；其他业务记录删除后不可恢复，操作写入审计日志。
+
+
+## 15. 品牌 PDF 导出与账单（4）
+
+以下接口均返回 `application/pdf` 文件流和 `Cache-Control: no-store`，权限为只读；可使用员工 Bearer Token 或具备 `read` 范围的 API Key。PDF 使用场馆名称、地址、电话和已上传 Logo；未上传时使用系统默认品牌标识。表格采用 A4 横向、重复表头、交替行底色、筛选条件和页码，适合直接发送或打印。
+
+### 15.1 导出某日教室安排
+
+#### GET /api/admin/rooms/overview.pdf
+
+- **Query**：`date`（默认今日）、`floor` 可选。
+- 包含所选日期的团课、私教/评估、工作坊、培训及内部/公司/企业活动；列为课程/活动名称、类型、时间、教练、教室、预约人数和备注。
+- 预约人数显示“已约/容量”，内部占用不显示人数；按开始时间、教室和名称排序。
+
+### 15.2 导出财务流水 PDF
+
+#### GET /api/admin/transactions.pdf
+
+- **Query**：`date_from`、`date_to`、`category`、`member_id`，与流水列表一致。
+- 包含编号/时间、会员、类别、业务、入账类型、结账方式、金额、状态和备注，并区分流水、流水+营收、营收、每日均摊及营收冲销。
+
+### 15.3 导出经营分析 PDF
+
+#### GET /api/admin/reports.pdf
+
+- **Query**：`date_from`（默认本月 1 日）、`date_to`（默认今日），开始日期不能晚于结束日期。
+- 包含流水与营收汇总、分类汇总、课程经营、教练课时、教室使用及到课时段表格。
+
+### 15.4 导出账单小票 PDF
+
+#### GET /api/admin/transactions/{transaction_id}/receipt.pdf
+
+- **响应**：单页 **75 × 145 mm** 小票；待核销或已取消记录返回 `400`。
+- 包含 Octave/自定义品牌 Logo、健康管理 Wellness、日期时间、项目、金额、入账类型、客户、结账方式、备注、入账人、6% 增值税与去税金额、签字栏及场馆地址电话。
+- 去税金额按“含税金额 ÷ 1.06”计算，增值税为含税金额减去去税金额；退款或冲销记录以负数展示。

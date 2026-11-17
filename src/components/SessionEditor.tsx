@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Field, Notice } from "@/components/AdminUI";
+import { SearchableCourseSelect } from "@/components/SearchableCourseSelect";
 import { Modal } from "@/components/UI";
 import { useLanguage } from "@/context/LanguageContext";
 import { apiFetch } from "@/lib/api";
@@ -102,7 +103,7 @@ export function SessionEditor({ meta, session, initial = {}, courseType = "", on
     <Modal wide title={session ? local("编辑排课", "Edit class") : local("新建排课", "Schedule class")} onClose={onClose}>
       <form className="form-grid two-columns" onSubmit={save}>
         {(error || roomError) && <div className="span-two"><Notice error message={error || roomError}/></div>}
-        <Field label={local("课程 / 服务", "Class / service")}><select required value={form.course_id} onChange={(event) => update("course_id", event.target.value)}>{courses.map((course) => <option key={course.id} value={course.id}>{local(course.name, course.name_en)} · {local(course.course_type === "group" ? "团课" : course.course_type === "private" ? "私教" : course.course_type === "workshop" ? "工作坊" : "评估", course.course_type)}</option>)}</select></Field>
+        <Field label={local("课程 / 服务", "Class / service")} hint={local("输入首字或关键词即可筛选；选择区域与下方教练字段分开显示", "Type to filter classes; the selector is visually separated from instructor")}><SearchableCourseSelect courses={courses} value={form.course_id} onChange={(value) => update("course_id", value)}/></Field>
         <Field label={local("上课日期", "Class date")}><input required type="date" value={form.session_date} onChange={(event) => update("session_date", event.target.value)}/></Field>
         <Field label={local("开始时间", "Start time")}><input required type="time" step={900} value={form.start_time} onChange={(event) => update("start_time", event.target.value)}/></Field>
         <Field label={local("结束时间", "End time")} hint={local("按课程时长自动带出，可手动调整", "Based on class duration; editable")}><input required type="time" step={900} value={form.end_time} onChange={(event) => update("end_time", event.target.value)}/></Field>

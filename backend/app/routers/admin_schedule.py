@@ -340,6 +340,28 @@ def update_course(course_id: int, payload: dict = Body(...), db: Session = Depen
     return course_dict(row)
 
 
+@router.post("/courses/{course_id}/image")
+def upload_course_image(course_id: int, file: UploadFile = File(...), db: Session = Depends(get_db), user: User = Depends(require_admin)):
+    row = db.get(Course, course_id)
+    if not row or row.deleted_at is not None:
+        raise HTTPException(404, "课程不存在")
+    raw = file.file.read(6 * 1024 * 1024 + 1)
+    if len(raw) > 6 * 1024 * 1024:
+        raise HTTPException(400, "课程图片不能超过 6MB")
+    extension = Path(file.filename or "").suffix.lower()
+    valid = (extension == ".png" and raw.startswith(b"\x89PNG\r\n\x1a\n")) or (extension in {".jpg", ".jpeg"} and raw.startswith(b"\xff\xd8")) or (extension == ".webp" and raw[:4] == b"RIFF" and raw[8:12] == b"WEBP")
+    if not valid:
+        raise HTTPException(400, "仅支持 PNG、JPG 或 WebP 图片")
+    directory = UPLOAD_DIR / "courses"
+    directory.mkdir(parents=True, exist_ok=True)
+    stored_name = f"course-{course_id}-{uuid.uuid4().hex}{extension}"
+    (directory / stored_name).write_bytes(raw)
+    row.image_url = f"/uploads/courses/{stored_name}"
+    audit(db, user, "catalog", "upload_image", "course", course_id, {"size_bytes": len(raw)})
+    db.commit()
+    return course_dict(row)
+
+
 @router.post("/rooms")
 def create_room(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_admin)):
     data = clean_payload(payload, ROOM_FIELDS)

@@ -32,3 +32,20 @@ export async function downloadFile(path: string, filename: string, tokenKind: To
   anchor.click();
   URL.revokeObjectURL(url);
 }
+
+
+export async function viewFile(path: string, tokenKind: TokenKind = "staff") {
+  const preview = window.open("", "_blank");
+  if (!preview) throw new Error("请允许浏览器打开新窗口后重试");
+  const token = getToken(tokenKind);
+  try {
+    const response = await fetch(path, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    if (!response.ok) throw new Error(await response.text());
+    const url = URL.createObjectURL(await response.blob());
+    preview.location.href = url;
+    window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch (error) {
+    preview.close();
+    throw error;
+  }
+}

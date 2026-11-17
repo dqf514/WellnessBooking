@@ -46,7 +46,17 @@ def ensure_schema():
             "rooms": {"floor": "VARCHAR(30) DEFAULT '1F'", "sort_order": "INTEGER DEFAULT 0"},
             "bookings": {"experience_voucher_id": "INTEGER REFERENCES experience_vouchers(id)"},
             "member_documents": {"category": "VARCHAR(24) DEFAULT 'contract'"},
-            "transactions": {"cancelled_at": "DATETIME", "cancelled_by": "VARCHAR(80) DEFAULT ''"},
+            "transactions": {
+                "cancelled_at": "DATETIME",
+                "cancelled_by": "VARCHAR(80) DEFAULT ''",
+                "booking_id": "INTEGER REFERENCES bookings(id)",
+                "cash_basis": "BOOLEAN DEFAULT 1",
+                "revenue_mode": "VARCHAR(24) DEFAULT 'legacy'",
+                "revenue_start_on": "VARCHAR(10) DEFAULT ''",
+                "revenue_days": "INTEGER DEFAULT 0",
+                "revenue_sequence": "INTEGER DEFAULT 0",
+                "created_by": "VARCHAR(80) DEFAULT ''",
+            },
         }
         soft_delete_tables = {"users", "members", "teachers", "rooms", "courses", "class_sessions", "card_products", "member_cards", "bookings", "member_card_shares", "experience_vouchers", "member_reminders", "room_reservations", "member_records", "member_documents", "transactions", "api_keys"}
         for table in soft_delete_tables:
@@ -67,3 +77,4 @@ def ensure_booking_constraints():
         return
     with engine.begin() as connection:
         connection.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ux_bookings_active_member_session ON bookings(session_id, member_id) WHERE status IN ('booked', 'checked_in', 'completed', 'no_show')"))
+        connection.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ux_transactions_booking_revenue_sequence ON transactions(booking_id, revenue_sequence, kind) WHERE booking_id IS NOT NULL AND kind IN ('consumption', 'consumption_reversal')"))

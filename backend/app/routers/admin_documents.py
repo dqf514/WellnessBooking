@@ -90,6 +90,17 @@ def delete_document(document_id: int, db: Session = Depends(get_db), user: User 
     return move_to_recycle(db, "documents", document_id, user)
 
 
+@router.get("/documents/{document_id}/view")
+def view_document(document_id: int, db: Session = Depends(get_db), _: User = Depends(require_read)):
+    row = db.get(MemberDocument, document_id)
+    if not row or row.deleted_at is not None:
+        raise HTTPException(404, "文件不存在")
+    path = UPLOAD_DIR / row.stored_name
+    if not path.exists():
+        raise HTTPException(404, "文件已被移除")
+    return FileResponse(path, media_type=row.content_type, filename=row.original_name, content_disposition_type="inline")
+
+
 @router.get("/documents/{document_id}/download")
 def download_document(document_id: int, db: Session = Depends(get_db), _: User = Depends(require_read)):
     row = db.get(MemberDocument, document_id)

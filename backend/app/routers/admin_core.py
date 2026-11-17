@@ -116,6 +116,8 @@ def update_member(member_id: int, payload: dict = Body(...), db: Session = Depen
 
 @router.post("/members/{member_id}/cards")
 def purchase_card(member_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+    from ..finance_service import resolve_entry_options, resolve_revenue_details
+
     member = db.get(Member, member_id)
     product = db.get(CardProduct, int(payload.get("product_id", 0)))
     if not member or member.deleted_at is not None or not product or product.deleted_at is not None:
@@ -124,8 +126,15 @@ def purchase_card(member_id: int, payload: dict = Body(...), db: Session = Depen
     if price < 0:
         raise HTTPException(400, "购买价格不能为负数")
     starts_on = valid_date(str(payload.get("starts_on") or today()), "开卡日期")
-    card = issue_card(db, member=member, product=product, price=price, payment_method=str(payload.get("payment_method", "cash")), starts_on=starts_on, note=str(payload.get("note", "")))
-    audit(db, user, "member_card", "purchase", "member_card", card.id, {"member_id": member_id, "product_id": product.id, "price": price})
+    record_cash, revenue_mode = resolve_entry_options(payload, product)
+    revenue_start_on, revenue_days = resolve_revenue_details(payload, revenue_mode, starts_on, product.validity_days)
+    entry_payload = {**payload, "revenue_start_on": revenue_start_on, "revenue_days": revenue_days}
+    card = issue_card(db, member=member, product=product, price=price, payment_method=str(payload.get("payment_method", "cash")), starts_on=starts_on, note=str(payload.get("note", "")), record_cash=record_cash, revenue_mode=revenue_mode, created_by=user.full_name or user.username)
+    transaction = db.query(Transaction).filter(Transaction.member_card_id == card.id, Transaction.kind == "purchase").first()
+    if transaction:
+        transaction.revenue_start_on = entry_payload["revenue_start_on"]
+        transaction.revenue_days = entry_payload["revenue_days"]
+    audit(db, user, "member_card", "purchase", "member_card", card.id, {"member_id": member_id, "product_id": product.id, "price": price, "record_cash": record_cash, "revenue_mode": revenue_mode})
     db.commit()
     return card_dict(card)
 

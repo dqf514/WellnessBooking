@@ -233,6 +233,10 @@ def transition_booking(db: Session, booking: Booking, action: str, actor_name: s
         booking.member.no_show_blocked_until = add_days(today(), days)
     else:
         raise HTTPException(400, "不支持的预约操作")
+    if action in {"undo_check_in", "cancel"}:
+        from .finance_service import reverse_booking_revenue
+
+        reverse_booking_revenue(db, booking, actor_name)
     db.flush()
     return booking
 
