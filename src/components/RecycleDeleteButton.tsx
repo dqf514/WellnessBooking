@@ -4,7 +4,7 @@ import { Icon, Modal } from "@/components/UI";
 import { useLanguage } from "@/context/LanguageContext";
 import { apiFetch } from "@/lib/api";
 
-export function RecycleDeleteButton({ resource, id, label, onDeleted, className = "text-button danger", disabled = false }: { resource: string; id: number; label: string; onDeleted: () => void | Promise<void>; className?: string; disabled?: boolean }) {
+export function RecycleDeleteButton({ resource, id, label, onDeleted, className = "text-button danger delete-button", disabled = false }: { resource: string; id: number; label: string; onDeleted: () => void | Promise<void>; className?: string; disabled?: boolean }) {
   const { local } = useLanguage();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);

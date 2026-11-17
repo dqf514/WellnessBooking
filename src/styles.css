@@ -680,3 +680,115 @@ input[type="number"] { -moz-appearance: textfield; }
   .course-image-preview { width: 100%; height: 180px; }
   .searchable-options button { align-items: flex-start; flex-direction: column; gap: 4px; }
 }
+
+.delete-button, .table-actions .button, .table-actions .text-button, .course-item-actions .text-button { flex: 0 0 auto; white-space: nowrap; word-break: keep-all; overflow-wrap: normal; }
+.delete-button svg, .table-actions svg, .course-item-actions svg { flex: 0 0 auto; }
+.table-actions { align-items: center; flex-wrap: nowrap; gap: 6px; min-width: max-content; }
+.course-library-list article { grid-template-columns: 5px minmax(0, 1fr) auto; }
+.course-library-list article .course-item-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: nowrap; gap: 7px; min-width: max-content; white-space: nowrap; }
+.course-item-actions .badge { flex: 0 0 auto; }
+.product-admin-card header .table-actions, .catalog-card header .table-actions { min-width: 0; }
+.profile-cards .table-actions { min-width: max-content; }
+.api-key-row-actions { flex-wrap: nowrap; min-width: max-content; }
+.api-key-row-actions .text-button { white-space: nowrap; }
+
+.admin-shell .badge, .modal .badge { font-size: 12px; white-space: nowrap; }
+.admin-shell .view-public { font-size: 13px; }
+.sidebar-user strong { font-size: 13px; }
+.sidebar-user small { font-size: 11px; }
+.button-small { font-size: 14px; }
+:is(.admin-content, .modal) .data-table { font-size: 15px; }
+:is(.admin-content, .modal) .data-table th { font-size: 12px; }
+:is(.admin-content, .modal) .data-table small,
+:is(.admin-content, .modal) .member-cell small,
+:is(.admin-content, .modal) .course-cell + small { font-size: 12px; }
+:is(.admin-content, .modal) .data-table td::before { font-size: 12px; }
+:is(.admin-content, .modal) .table-actions .text-button { font-size: 14px; }
+:is(.admin-content, .modal) .form-help { font-size: 13px; }
+:is(.admin-content, .modal) .field > span { font-size: 14px; }
+:is(.admin-content, .modal) .field > small { font-size: 12px; }
+.admin-content .metric-card > div { font-size: 13px; }
+.admin-content .metric-card p { font-size: 12px; }
+.admin-content .timeline-row p, .admin-content .recent-list p, .admin-content .recent-list time { font-size: 12px; }
+.admin-content .product-admin-card > p, .admin-content .product-admin-card dl > div { font-size: 13px; }
+.admin-content .benefit-tags span { font-size: 12px; }
+.admin-content .catalog-card { font-size: 14px; }
+.admin-content .catalog-card small { font-size: 12px; }
+.profile-cards > article { font-size: 14px; }
+.profile-cards article small { font-size: 12px; }
+.profile-cards > header > span { font-size: 12px; }
+.profile-summary .profile-note { font-size: 13px; }
+.record-list article > span, .record-list article > small { font-size: 12px; }
+.record-list p { font-size: 13px; }
+.documents-list h3 { font-size: 16px; }
+.documents-list article strong { font-size: 14px; }
+.course-library-list article small { font-size: 13px; }
+.course-library-list article .course-item-actions .text-button { font-size: 14px; }
+.schedule-class > span { font-size: 12px; }
+.schedule-class > strong { font-size: 14px; }
+.schedule-class > small { font-size: 12px; }
+.time-axis > span { font-size: 12px; }
+.room-column > header strong { font-size: clamp(11px, .9vw, 14px); }
+.room-column > header span { font-size: 11px; }
+.room-block { font-size: 11px; }
+.room-block > span { font-size: clamp(10px, .72vw, 11px); }
+.room-block strong { font-size: clamp(11px, .8vw, 13px); }
+.room-block small { font-size: 11px; }
+.room-legend span { font-size: 12px; }
+.settings-panel > header p, .settings-action-row > p { font-size: 13px; }
+.sms-info p { font-size: 12px; }
+.log-detail { font-size: 12px; }
+.api-key-mask { font-size: 12px; }
+.api-key-table td > small, .api-log-table td > small { font-size: 12px; }
+.scope-chip { font-size: 12px; }
+.scope-options strong { font-size: 13px; }
+.scope-options small { font-size: 12px; }
+.report-summary span { font-size: 13px; }
+.report-summary small { font-size: 12px; }
+.chart-block h3 { font-size: 14px; }
+.bar-chart small, .bar-value { font-size: 12px; }
+.horizontal-bars, .horizontal-bars strong { font-size: 12px; }
+.revenue-breakdown > div { font-size: 14px; }
+.room-usage-list { font-size: 13px; }
+.entry-option-grid small { font-size: 12px; }
+.searchable-options button small { font-size: 12px; }
+
+@media (max-width: 960px) {
+  .table-actions { flex-wrap: wrap; min-width: 0; }
+  .course-library-list article .course-item-actions { flex-wrap: nowrap; }
+  .profile-cards .table-actions { min-width: 0; }
+}
+
+@media (max-width: 700px) {
+  :is(.admin-content, .modal) .data-table { font-size: 15px; }
+  .room-block strong { font-size: 15px; }
+  .room-block small { font-size: 12px; }
+  .profile-cards article small { font-size: 12px; }
+}
+
+.profile-cards article > .table-actions, .documents-list article > .table-actions, .voucher-list article > .table-actions, .record-list article > .table-actions { display: flex; align-items: center; flex-wrap: nowrap; gap: 6px; }
+@media (max-width: 960px) {
+  .profile-cards article > .table-actions, .documents-list article > .table-actions, .voucher-list article > .table-actions, .record-list article > .table-actions { flex-wrap: wrap; }
+}
+
+.brand small { font-size: 10px; }
+.admin-shell .language-toggle { font-size: 12px; }
+.sidebar-user small { font-size: 12px; }
+.dashboard-note p { font-size: 12px; }
+.time-axis header { font-size: 12px; }
+.week-day > header span { font-size: 12px; }
+.no-class { color: var(--muted); font-size: 12px; }
+.add-class-link { font-size: 12px; }
+.finance-total span { font-size: 13px; }
+.finance-total p { font-size: 12px; }
+.room-usage-list > div > div { font-size: 13px; }
+.room-usage-list small { font-size: 12px; }
+.admin-content .catalog-card > p, .admin-content .catalog-card > span, .admin-content .catalog-card > small { font-size: 12px; }
+.benefit-editor header p { font-size: 12px; }
+.debug-output { font-size: 12px; }
+.room-block > span, .room-block strong, .room-block small { font-size: 12px; }
+
+.room-column > header strong { font-size: clamp(12px, .95vw, 14px); }
+.room-column > header span { font-size: 12px; }
+.horizontal-bars > div, .horizontal-bars strong { font-size: 12px; }
+.revenue-breakdown small { font-size: 12px; }
