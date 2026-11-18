@@ -456,28 +456,75 @@
 
 ---
 
-## 十四、教室总览全屏大屏视图与两行排课块（2026-11-18）
+## 十四、教室总览全屏大屏视图与自适应排课块（2026-11-18）
 
 ### 1. 全屏排课表
 
-- 新增 `src/components/RoomScheduleBoard.tsx`：通过 `createPortal` 挂到 `document.body`，全屏铺满视口（`.room-board`），标题栏只保留标题、日期、操作提示与关闭按钮。
+- 新增 `src/components/RoomScheduleBoard.tsx`：通过 `createPortal` 挂到 `document.body`，全屏铺满视口（`.room-board`），标题栏保留标题、居中的日期与时钟、操作提示与关闭按钮。
 - 布局按可用空间自适应：`.room-board-body` 为 `grid-template-columns: 52px minmax(0, 1fr)`，列宽 `roomWidth = floor((bodyWidth - 52) / 教室数)`，行高 `hourHeight = floor((bodyHeight - 30) / 小时数)`，分别写入 CSS 变量 `--board-room-width` 与内联高度，保证所有教室与 07:00–22:00 全部落在视口内，无需横向或纵向滚动。
 - 键盘：`document` 上的 `keydown` 监听 `ArrowLeft` / `ArrowRight` 切换日期（复用 `addDays`）、`Escape` 关闭；打开时给 `body` 加 `room-board-open` 类以锁定页面滚动，卸载时移除。
 - 打印：`@media print` 中隐藏 `#root`、把 `.room-board` 改为静态定位、列宽改为 `minmax(0, 1fr)` 均分，并声明 `@page { size: A3 landscape; margin: 8mm }`，实测 `Page.printToPDF` 输出单页 A3 横向（1191×842pt）。
 - 入口：`RoomsPage` 日期导航行右侧新增 `.room-board-trigger`（`Icon name="expand"`，图标在 `src/components/UI.tsx` 补充），`≤700px` 时隐藏（移动端为分页卡片视图，不提供大屏）。
 - `RoomsPage` 新增 `shiftDate(delta)`，全屏下的前后翻日不与移动端的“翻页”逻辑冲突。
 
-### 2. 两行排课块
+### 2. 浏览器全屏（等同 F11）
 
-- `RoomsPage.blockStyle()` 由按时长计算高度改为固定 34px（两行文字），`top` 仍按开始时间定位。
-- 课程块与教室占用块各删掉第三行 `<small>`（教练/预约人数、占用类别），只保留时间段与主题；完整信息移到 `title` 属性，悬停可见。
-- 样式侧：`.room-block` 去掉 `min-height`、内边距收到 2px 6px，`strong` 取消 `-webkit-line-clamp` 改为单行省略号，`.room-block > span` 同样单行省略。
+- 新增导出函数 `requestBoardFullscreen()`：调用 `document.documentElement.requestFullscreen()`，失败时静默降级（`.catch(() => {})`）为整页浮层，不影响大屏本身。
+- 组件内监听 `fullscreenchange`：进入全屏后浏览器地址栏与工具栏自动隐藏；退出全屏时同步关闭大屏；组件卸载时若仍处于全屏则调用 `exitFullscreen()` 还原。
+- 样式补充 `html:fullscreen, html:fullscreen body { overflow: hidden; background: #fff; }`，避免全屏时出现滚动条与白边。
+- 说明：自动化浏览器 profile 未授予 Fullscreen 权限（`Runtime.evaluate` 报 “Permissions check failed”，真实 CDP 鼠标点击同样被拒），因此该路径只能在真实浏览器中验证，代码保留降级兜底。
 
-### 3. 验证
+### 3. 居中日期与实时时钟
+
+- 标题栏改为 `grid-template-columns: 1fr auto 1fr` 三列：左侧标题、中间日期 + 时钟、右侧提示与关闭按钮；`.room-board-title` 用 `justify-self: start`，`.room-board-tools` 用 `justify-self: end`。
+- 新增 `useClock()`：`setInterval` 每秒更新 `new Date()`，卸载时清理定时器；显示格式 `HH:MM:SS`，`.room-board-clock` 字号 32px、日期 22px。
+- 星期由 `new Date(`${date}T00:00:00`).getDay()` 映射到 `WEEKDAYS`。
+
+### 4. 排课块高度覆盖时间段 + 文字随格子自适应
+
+- `RoomsPage.blockStyle()` 与 `RoomScheduleBoard.sizeOf()` 均改为按 `结束时间 - 开始时间` 计算高度（`Math.max(26/24, 时长 / 60 * 行高)`），`top` 仍按开始时间定位。
+- 样式侧使用 **CSS 容器查询**：`container-type: size` 让排课块成为独立容器，字号用 `cqh` / `cqw` 单位取小值自适应（`max(10px, min(30cqh, 12cqw))` 与 `max(12px, min(42cqh, 20cqw))`），并以 flex 垂直居中、单行省略号收尾。
+- 需注意 CSS 层叠：文件后段的 `.room-block > span { font-size: 12px }` 等同优先级规则会覆盖新规则，已删除/改写；`noUnusedLocals` 下 `tsc -b` 是唯一质量闸门。
+
+### 5. 左侧时间刻度对齐修复
+
+- 原 `.time-axis > span` 用绝对定位相对 `.time-axis` 定位，而 `.time-axis` 含 78px 表头，导致刻度整体上移约一小时（实测标签 450.39px vs 网格线 516.39px）。
+- 改为新增 `.time-axis-track` 容器（`height: 900px`）承载刻度，`.time-axis-track > span` 相对该容器定位并 `translateY(-6px)`，与网格线、课程块严格对齐；`≤700px` 媒体查询同步调整字号与右偏移。
+
+### 6. 验证
 
 - `npm run build`（`tsc -b` + `vite build`）通过。
-- CDP 脚本核对：全屏打开后 `ArrowRight` 日期由 2026-11-18 变为 2026-11-19、`ArrowLeft` 还原、`Escape` 关闭且 `body` 类名复位。
+- CDP 脚本核对：全屏打开后 `ArrowRight` 日期由 2026-11-18 变为 2026-11-19、`ArrowLeft` 还原、`Escape` 关闭且 `body` 类名复位；时钟从 `14:44:45` 走到 `14:47`，再次采样从 `14:48:45` 走到 `14:48:47`。
+- 字体测量：普通排课块 60px×93px 对应 `span` 11.7px / `strong` 16.38px；大屏排课块 55px×83px 对应 `span` 10px / `strong` 14px。
 - 截图核对：1600px 下 17 间教室全部可见且无滚动条；打印媒体模拟与 `printToPDF` 均只输出排课表本身（无后台侧边栏与工具栏）。
 - 验证用临时教室、当日课程与占用记录已在核对完成后从 `backend/data/wellness.db` 删除，数据库恢复原状。
+
+---
+
+## 十五、经营概览今日安排与教室大屏直达（2026-11-18）
+
+### 1. 后端数据复用
+
+- 无需新增接口：概览面板直接复用 `GET /api/admin/rooms/overview?date=YYYY-MM-DD`（已具备 `require_catalog_view` 能力门），返回的 `rooms[]` 含 `sessions[]` 与 `reservations[]`。
+- `DashboardPage` 新增 `OverviewRoom` / `RoomReservation` / `TimelineItem` 三个本地类型，`USAGE_TYPES` 映射 `internal` / `company` / `enterprise` 三种教室占用类型到中文名、标签色调与色值。
+
+### 2. 今日安排面板
+
+- 面板标题由“今日课程”改为“今日安排”，`timeline` 用 `useMemo` 把 `data.upcoming` 的课程与 `overview[].reservations` 的教室占用合并，按 `start_time` 再按 `end_time` 排序。
+- 课程条目渲染为 `<Link to="/admin/bookings">`，教室占用渲染为只读 `<div class="timeline-row reservation">`（`cursor: default`），避免误触。
+- 徽标：课程显示 `已约/容量`（余位为 0 时红色），教室占用显示类型标签（琥珀/蓝色）。
+- 文案补入 `src/lib/adminTranslations.ts`（“今日安排”“打开教室大屏”），英文回退查 `adminTranslations` → `adminMessages`。
+
+### 3. “完整课表”直达教室大屏
+
+- 面板右上角新增 `.panel-action` 按钮（原为无按钮的静态标题），点击时 `setBoardOpen(true)` 并调用 `requestBoardFullscreen()`。
+- 大屏数据按 `boardDate` 独立拉取：`useEffect` 依赖 `[boardOpen, boardDate]`，左右方向键切日时自动按新日期重新请求 `/api/admin/rooms/overview`。
+- `RoomScheduleBoard` 组件本身可复用，教室总览页与经营概览页共用同一实现。
+
+### 4. 验证
+
+- `npm run build` 通过。
+- CDP 核对：经营概览渲染 12 行，其中 4 行为教室占用，徽标分别为“内部使用 / 公司活动 / 企业活动”；点击“完整课表”后大屏打开，含 17 间教室、68 个排课块。
+- 截图：`public/changelog-2026-11-18/32-room-board.jpg`、`33-rooms-blocks.jpg`、`34-dashboard-schedule.jpg`。
 
 
