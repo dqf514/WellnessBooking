@@ -836,3 +836,25 @@ input[type="number"] { -moz-appearance: textfield; }
 .sidebar-quick-btn:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.24); color: #fff; }
 .sidebar-quick-btn svg { transform: none; }
 @media (max-width: 760px) { .sidebar-quick { justify-content: flex-start; } .sidebar-quick-btn { width: 44px; height: 44px; } }
+
+/* 系统设置 · 更新日志：版本卡片 + 按日期分界的时间线 */
+.changelog-version { display: flex; align-items: center; flex-wrap: wrap; gap: 26px; padding: 20px 23px; }
+.changelog-version > div { display: grid; gap: 5px; min-width: 132px; }
+.changelog-version small { color: var(--muted); font-size: 11px; letter-spacing: .08em; }
+.changelog-version strong { color: var(--pine-950); font-family: var(--font-display); font-size: 22px; font-weight: 600; }
+.changelog-version span { color: var(--muted); font-size: 12px; }
+.changelog-version .button { margin-left: auto; }
+.changelog-timeline { display: grid; gap: 14px; margin: 0; padding: 0; list-style: none; }
+.changelog-timeline > li { display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 16px; align-items: start; }
+.changelog-marker { display: grid; gap: 4px; padding-top: 16px; text-align: right; }
+.changelog-marker strong { color: var(--pine-950); font-family: var(--font-display); font-size: 16px; font-weight: 600; }
+.changelog-marker span { color: var(--sage-500); font-size: 11px; letter-spacing: .06em; }
+.changelog-release { padding: 20px 23px; }
+.changelog-release h3 { margin: 0 0 6px; color: var(--pine-950); font-family: var(--font-display); font-size: 19px; font-weight: 600; }
+.changelog-summary { margin: 0 0 16px; color: var(--muted); font-size: 13px; line-height: 1.9; }
+.changelog-group + .changelog-group { margin-top: 16px; padding-top: 15px; border-top: 1px dashed var(--line); }
+.changelog-group h4 { margin: 0 0 8px; color: var(--pine-700); font-size: 13px; font-weight: 600; }
+.changelog-group ul { margin: 0; padding-left: 19px; }
+.changelog-group li { color: var(--ink); font-size: 13px; line-height: 1.95; }
+.changelog-group li::marker { color: var(--sage-500); }
+@media (max-width: 860px) { .changelog-timeline > li { grid-template-columns: 1fr; } .changelog-marker { display: flex; align-items: baseline; gap: 8px; padding-top: 0; text-align: left; } .changelog-version { gap: 16px; } .changelog-version .button { margin-left: 0; } }

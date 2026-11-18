@@ -356,3 +356,18 @@
 - `styles.css`：新增 `.sidebar-quick` / `.sidebar-quick-btn` 样式（深色底 40×40 方钮、悬停高亮、移动端 44×44）。
 
 **验证：** `npm run build`（`tsc -b` + `vite build`）通过；桌面端与 432px 手机端均已截图核对。
+
+---
+
+## 十、系统设置“更新日志”页（2026-11-18）
+
+### 1. 数据与组件
+
+- 新增 `src/lib/changelog.ts`：版本常量（`APP_VERSION` / `APP_RELEASE_DATE` / `API_VERSION` / `API_ENDPOINT_COUNT`）与结构化更新日志（`changelogReleases`，按日期为分界，每条含版本号、概述与分组要点，中英双语）。
+- 新增 `src/pages/admin/settings/ChangelogSettings.tsx`：版本卡片 + 按日期分界的时间线，右上角链接到完整图文说明页 `/changelog-2026-11-18.html`。
+- `SettingsPage.tsx` 新增 `changelog` 标签页（“更新日志”），位于“操作日志”之后。
+- `src/styles.css` 新增 `.changelog-version` / `.changelog-timeline` / `.changelog-release` / `.changelog-group` 样式，窄屏下时间线转为单列。
+- `src/lib/adminTranslations.ts` 补入“更新日志 / 当前版本 / 接口版本 / 更新批次 / 查看完整图文更新说明”等后台文案的中英映射。
+- `package.json` 版本号由 1.0.0 提升为 1.1.0；API 契约版本仍为 v1.0.0（无破坏性变更，接口总数仍为 125）。
+
+**验证：** `npm run build`（`tsc -b` + `vite build`）通过；后台“系统设置 → 更新日志”已截图核对中英文渲染。
