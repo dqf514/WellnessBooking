@@ -1,8 +1,8 @@
 # 音昱 Wellness API 对接文档
 
-> 版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 **120 个 HTTP 接口**。
+> 版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 **125 个 HTTP 接口**。
 >
-> 文档更新：2026-11-11 · 功能基线：预约排课、动态二维码签到、购卡申请取消、会员权益与营收业务闭环。
+> 文档更新：2026-11-18 · 功能基线：预约排课、动态二维码签到、购卡申请取消、会员权益与营收业务闭环、角色能力矩阵与课程库独立接口。
 >
 > 在线交互文档：`/docs`（Swagger UI）、`/redoc`（ReDoc）；原始 OpenAPI 3 定义：`/openapi.json`。接口路径、方法、参数和实时响应结构以同版本 `/openapi.json` 为最终依据。
 
@@ -37,19 +37,52 @@ Authorization: Bearer <access_token>
 
 Token 类型为 JWT，签名算法 HS256；有效期默认 10080 分钟（7 天），可由服务端 `ACCESS_TOKEN_EXPIRE_MINUTES` 修改。员工 Token 的主题是 `staff:<用户ID>`，会员 Token 的主题是 `member:<会员ID>`，两者不能混用。修改密码不会主动吊销已签发 Token；停用账号后，下一次鉴权会失败。
 
-| 文档权限标记 | 可访问角色 / 身份 |
-| --- | --- |
-| 公开 | 不需要 Token |
-| 会员 | 有效会员 Token |
-| 员工 | 任意有效员工 Token，用于 `/api/auth/me`、修改自己的密码 |
-| 只读 | `admin`、`frontdesk`、`finance`、`teacher`、`viewer` |
-| 前台 | `admin`、`frontdesk` |
-| 财务 | `admin`、`finance` |
-| 管理员 | 仅 `admin` |
+| 文档权限标记 | 对应能力 | 可访问角色 / 身份 |
+| --- | --- | --- |
+| 公开 | — | 不需要 Token |
+| 会员 | — | 有效会员 Token |
+| 员工 | — | 任意有效员工 Token，用于 `/api/auth/me`、修改自己的密码 |
+| 只读 | `dashboard.view`、`bookings.view`、`members.view`、`catalog.view` | `admin`、`frontdesk`、`finance`、`teacher`、`viewer` |
+| 前台 | `bookings.write`、`members.write`、`cards.write`、`records.write` | `admin`、`frontdesk` |
+| 财务 | `products.write`、`finance.write` | `admin`、`finance` |
+| 管理员 | `settings.write` | 仅 `admin` |
 
 权限在服务端强制执行，隐藏前端菜单并不等于接口授权。`teacher` 和 `viewer` 虽可读取业务数据，但不能执行写操作。
 
-### 1.4 API Key 接入鉴权
+### 1.4 角色能力矩阵
+
+服务端按“能力”而不是“角色名”判断权限。`backend/app/permissions.py` 是全系统唯一的角色→能力定义处，后台菜单、路由守卫、按钮显隐与接口鉴权共用同一份矩阵。登录响应与 `GET /api/auth/me` 会在 `user.capabilities` 中下发当前账号实际拥有的能力，调用方可据此渲染界面。
+
+| 能力 | 说明 | 管理员 | 财务 | 前台 | 教练 | 只读 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `dashboard.view` | 查看今日课程、预约与本月营收概览 | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `bookings.view` | 查看团课、私教与工作坊的预约名单 | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `bookings.write` | 新建排课、代客预约、签到、取消与爽约处理 | ✓ | — | ✓ | — | — |
+| `members.view` | 查看会员档案、卡权益与跟进记录 | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `members.write` | 新建与修改会员资料、附件与爽约限制 | ✓ | — | ✓ | — | — |
+| `records.write` | 书写私教与跟进记录 | ✓ | — | ✓ | ✓ | — |
+| `cards.write` | 延期、冻结、转卡、共享与体验券管理 | ✓ | — | ✓ | — | — |
+| `revenue.write` | 购卡、升额、电子码核销与消课营收确认 | ✓ | ✓ | ✓ | — | — |
+| `catalog.view` | 查看课程、教练与教室目录 | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `catalog.write` | 维护课程、教练与教室资料 | ✓ | — | — | — | — |
+| `products.view` | 查看卡课产品与价格 | ✓ | ✓ | ✓ | — | ✓ |
+| `products.write` | 新建与修改卡课产品 | ✓ | ✓ | — | — | — |
+| `finance.view` | 查看收支流水与对账单 | ✓ | ✓ | — | — | ✓ |
+| `finance.write` | 手工入账、修改与退款 | ✓ | ✓ | — | — | — |
+| `reports.view` | 查看经营报表与营收构成 | ✓ | ✓ | ✓ | — | ✓ |
+| `recycle.write` | 将数据移入回收站 | ✓ | ✓ | ✓ | — | — |
+| `recycle.view` | 查看与恢复回收站数据 | ✓ | — | — | — | — |
+| `settings.view` | 查看账号、短信、密钥与日志 | ✓ | — | — | — | — |
+| `settings.write` | 维护账号、短信、品牌与系统设置 | ✓ | — | — | — | — |
+
+要点：
+
+- 移入回收站按资源类型校验，只能删除自己具备写入能力的资源（见第 16 节）；读取回收站、恢复和彻底删除仅管理员可用。
+- API Key 的实际权限是“密钥 scopes”与“创建人当前角色能力”的交集，两者任一不满足即返回 `403`。
+- 少数入口按“满足其中一项能力”开放：财务入账页面对具备 `finance.view` 的角色返回完整流水，对仅有 `revenue.write` 的前台只提供电子码核销。
+- 完整矩阵可通过 `GET /api/admin/role-permissions` 查询（管理员）。
+
+### 1.5 API Key 接入鉴权
 
 系统对接可在“系统设置 → API 密钥”创建独立凭证，调用后台接口时发送：
 
@@ -62,6 +95,7 @@ X-API-Key: <完整 API Key>
 - API Key 复用创建人的员工身份，实际权限是“创建人当前角色允许范围”和“密钥 scopes”的交集。创建人停用后密钥立即不可用，角色降级也会进一步受限。
 - 无效、停用、过期或已删除密钥返回 `401`；角色或 scope 不足返回 `403`。写操作不会因为有 `read` 而自动获得权限。
 - API Key 仅用于 `/api/admin` 业务接口，不能访问会员个人接口、查询员工身份、修改密码，也不能管理 API Key；密钥管理只接受管理员 JWT 登录会话。
+- `GET /api/admin/role-permissions` 属于系统内部权限信息，即使只读 scope 也不返回，需 `settings:write`。
 - 每次携带 `yyk_` 前缀密钥的请求都会记录方法、路径、状态码、IP、User-Agent 和时间，日志不记录完整密钥或 Query String。
 
 | scope | 权限范围 |
@@ -79,7 +113,7 @@ X-API-Key: <完整 API Key>
 curl "$API/api/admin/dashboard" -H "X-API-Key: $WELLNESS_API_KEY"
 ```
 
-### 1.5 错误与并发
+### 1.6 错误与并发
 
 业务错误格式：
 
@@ -107,14 +141,14 @@ FastAPI 参数校验错误格式：
 
 预约通过原子容量更新和唯一约束防止超约、重复预约；扣次通过会员卡 `version` 乐观锁防止并发重复扣减。收到 `409` 后必须重新读取数据。
 
-### 1.6 分页、筛选与 CORS
+### 1.7 分页、筛选与 CORS
 
 - 操作/短信日志固定每页 50 条，API Key 使用日志固定每页 20 条，`page` 均从 1 开始。
 - 财务流水按时间倒序最多返回 1000 条；其他列表当前没有分页参数。
 - 会员端课表单次跨度最多 31 天；后台课表不限制跨度，但调用方应主动控制范围。
 - 开发环境 CORS 仅允许 `127.0.0.1` / `localhost` 的 `38733`、`38735` 端口；生产跨域部署需调整服务端 CORS 配置。
 
-### 1.7 回收站与数据保留
+### 1.8 回收站与数据保留
 
 - 可删除资料采用软删除：写入 `deleted_at`、`deleted_by` 和删除前状态，日常列表、会员端、预约权益、报表、导出和短信任务均排除已删除数据；数据库备份仍保留这些数据。
 - 普通业务角色只能删除自己有写入权限的资源；恢复和彻底删除仅接受管理员 JWT 登录会话，API Key 不能管理回收站。
@@ -135,6 +169,7 @@ FastAPI 参数校验错误格式：
 | `full_name` | string | 显示姓名 |
 | `phone` | string | 绑定手机号，未绑定为空字符串 |
 | `role` | string | `admin` / `finance` / `frontdesk` / `teacher` / `viewer` |
+| `capabilities` | string[] | 当前角色拥有的能力清单，见第 1.4 节 |
 | `active` | boolean | 是否启用 |
 | `created_at` | string | 创建时间 |
 
@@ -418,7 +453,8 @@ curl -X POST "$API/api/auth/login" \
 
 #### GET /api/admin/meta
 
-- **权限**：只读；**请求**：无。
+- **权限**：只读（`catalog.view`）；**请求**：无。
+- `products` 仅在具备 `products.view` 时返回，`users` 仅在具备 `settings.view` 或 `members.write` 时返回，避免下发用不到的数据。
 - **响应**：`courses`、`rooms`、`teachers`、`products`、`users` 五个完整数组，包括停用项。
 - 用于表单选项和关联展示；接口含全部员工账号，前端不应把响应暴露给非授权用户。
 
@@ -662,13 +698,13 @@ curl -X POST "$API/api/auth/login" \
 - **权限**：只读；**响应**：原始文件流，`Content-Disposition: inline`。
 - 用于浏览器直接预览 PDF 和图片；Office、CSV 等格式是否可直接显示由浏览器决定。鉴权方式与下载接口相同。
 
-## 8. 排课、预约、教室与目录（28）
+## 8. 排课、预约、教室与目录（29）
 
 ### 8.1 查询后台排课
 
 #### GET /api/admin/sessions
 
-- **权限**：只读。
+- **权限**：只读（`bookings.view`）。
 - **Query**：`date_from`、`date_to`（默认今日起 7 天）、`detailed`（默认 `false`）、`course_type`。
 - **响应**：`{ items: ClassSession[] }`，包含已取消排课；`detailed=true` 时每节含预约名单。
 
@@ -735,7 +771,7 @@ curl -X POST "$API/api/auth/login" \
 
 #### GET /api/admin/rooms/overview
 
-- **权限**：只读；**Query**：`date`（默认今日）、`floor`（可选，按楼层精确筛选）。
+- **权限**：只读（`catalog.view`）；**Query**：`date`（默认今日）、`floor`（可选，按楼层精确筛选）。
 - **响应**：`{ date, rooms }`；每个 Room 增加 `sessions` 和 `reservations`，教室按 `floor`、`sort_order`、`id` 排列。
 - `reservations[]` 含 `id`、`room_id`、`title`、`reservation_date`、`start_time`、`end_time`、`usage_type`、`notes`；只包含启用教室、正常排课和有效占用。
 
@@ -755,7 +791,14 @@ curl -X POST "$API/api/auth/login" \
 - **权限**：前台；**Body**：无。
 - **响应**：`{ ok: true }`。软取消，不删除记录。
 
-### 8.11 新建课程
+### 8.11 课程库列表
+
+#### GET /api/admin/courses
+
+- **权限**：只读（`catalog.view`）；**Query**：`course_type`（课程类别，可逗号分隔多值）、`q`（按中英文名称模糊搜索）、`active_only`（默认 `false`，只返回启用课程）。
+- **响应**：`{ items: Course[], total }`，按课程类别和 ID 排序，不含已删除课程；后台“课程库”页面据此渲染卡片与表格两种视图。
+
+### 8.12 新建课程
 
 #### POST /api/admin/courses
 
@@ -763,27 +806,27 @@ curl -X POST "$API/api/auth/login" \
 - **Body**：Course 字段中的 `course_type`、`name`、`name_en`、`description`、`description_en`、`duration_minutes`、`price`、`color`、`image_url`、`active`；未在代码中额外强制必填，但业务上应提供类型和名称。
 - **响应**：Course。
 
-### 8.12 修改课程
+### 8.13 修改课程
 
 #### PATCH /api/admin/courses/{course_id}
 
 - **权限**：管理员；**Body**：与新建相同，部分更新。
 - **响应**：Course；不存在返回 `404`。
 
-### 8.13 新建教室
+### 8.14 新建教室
 
 #### POST /api/admin/rooms
 
 - **权限**：管理员；**Body**：`name`、`name_en`、`capacity`、`floor`、`sort_order`、`color`、`active`。
 - **响应**：Room。`sort_order` 省略时按当前教室数量生成。
 
-### 8.14 修改教室
+### 8.15 修改教室
 
 #### PATCH /api/admin/rooms/{room_id}
 
 - **权限**：管理员；**Body**：与新建相同，部分更新；**响应**：Room。
 
-### 8.15 新建教练
+### 8.16 新建教练
 
 #### POST /api/admin/teachers
 
@@ -791,14 +834,14 @@ curl -X POST "$API/api/auth/login" \
 - `user_id` 可为空表示不关联；传入时必须是存在、已启用且角色为 `teacher` 的员工账号，且未被其他教练占用，否则返回 `400` / `409`。
 - **响应**：Teacher。
 
-### 8.16 修改教练
+### 8.17 修改教练
 
 #### PATCH /api/admin/teachers/{teacher_id}
 
 - **权限**：管理员；**Body**：与新建相同，部分更新；**响应**：Teacher。
 - 传入与当前一致的 `user_id` 不会重复校验，便于在不改变关联关系时修改其他资料。
 
-### 8.17 一步完成私教排课与预约
+### 8.18 一步完成私教排课与预约
 
 #### POST /api/admin/private-bookings
 
@@ -819,21 +862,21 @@ curl -X POST "$API/api/auth/login" \
 
 课程必须是 `private` 或 `assessment`，教练、教室冲突返回 `409`，课程已开始返回 `400`。成功响应包含 `session` 和 `booking`，任一失败则整体不保存。发送预约通知的规则与普通后台预约一致，保存后仍是 `booked`，签到时才扣次。
 
-### 8.18 空排课移入回收站
+### 8.19 空排课移入回收站
 
 #### DELETE /api/admin/sessions/{session_id}/permanent
 
 - **权限**：前台；**Body**：无；**响应**：`{ ok, item, message }`。
 - 路径名为历史兼容保留，实际执行软删除而非物理删除。仅从未产生任何预约的排课可通过此入口删除；已有预约（包括已取消预约）返回 `400`，应使用取消课程保留历史。恢复与到期彻底删除见第 16 章。
 
-### 8.19 编辑教室占用
+### 8.20 编辑教室占用
 
 #### PATCH /api/admin/room-reservations/{reservation_id}
 
 - **权限**：前台；**Body**：`room_id`、`title`、`reservation_date`、`start_time`、`end_time`、`usage_type`、`notes` 的任意子集。
 - **响应**：`{ ok: true }`。省略字段沿用原值，保存前排除自身并检查课程及其他占用冲突；取消占用仍使用 DELETE 接口。
 
-### 8.20 教室自定义排序
+### 8.21 教室自定义排序
 
 #### POST /api/admin/rooms/reorder
 
@@ -845,23 +888,23 @@ curl -X POST "$API/api/auth/login" \
 
 ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、自定义顺序和 ID 排列；此接口不修改 `floor`。
 
-### 8.21 上传教练照片
+### 8.22 上传教练照片
 
 #### POST /api/admin/teachers/{teacher_id}/photo
 
 - **权限**：管理员；`multipart/form-data` 上传字段名为 `file`，支持 PNG、JPG、WebP，最大 4 MiB。
 - **响应**：更新后的 Teacher。服务端校验真实文件头，`image_url` 为 `/uploads/teachers/...` 路径；上传文件需与数据库一起备份。
 
-### 8.22 查询各教室指定时段占用
+### 8.23 查询各教室指定时段占用
 
 #### GET /api/admin/rooms/availability
 
-- **权限**：只读；**Query**：`date`、`start_time`、`end_time` 必填，`exclude_session_id` 可选（编辑排课时排除自身）。
+- **权限**：只读（`catalog.view`）；**Query**：`date`、`start_time`、`end_time` 必填，`exclude_session_id` 可选（编辑排课时排除自身）。
 - **响应**：`{ date, start_time, end_time, rooms }`，按楼层和排序返回启用教室；每项在 Room 基础上增加 `available` 和 `conflicts`。
 - `conflicts[]` 同时包含重叠课程和内部占用：`kind=class|reservation`、`title`、`title_en`、`teacher_name`、`teacher_name_en`、`start_time`、`end_time`。
 - 结束时间必须晚于开始时间。此接口用于在排课编辑器中即时禁用并标注冲突教室；新建和修改排课仍会执行服务端最终冲突校验。
 
-### 8.23 获取课程动态签到码
+### 8.24 获取课程动态签到码
 
 #### GET /api/admin/sessions/{session_id}/check-in-code
 
@@ -870,7 +913,7 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 - 仅在开课前 30 分钟至课程结束提供签到码；未开放或已结束返回 `400`，取消或删除课程不可生成。
 - 二维码有效期 60 秒，建议每 30 秒刷新。课程码不能代替会员登录，会员扫描后仍需通过本人 Bearer Token 调用自助签到接口。
 
-### 8.24 前台扫描会员动态码签到
+### 8.25 前台扫描会员动态码签到
 
 #### POST /api/admin/check-in/scan
 
@@ -889,7 +932,7 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 
 - 重复扫描已消课预约返回 `already_checked_in=true`，不会重复扣次。无效、篡改或过期签到码返回 `400`；无匹配预约时转预约名单人工核对。
 
-### 8.25 私教/评估消课营收入账
+### 8.26 私教/评估消课营收入账
 
 #### POST /api/admin/bookings/{booking_id}/revenue
 
@@ -898,7 +941,7 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 - 仅已签到消课的私教/评估预约可用。金额可参考 Booking 的 `consumption_amount`，也允许按财务口径修改；本接口只入营收，不重复计入现金流水。
 - 同一预约当前存在未冲销营收时返回 `409`，不得重复入账。`booking_id + revenue_sequence + kind` 唯一索引防止并发重复；取消签到后自动冲销，再次签到可开启新的营收周期。
 
-### 8.26 上传课程图片
+### 8.27 上传课程图片
 
 #### POST /api/admin/courses/{course_id}/image
 
@@ -906,14 +949,14 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 - 支持 PNG、JPG、WebP，最大 6 MiB，校验文件签名；**响应**：更新后的 Course，`image_url` 指向 `/uploads/courses/`。
 - 新建课程时先保存课程取得 `course_id`，再调用本接口；也可在课程表单中仅填写已有图片 URL。
 
-### 8.27 移除教练照片
+### 8.28 移除教练照片
 
 #### DELETE /api/admin/teachers/{teacher_id}/photo
 
 - **权限**：管理员；**Body**：无。
 - 清空教练的 `image_url` 并删除服务器上的旧文件；**响应**：更新后的 Teacher。
 
-### 8.28 移除课程图片
+### 8.29 移除课程图片
 
 #### DELETE /api/admin/courses/{course_id}/image
 
@@ -926,7 +969,7 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 
 #### GET /api/admin/products
 
-- **权限**：只读；**响应**：`{ items: CardProduct[] }`，包含停用产品。
+- **权限**：只读（`products.view`；教练角色不可见）；**响应**：`{ items: CardProduct[] }`，包含停用产品。
 
 ### 9.2 新建产品
 
@@ -947,7 +990,7 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 
 #### GET /api/admin/transactions
 
-- **权限**：只读。
+- **权限**：财务查看（`finance.view`：`admin`、`finance`、`viewer`）。
 - **Query**：`date_from`、`date_to`、`category`、`member_id`，均可选。
 - **响应**：`{ items: Transaction[]（最多1000）, total_amount }`。
 - `total_amount` 仅汇总 `cash_basis=true` 且状态为 `paid`、`refunded` 的记录；仅营收和待核销记录不计入。类别筛选 `private` 包含历史 `assessment`，`annual` 包含历史 `package`。
@@ -982,7 +1025,7 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 
 #### GET /api/admin/reports
 
-- **权限**：只读；**Query**：`date_from`（默认本月 1 日）、`date_to`（默认今日）。
+- **权限**：报表（`reports.view`：`admin`、`finance`、`frontdesk`、`viewer`）；**Query**：`date_from`（默认本月 1 日）、`date_to`（默认今日）。
 - **响应**：`range`、`summary`、`amortized_revenue`、`private_recognized_revenue`、`revenue_by_category`、`cash_by_category`、`course_stats`、`teacher_stats`、`weekday`、`hour`、`room_usage`。
 - `summary` 含 `revenue`（确认营收）、`cash_received`（现金实收）、`sessions`、`cancelled_sessions`、`attendees`、`booking_count`、`cancelled_bookings`。
 - 现金实收只统计查询范围内 `cash_basis=true` 的 `paid` / `refunded` 记录净额；`cash_by_category` 与 `revenue_by_category` 分别展示流水和营收分类。
@@ -1005,7 +1048,7 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 - **权限**：财务；**响应**：`{ ok, item, message }`。
 - 只允许手工入账。删除后立即从流水、现金实收、确认营收和导出中排除，恢复后重新计入；购买、升卡和退款流水不可删除。
 
-## 10. 场馆、品牌与账号（8）
+## 10. 场馆、品牌与账号（9）
 
 ### 10.1 读取系统设置
 
@@ -1067,7 +1110,14 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 - **权限**：管理员；**响应**：`{ ok, item, message }`。
 - 删除后账号立即不能登录，已签发 Token 也不能继续使用。不能删除当前登录账号或最后一个有效管理员；可由管理员恢复。
 
-### 10.9 品牌静态文件
+### 10.9 角色权限矩阵
+
+#### GET /api/admin/role-permissions
+
+- **权限**：管理员（`settings.view`）；API Key 需要 `settings:write`。
+- **响应**：`{ roles: [{ role, label, capabilities: string[] }], matrix: [{ capability, label, hint, roles: string[] }] }`，供后台“账号权限”页面展示当前权限矩阵。
+
+### 10.10 品牌静态文件
 
 上传后的图片通过 `GET /uploads/branding/logo.png` 或 `GET /uploads/branding/favicon.png` 访问，属于静态资源而不是 `/api` 业务接口。实际使用时应采用 AppSettings 返回的带版本 URL。
 
@@ -1252,6 +1302,7 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 #### GET /api/admin/maintenance/export/{kind}.csv
 
 - 路径 `kind`：`members`、`bookings`、`transactions`；其他值 `404`。
+- **权限**：按导出类型判定——`members` 需 `members.view`，`bookings` 需 `bookings.view`，`transactions` 需 `finance.view`；API Key 需 `maintenance:write`。
 - **响应**：带 UTF-8 BOM 的 `text/csv`，可直接用 Excel 打开；导出全部记录，无日期筛选。
 - 会员列：`id,name,name_en,phone,gender,birth_date,source,wechat,emergency_phone,notes,created_at`。
 - 预约列：`id,member,phone,course,teacher,room,date,start_time,end_time,status,source,booked_at,cancelled_at,cancelled_by`。
@@ -1391,7 +1442,7 @@ const dashboard = await api("/api/admin/dashboard", {
 
 回收站资源标识：`users`、`members`、`teachers`、`rooms`、`courses`、`sessions`、`products`、`cards`、`bookings`、`shares`、`vouchers`、`reminders`、`room-reservations`、`records`、`documents`、`transactions`、`api-keys`。
 
-删除接口按调用者当前角色和资源写入权限校验；读取回收站、恢复和彻底删除仅允许管理员 JWT 会话。`RecycleItem` 包含 `id`、`resource`、`resource_label`、`title`、`subtitle`、`deleted_at`、`deleted_by`、`days_in_recycle`、`purge_after`、`can_purge`。
+删除接口按调用者当前角色的资源写入能力校验（见第 1.4 节与 `RESOURCE_CAPABILITIES`）；读取回收站、恢复和彻底删除仅允许管理员 JWT 会话。`RecycleItem` 包含 `id`、`resource`、`resource_label`、`title`、`subtitle`、`deleted_at`、`deleted_by`、`days_in_recycle`、`purge_after`、`can_purge`。
 
 ### 16.1 查询回收站
 
@@ -1406,7 +1457,7 @@ const dashboard = await api("/api/admin/dashboard", {
 
 - **权限**：管理员，或具有该资源写入权限的前台/财务角色；不接受 API Key。
 - **响应**：`{ ok, item, message }`。已删除或不存在返回 `404`，关联业务或角色限制返回 `400` / `403`。
-- 课程、教室、教练、产品、会员、会员卡、共享、提醒、体验券、会员记录、附件、手工入账等按第 1.7 节规则软删除。
+- 课程、教室、教练、产品、会员、会员卡、共享、提醒、体验券、会员记录、附件、手工入账等按第 1.8 节规则软删除。
 
 ### 16.3 恢复数据
 
@@ -1424,36 +1475,37 @@ const dashboard = await api("/api/admin/dashboard", {
 - 合同/评估附件会同时删除磁盘文件；其他业务记录删除后不可恢复，操作写入审计日志。
 
 
-## 15. 品牌 PDF 导出与账单（4）
+## 17. 品牌 PDF 导出与账单（4）
 
-以下接口均返回 `application/pdf` 文件流和 `Cache-Control: no-store`，权限为只读；可使用员工 Bearer Token 或具备 `read` 范围的 API Key。PDF 使用场馆名称、地址、电话和已上传 Logo；未上传时使用系统默认品牌标识。表格采用 A4 横向、重复表头、交替行底色、筛选条件和页码，适合直接发送或打印。
+以下接口均返回 `application/pdf` 文件流和 `Cache-Control: no-store`；可使用员工 Bearer Token，API Key 还需具备 `read` 范围。各接口的读取能力见下。PDF 使用场馆名称、地址、电话和已上传 Logo；未上传时使用系统默认品牌标识。表格采用 A4 横向、重复表头、交替行底色、筛选条件和页码，适合直接发送或打印。
 
-### 15.1 导出某日教室安排
+### 17.1 导出某日教室安排
 
 #### GET /api/admin/rooms/overview.pdf
 
-- **Query**：`date`（默认今日）、`floor` 可选。
+- **权限**：只读（`catalog.view`）；**Query**：`date`（默认今日）、`floor` 可选。
 - 包含所选日期的团课、私教/评估、工作坊、培训及内部/公司/企业活动；列为课程/活动名称、类型、时间、教练、教室、预约人数和备注。
 - 预约人数显示“已约/容量”，内部占用不显示人数；按开始时间、教室和名称排序。
 
-### 15.2 导出财务流水 PDF
+### 17.2 导出财务流水 PDF
 
 #### GET /api/admin/transactions.pdf
 
-- **Query**：`date_from`、`date_to`、`category`、`member_id`，与流水列表一致。
+- **权限**：财务查看（`finance.view`）；**Query**：`date_from`、`date_to`、`category`、`member_id`，与流水列表一致。
 - 包含编号/时间、会员、类别、业务、入账类型、结账方式、金额、状态和备注，并区分流水、流水+营收、营收、每日均摊及营收冲销。
 
-### 15.3 导出经营分析 PDF
+### 17.3 导出经营分析 PDF
 
 #### GET /api/admin/reports.pdf
 
-- **Query**：`date_from`（默认本月 1 日）、`date_to`（默认今日），开始日期不能晚于结束日期。
+- **权限**：报表（`reports.view`）；**Query**：`date_from`（默认本月 1 日）、`date_to`（默认今日），开始日期不能晚于结束日期。
 - 包含流水与营收汇总、分类汇总、课程经营、教练课时、教室使用及到课时段表格。
 
-### 15.4 导出账单小票 PDF
+### 17.4 导出账单小票 PDF
 
 #### GET /api/admin/transactions/{transaction_id}/receipt.pdf
 
+- **权限**：财务查看（`finance.view`）。
 - **响应**：单页 **75 × 145 mm** 小票；待核销或已取消记录返回 `400`。
 - 包含 Octave/自定义品牌 Logo、健康管理 Wellness、日期时间、项目、金额、入账类型、客户、结账方式、备注、入账人、6% 增值税与去税金额、签字栏及场馆地址电话。
 - 去税金额按“含税金额 ÷ 1.06”计算，增值税为含税金额减去去税金额；退款或冲销记录以负数展示。

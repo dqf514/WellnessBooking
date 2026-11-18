@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from ..checkin_service import issue_member_check_in_code, issue_session_check_in_code, scan_member_code, scan_session_code
 from ..database import get_db
-from ..deps import get_current_member, require_staff
+from ..deps import get_current_member, require_bookings_write
 from ..models import ClassSession, Member, User
 
 router = APIRouter(prefix="/api", tags=["check-in"])
@@ -24,7 +24,7 @@ def member_scan_check_in_code(payload: dict = Body(...), db: Session = Depends(g
 
 
 @router.get("/admin/sessions/{session_id}/check-in-code")
-def session_check_in_code(session_id: int, response: Response, db: Session = Depends(get_db), _: User = Depends(require_staff)):
+def session_check_in_code(session_id: int, response: Response, db: Session = Depends(get_db), _: User = Depends(require_bookings_write)):
     response.headers["Cache-Control"] = "no-store"
     session = db.get(ClassSession, session_id)
     if not session or session.deleted_at is not None:
@@ -33,7 +33,7 @@ def session_check_in_code(session_id: int, response: Response, db: Session = Dep
 
 
 @router.post("/admin/check-in/scan")
-def staff_scan_check_in_code(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+def staff_scan_check_in_code(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_bookings_write)):
     token = str(payload.get("token", "")).strip()
     if not token:
         raise HTTPException(400, "请扫描会员签到二维码")

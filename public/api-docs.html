@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#173f35">
-  <meta name="description" content="音昱 Wellness 完整 API 对接文档，覆盖 123 个接口、权限、字段、业务规则与示例。">
+  <meta name="description" content="音昱 Wellness 完整 API 对接文档，覆盖 125 个接口、权限、字段、业务规则与示例。">
   <meta name="generator" content="docs/build_api_docs.py">
   <link id="api-favicon" rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Crect width='36' height='36' rx='18' fill='%23173f35'/%3E%3Cpath d='M28 6C15 7 8 13 8 23c7 1 15-2 20-17ZM8 29c3-8 8-12 16-17' fill='none' stroke='%23e9efe7' stroke-width='1.5'/%3E%3C/svg%3E">
   <title>API 对接文档 · 音昱 Wellness</title>
@@ -33,7 +33,7 @@
     <aside class="sidebar" aria-label="API 文档目录">
       <label class="search-label"><span>搜索接口、字段或业务规则</span><input class="search-input" id="api-search" type="search" placeholder="例如：签到、退款、bookings" autocomplete="off"><span class="search-hint">按 / 快速搜索，Esc 清空</span></label>
       <p class="search-results" id="search-results" aria-live="polite"></p>
-      <p class="toc-title">API REFERENCE · 123 ENDPOINTS</p>
+      <p class="toc-title">API REFERENCE · 125 ENDPOINTS</p>
       <nav><ul class="toc-list"><li><a href="#1-接入基础">1. 接入基础</a></li>
 <li><a href="#2-通用数据结构">2. 通用数据结构</a></li>
 <li><a href="#3-健康检查与员工认证-7">3. 健康检查与员工认证（7）</a></li>
@@ -41,16 +41,16 @@
 <li><a href="#5-经营概览与基础元数据-2">5. 经营概览与基础元数据（2）</a></li>
 <li><a href="#6-会员档案-会员卡-权益与爽约-20">6. 会员档案、会员卡、权益与爽约（20）</a></li>
 <li><a href="#7-会员合同与评估文件-7">7. 会员合同与评估文件（7）</a></li>
-<li><a href="#8-排课-预约-教室与目录-28">8. 排课、预约、教室与目录（28）</a></li>
+<li><a href="#8-排课-预约-教室与目录-29">8. 排课、预约、教室与目录（29）</a></li>
 <li><a href="#9-产品-财务与报表-10">9. 产品、财务与报表（10）</a></li>
-<li><a href="#10-场馆-品牌与账号-8">10. 场馆、品牌与账号（8）</a></li>
+<li><a href="#10-场馆-品牌与账号-9">10. 场馆、品牌与账号（9）</a></li>
 <li><a href="#11-短信与审计日志-5">11. 短信与审计日志（5）</a></li>
 <li><a href="#12-api-key-管理与调用日志-6">12. API Key 管理与调用日志（6）</a></li>
 <li><a href="#13-数据导出-备份与恢复-10">13. 数据导出、备份与恢复（10）</a></li>
 <li><a href="#14-典型业务调用顺序">14. 典型业务调用顺序</a></li>
 <li><a href="#15-对接检查清单">15. 对接检查清单</a></li>
 <li><a href="#16-回收站与-180-天保留-4">16. 回收站与 180 天保留（4）</a></li>
-<li><a href="#15-品牌-pdf-导出与账单-4">15. 品牌 PDF 导出与账单（4）</a></li></ul></nav>
+<li><a href="#17-品牌-pdf-导出与账单-4">17. 品牌 PDF 导出与账单（4）</a></li></ul></nav>
       <div class="sidebar-bottom"><a href="/openapi.json" target="_blank" rel="noreferrer">下载 OpenAPI JSON ↗</a><a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md" target="_blank" rel="noreferrer">GitHub Markdown 源文档 ↗</a><a href="/help.html">← 返回系统操作指南</a></div>
     </aside>
     <main class="docs-main" id="api-content">
@@ -61,19 +61,19 @@
 <option value="5-经营概览与基础元数据-2">5. 经营概览与基础元数据（2）</option>
 <option value="6-会员档案-会员卡-权益与爽约-20">6. 会员档案、会员卡、权益与爽约（20）</option>
 <option value="7-会员合同与评估文件-7">7. 会员合同与评估文件（7）</option>
-<option value="8-排课-预约-教室与目录-28">8. 排课、预约、教室与目录（28）</option>
+<option value="8-排课-预约-教室与目录-29">8. 排课、预约、教室与目录（29）</option>
 <option value="9-产品-财务与报表-10">9. 产品、财务与报表（10）</option>
-<option value="10-场馆-品牌与账号-8">10. 场馆、品牌与账号（8）</option>
+<option value="10-场馆-品牌与账号-9">10. 场馆、品牌与账号（9）</option>
 <option value="11-短信与审计日志-5">11. 短信与审计日志（5）</option>
 <option value="12-api-key-管理与调用日志-6">12. API Key 管理与调用日志（6）</option>
 <option value="13-数据导出-备份与恢复-10">13. 数据导出、备份与恢复（10）</option>
 <option value="14-典型业务调用顺序">14. 典型业务调用顺序</option>
 <option value="15-对接检查清单">15. 对接检查清单</option>
 <option value="16-回收站与-180-天保留-4">16. 回收站与 180 天保留（4）</option>
-<option value="15-品牌-pdf-导出与账单-4">15. 品牌 PDF 导出与账单（4）</option></select></label>
+<option value="17-品牌-pdf-导出与账单-4">17. 品牌 PDF 导出与账单（4）</option></select></label>
       <div class="search-empty" id="search-empty" hidden>没有匹配的接口。可尝试“预约”“卡”“settings”或清空搜索。</div>
       <h1 id="音昱-wellness-api-对接文档">音昱 Wellness API 对接文档<a class="anchor" href="#音昱-wellness-api-对接文档" aria-label="链接到此节">#</a></h1>
-<aside class="callout">版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 <strong>120 个 HTTP 接口</strong>。 文档更新：2026-11-11 · 功能基线：预约排课、动态二维码签到、购卡申请取消、会员权益与营收业务闭环。 在线交互文档：<code>/docs</code>（Swagger UI）、<code>/redoc</code>（ReDoc）；原始 OpenAPI 3 定义：<code>/openapi.json</code>。接口路径、方法、参数和实时响应结构以同版本 <code>/openapi.json</code> 为最终依据。</aside>
+<aside class="callout">版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 <strong>125 个 HTTP 接口</strong>。 文档更新：2026-11-18 · 功能基线：预约排课、动态二维码签到、购卡申请取消、会员权益与营收业务闭环、角色能力矩阵与课程库独立接口。 在线交互文档：<code>/docs</code>（Swagger UI）、<code>/redoc</code>（ReDoc）；原始 OpenAPI 3 定义：<code>/openapi.json</code>。接口路径、方法、参数和实时响应结构以同版本 <code>/openapi.json</code> 为最终依据。</aside>
 <h2 id="1-接入基础">1. 接入基础<a class="anchor" href="#1-接入基础" aria-label="链接到此节">#</a></h2>
 <h3 id="1-1-服务地址">1.1 服务地址<a class="anchor" href="#1-1-服务地址" aria-label="链接到此节">#</a></h3>
 <div class="table-wrap"><table>
@@ -92,22 +92,50 @@
 <div class="code-block"><button class="copy-code" type="button">复制</button><pre><code class="language-http">Authorization: Bearer &lt;access_token&gt;</code></pre></div>
 <p>Token 类型为 JWT，签名算法 HS256；有效期默认 10080 分钟（7 天），可由服务端 <code>ACCESS_TOKEN_EXPIRE_MINUTES</code> 修改。员工 Token 的主题是 <code>staff:&lt;用户ID&gt;</code>，会员 Token 的主题是 <code>member:&lt;会员ID&gt;</code>，两者不能混用。修改密码不会主动吊销已签发 Token；停用账号后，下一次鉴权会失败。</p>
 <div class="table-wrap"><table>
-<thead><tr><th>文档权限标记</th><th>可访问角色 / 身份</th></tr></thead>
+<thead><tr><th>文档权限标记</th><th>对应能力</th><th>可访问角色 / 身份</th></tr></thead>
 <tbody>
-<tr><td>公开</td><td>不需要 Token</td></tr>
-<tr><td>会员</td><td>有效会员 Token</td></tr>
-<tr><td>员工</td><td>任意有效员工 Token，用于 <code>/api/auth/me</code>、修改自己的密码</td></tr>
-<tr><td>只读</td><td><code>admin</code>、<code>frontdesk</code>、<code>finance</code>、<code>teacher</code>、<code>viewer</code></td></tr>
-<tr><td>前台</td><td><code>admin</code>、<code>frontdesk</code></td></tr>
-<tr><td>财务</td><td><code>admin</code>、<code>finance</code></td></tr>
-<tr><td>管理员</td><td>仅 <code>admin</code></td></tr>
+<tr><td>公开</td><td>—</td><td>不需要 Token</td></tr>
+<tr><td>会员</td><td>—</td><td>有效会员 Token</td></tr>
+<tr><td>员工</td><td>—</td><td>任意有效员工 Token，用于 <code>/api/auth/me</code>、修改自己的密码</td></tr>
+<tr><td>只读</td><td><code>dashboard.view</code>、<code>bookings.view</code>、<code>members.view</code>、<code>catalog.view</code></td><td><code>admin</code>、<code>frontdesk</code>、<code>finance</code>、<code>teacher</code>、<code>viewer</code></td></tr>
+<tr><td>前台</td><td><code>bookings.write</code>、<code>members.write</code>、<code>cards.write</code>、<code>records.write</code></td><td><code>admin</code>、<code>frontdesk</code></td></tr>
+<tr><td>财务</td><td><code>products.write</code>、<code>finance.write</code></td><td><code>admin</code>、<code>finance</code></td></tr>
+<tr><td>管理员</td><td><code>settings.write</code></td><td>仅 <code>admin</code></td></tr>
 </tbody>
 </table></div>
 <p>权限在服务端强制执行，隐藏前端菜单并不等于接口授权。<code>teacher</code> 和 <code>viewer</code> 虽可读取业务数据，但不能执行写操作。</p>
-<h3 id="1-4-api-key-接入鉴权">1.4 API Key 接入鉴权<a class="anchor" href="#1-4-api-key-接入鉴权" aria-label="链接到此节">#</a></h3>
+<h3 id="1-4-角色能力矩阵">1.4 角色能力矩阵<a class="anchor" href="#1-4-角色能力矩阵" aria-label="链接到此节">#</a></h3>
+<p>服务端按“能力”而不是“角色名”判断权限。<code>backend/app/permissions.py</code> 是全系统唯一的角色→能力定义处，后台菜单、路由守卫、按钮显隐与接口鉴权共用同一份矩阵。登录响应与 <code>GET /api/auth/me</code> 会在 <code>user.capabilities</code> 中下发当前账号实际拥有的能力，调用方可据此渲染界面。</p>
+<div class="table-wrap"><table>
+<thead><tr><th>能力</th><th>说明</th><th>管理员</th><th>财务</th><th>前台</th><th>教练</th><th>只读</th></tr></thead>
+<tbody>
+<tr><td><code>dashboard.view</code></td><td>查看今日课程、预约与本月营收概览</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+<tr><td><code>bookings.view</code></td><td>查看团课、私教与工作坊的预约名单</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+<tr><td><code>bookings.write</code></td><td>新建排课、代客预约、签到、取消与爽约处理</td><td>✓</td><td>—</td><td>✓</td><td>—</td><td>—</td></tr>
+<tr><td><code>members.view</code></td><td>查看会员档案、卡权益与跟进记录</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+<tr><td><code>members.write</code></td><td>新建与修改会员资料、附件与爽约限制</td><td>✓</td><td>—</td><td>✓</td><td>—</td><td>—</td></tr>
+<tr><td><code>records.write</code></td><td>书写私教与跟进记录</td><td>✓</td><td>—</td><td>✓</td><td>✓</td><td>—</td></tr>
+<tr><td><code>cards.write</code></td><td>延期、冻结、转卡、共享与体验券管理</td><td>✓</td><td>—</td><td>✓</td><td>—</td><td>—</td></tr>
+<tr><td><code>revenue.write</code></td><td>购卡、升额、电子码核销与消课营收确认</td><td>✓</td><td>✓</td><td>✓</td><td>—</td><td>—</td></tr>
+<tr><td><code>catalog.view</code></td><td>查看课程、教练与教室目录</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+<tr><td><code>catalog.write</code></td><td>维护课程、教练与教室资料</td><td>✓</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td><code>products.view</code></td><td>查看卡课产品与价格</td><td>✓</td><td>✓</td><td>✓</td><td>—</td><td>✓</td></tr>
+<tr><td><code>products.write</code></td><td>新建与修改卡课产品</td><td>✓</td><td>✓</td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td><code>finance.view</code></td><td>查看收支流水与对账单</td><td>✓</td><td>✓</td><td>—</td><td>—</td><td>✓</td></tr>
+<tr><td><code>finance.write</code></td><td>手工入账、修改与退款</td><td>✓</td><td>✓</td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td><code>reports.view</code></td><td>查看经营报表与营收构成</td><td>✓</td><td>✓</td><td>✓</td><td>—</td><td>✓</td></tr>
+<tr><td><code>recycle.write</code></td><td>将数据移入回收站</td><td>✓</td><td>✓</td><td>✓</td><td>—</td><td>—</td></tr>
+<tr><td><code>recycle.view</code></td><td>查看与恢复回收站数据</td><td>✓</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td><code>settings.view</code></td><td>查看账号、短信、密钥与日志</td><td>✓</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td><code>settings.write</code></td><td>维护账号、短信、品牌与系统设置</td><td>✓</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+</tbody>
+</table></div>
+<p>要点：</p>
+<ul><li>移入回收站按资源类型校验，只能删除自己具备写入能力的资源（见第 16 节）；读取回收站、恢复和彻底删除仅管理员可用。</li><li>API Key 的实际权限是“密钥 scopes”与“创建人当前角色能力”的交集，两者任一不满足即返回 <code>403</code>。</li><li>少数入口按“满足其中一项能力”开放：财务入账页面对具备 <code>finance.view</code> 的角色返回完整流水，对仅有 <code>revenue.write</code> 的前台只提供电子码核销。</li><li>完整矩阵可通过 <code>GET /api/admin/role-permissions</code> 查询（管理员）。</li></ul>
+<h3 id="1-5-api-key-接入鉴权">1.5 API Key 接入鉴权<a class="anchor" href="#1-5-api-key-接入鉴权" aria-label="链接到此节">#</a></h3>
 <p>系统对接可在“系统设置 → API 密钥”创建独立凭证，调用后台接口时发送：</p>
 <div class="code-block"><button class="copy-code" type="button">复制</button><pre><code class="language-http">X-API-Key: &lt;完整 API Key&gt;</code></pre></div>
-<ul><li>密钥以 <code>yyk_</code> 开头，服务端只保存 SHA-256 哈希；完整明文仅在创建或轮换响应中返回一次，之后只能查看 <code>前缀…后四位</code>。</li><li>不要把密钥放在 URL、前端代码或公开仓库中。<code>Authorization: Bearer</code> 与 <code>X-API-Key</code> 不能同时使用，否则返回 <code>400</code>。</li><li>API Key 复用创建人的员工身份，实际权限是“创建人当前角色允许范围”和“密钥 scopes”的交集。创建人停用后密钥立即不可用，角色降级也会进一步受限。</li><li>无效、停用、过期或已删除密钥返回 <code>401</code>；角色或 scope 不足返回 <code>403</code>。写操作不会因为有 <code>read</code> 而自动获得权限。</li><li>API Key 仅用于 <code>/api/admin</code> 业务接口，不能访问会员个人接口、查询员工身份、修改密码，也不能管理 API Key；密钥管理只接受管理员 JWT 登录会话。</li><li>每次携带 <code>yyk_</code> 前缀密钥的请求都会记录方法、路径、状态码、IP、User-Agent 和时间，日志不记录完整密钥或 Query String。</li></ul>
+<ul><li>密钥以 <code>yyk_</code> 开头，服务端只保存 SHA-256 哈希；完整明文仅在创建或轮换响应中返回一次，之后只能查看 <code>前缀…后四位</code>。</li><li>不要把密钥放在 URL、前端代码或公开仓库中。<code>Authorization: Bearer</code> 与 <code>X-API-Key</code> 不能同时使用，否则返回 <code>400</code>。</li><li>API Key 复用创建人的员工身份，实际权限是“创建人当前角色允许范围”和“密钥 scopes”的交集。创建人停用后密钥立即不可用，角色降级也会进一步受限。</li><li>无效、停用、过期或已删除密钥返回 <code>401</code>；角色或 scope 不足返回 <code>403</code>。写操作不会因为有 <code>read</code> 而自动获得权限。</li><li>API Key 仅用于 <code>/api/admin</code> 业务接口，不能访问会员个人接口、查询员工身份、修改密码，也不能管理 API Key；密钥管理只接受管理员 JWT 登录会话。</li><li><code>GET /api/admin/role-permissions</code> 属于系统内部权限信息，即使只读 scope 也不返回，需 <code>settings:write</code>。</li><li>每次携带 <code>yyk_</code> 前缀密钥的请求都会记录方法、路径、状态码、IP、User-Agent 和时间，日志不记录完整密钥或 Query String。</li></ul>
 <div class="table-wrap"><table>
 <thead><tr><th>scope</th><th>权限范围</th></tr></thead>
 <tbody>
@@ -122,7 +150,7 @@
 </tbody>
 </table></div>
 <div class="code-block"><button class="copy-code" type="button">复制</button><pre><code class="language-bash">curl &quot;$API/api/admin/dashboard&quot; -H &quot;X-API-Key: $WELLNESS_API_KEY&quot;</code></pre></div>
-<h3 id="1-5-错误与并发">1.5 错误与并发<a class="anchor" href="#1-5-错误与并发" aria-label="链接到此节">#</a></h3>
+<h3 id="1-6-错误与并发">1.6 错误与并发<a class="anchor" href="#1-6-错误与并发" aria-label="链接到此节">#</a></h3>
 <p>业务错误格式：</p>
 <div class="code-block"><button class="copy-code" type="button">复制</button><pre><code class="language-json">{ &quot;detail&quot;: &quot;课程已约满&quot; }</code></pre></div>
 <p>FastAPI 参数校验错误格式：</p>
@@ -142,9 +170,9 @@
 </tbody>
 </table></div>
 <p>预约通过原子容量更新和唯一约束防止超约、重复预约；扣次通过会员卡 <code>version</code> 乐观锁防止并发重复扣减。收到 <code>409</code> 后必须重新读取数据。</p>
-<h3 id="1-6-分页-筛选与-cors">1.6 分页、筛选与 CORS<a class="anchor" href="#1-6-分页-筛选与-cors" aria-label="链接到此节">#</a></h3>
+<h3 id="1-7-分页-筛选与-cors">1.7 分页、筛选与 CORS<a class="anchor" href="#1-7-分页-筛选与-cors" aria-label="链接到此节">#</a></h3>
 <ul><li>操作/短信日志固定每页 50 条，API Key 使用日志固定每页 20 条，<code>page</code> 均从 1 开始。</li><li>财务流水按时间倒序最多返回 1000 条；其他列表当前没有分页参数。</li><li>会员端课表单次跨度最多 31 天；后台课表不限制跨度，但调用方应主动控制范围。</li><li>开发环境 CORS 仅允许 <code>127.0.0.1</code> / <code>localhost</code> 的 <code>38733</code>、<code>38735</code> 端口；生产跨域部署需调整服务端 CORS 配置。</li></ul>
-<h3 id="1-7-回收站与数据保留">1.7 回收站与数据保留<a class="anchor" href="#1-7-回收站与数据保留" aria-label="链接到此节">#</a></h3>
+<h3 id="1-8-回收站与数据保留">1.8 回收站与数据保留<a class="anchor" href="#1-8-回收站与数据保留" aria-label="链接到此节">#</a></h3>
 <ul><li>可删除资料采用软删除：写入 <code>deleted_at</code>、<code>deleted_by</code> 和删除前状态，日常列表、会员端、预约权益、报表、导出和短信任务均排除已删除数据；数据库备份仍保留这些数据。</li><li>普通业务角色只能删除自己有写入权限的资源；恢复和彻底删除仅接受管理员 JWT 登录会话，API Key 不能管理回收站。</li><li>彻底删除必须满足 <code>deleted_at + 180 天 &lt;= 服务器当前时间</code>，提前调用返回 <code>400</code>。附件文件在回收站期间保留，只有到期彻底删除时才清理。</li><li>取消课程、取消预约、销卡、停用和退款是业务状态操作，不等于移入回收站。购买、升卡和退款流水不可删除；手工入账可编辑和软删除。</li><li>有关联未消课预约的会员或会员卡、有未来正常排课的课程/教练/教室、含有效预约或到课历史的排课不可直接删除；只有已取消预约可移入回收站。</li></ul>
 <h2 id="2-通用数据结构">2. 通用数据结构<a class="anchor" href="#2-通用数据结构" aria-label="链接到此节">#</a></h2>
 <p>以下为响应字段定义。写入时仍应只传各接口允许的字段，不要回传整个响应对象。</p>
@@ -157,6 +185,7 @@
 <tr><td><code>full_name</code></td><td>string</td><td>显示姓名</td></tr>
 <tr><td><code>phone</code></td><td>string</td><td>绑定手机号，未绑定为空字符串</td></tr>
 <tr><td><code>role</code></td><td>string</td><td><code>admin</code> / <code>finance</code> / <code>frontdesk</code> / <code>teacher</code> / <code>viewer</code></td></tr>
+<tr><td><code>capabilities</code></td><td>string[]</td><td>当前角色拥有的能力清单，见第 1.4 节</td></tr>
 <tr><td><code>active</code></td><td>boolean</td><td>是否启用</td></tr>
 <tr><td><code>created_at</code></td><td>string</td><td>创建时间</td></tr>
 </tbody>
@@ -354,7 +383,7 @@
 <h3 id="5-2-后台基础元数据">5.2 后台基础元数据<a class="anchor" href="#5-2-后台基础元数据" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/meta">
 <h4 id="get-api-admin-meta"><span class="method method-get">GET</span><a href="#get-api-admin-meta" class="route">/api/admin/meta</a></h4>
-<ul><li><strong>权限</strong>：只读；<strong>请求</strong>：无。</li><li><strong>响应</strong>：<code>courses</code>、<code>rooms</code>、<code>teachers</code>、<code>products</code>、<code>users</code> 五个完整数组，包括停用项。</li><li>用于表单选项和关联展示；接口含全部员工账号，前端不应把响应暴露给非授权用户。</li></ul>
+<ul><li><strong>权限</strong>：只读（<code>catalog.view</code>）；<strong>请求</strong>：无。</li><li><code>products</code> 仅在具备 <code>products.view</code> 时返回，<code>users</code> 仅在具备 <code>settings.view</code> 或 <code>members.write</code> 时返回，避免下发用不到的数据。</li><li><strong>响应</strong>：<code>courses</code>、<code>rooms</code>、<code>teachers</code>、<code>products</code>、<code>users</code> 五个完整数组，包括停用项。</li><li>用于表单选项和关联展示；接口含全部员工账号，前端不应把响应暴露给非授权用户。</li></ul>
 </section>
 <h2 id="6-会员档案-会员卡-权益与爽约-20">6. 会员档案、会员卡、权益与爽约（20）<a class="anchor" href="#6-会员档案-会员卡-权益与爽约-20" aria-label="链接到此节">#</a></h2>
 <h3 id="6-1-查询会员列表">6.1 查询会员列表<a class="anchor" href="#6-1-查询会员列表" aria-label="链接到此节">#</a></h3>
@@ -517,11 +546,11 @@
 <h4 id="get-api-admin-documents-document-id-view"><span class="method method-get">GET</span><a href="#get-api-admin-documents-document-id-view" class="route">/api/admin/documents/{document_id}/view</a></h4>
 <ul><li><strong>权限</strong>：只读；<strong>响应</strong>：原始文件流，<code>Content-Disposition: inline</code>。</li><li>用于浏览器直接预览 PDF 和图片；Office、CSV 等格式是否可直接显示由浏览器决定。鉴权方式与下载接口相同。</li></ul>
 </section>
-<h2 id="8-排课-预约-教室与目录-28">8. 排课、预约、教室与目录（28）<a class="anchor" href="#8-排课-预约-教室与目录-28" aria-label="链接到此节">#</a></h2>
+<h2 id="8-排课-预约-教室与目录-29">8. 排课、预约、教室与目录（29）<a class="anchor" href="#8-排课-预约-教室与目录-29" aria-label="链接到此节">#</a></h2>
 <h3 id="8-1-查询后台排课">8.1 查询后台排课<a class="anchor" href="#8-1-查询后台排课" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/sessions">
 <h4 id="get-api-admin-sessions"><span class="method method-get">GET</span><a href="#get-api-admin-sessions" class="route">/api/admin/sessions</a></h4>
-<ul><li><strong>权限</strong>：只读。</li><li><strong>Query</strong>：<code>date_from</code>、<code>date_to</code>（默认今日起 7 天）、<code>detailed</code>（默认 <code>false</code>）、<code>course_type</code>。</li><li><strong>响应</strong>：<code>{ items: ClassSession[] }</code>，包含已取消排课；<code>detailed=true</code> 时每节含预约名单。</li></ul>
+<ul><li><strong>权限</strong>：只读（<code>bookings.view</code>）。</li><li><strong>Query</strong>：<code>date_from</code>、<code>date_to</code>（默认今日起 7 天）、<code>detailed</code>（默认 <code>false</code>）、<code>course_type</code>。</li><li><strong>响应</strong>：<code>{ items: ClassSession[] }</code>，包含已取消排课；<code>detailed=true</code> 时每节含预约名单。</li></ul>
 </section>
 <h3 id="8-2-新建排课">8.2 新建排课<a class="anchor" href="#8-2-新建排课" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/sessions">
@@ -567,7 +596,7 @@
 <h3 id="8-8-教室某日总览">8.8 教室某日总览<a class="anchor" href="#8-8-教室某日总览" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/rooms/overview">
 <h4 id="get-api-admin-rooms-overview"><span class="method method-get">GET</span><a href="#get-api-admin-rooms-overview" class="route">/api/admin/rooms/overview</a></h4>
-<ul><li><strong>权限</strong>：只读；<strong>Query</strong>：<code>date</code>（默认今日）、<code>floor</code>（可选，按楼层精确筛选）。</li><li><strong>响应</strong>：<code>{ date, rooms }</code>；每个 Room 增加 <code>sessions</code> 和 <code>reservations</code>，教室按 <code>floor</code>、<code>sort_order</code>、<code>id</code> 排列。</li><li><code>reservations[]</code> 含 <code>id</code>、<code>room_id</code>、<code>title</code>、<code>reservation_date</code>、<code>start_time</code>、<code>end_time</code>、<code>usage_type</code>、<code>notes</code>；只包含启用教室、正常排课和有效占用。</li></ul>
+<ul><li><strong>权限</strong>：只读（<code>catalog.view</code>）；<strong>Query</strong>：<code>date</code>（默认今日）、<code>floor</code>（可选，按楼层精确筛选）。</li><li><strong>响应</strong>：<code>{ date, rooms }</code>；每个 Room 增加 <code>sessions</code> 和 <code>reservations</code>，教室按 <code>floor</code>、<code>sort_order</code>、<code>id</code> 排列。</li><li><code>reservations[]</code> 含 <code>id</code>、<code>room_id</code>、<code>title</code>、<code>reservation_date</code>、<code>start_time</code>、<code>end_time</code>、<code>usage_type</code>、<code>notes</code>；只包含启用教室、正常排课和有效占用。</li></ul>
 </section>
 <h3 id="8-9-创建教室占用">8.9 创建教室占用<a class="anchor" href="#8-9-创建教室占用" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/room-reservations">
@@ -579,37 +608,42 @@
 <h4 id="delete-api-admin-room-reservations-reservation-id"><span class="method method-delete">DELETE</span><a href="#delete-api-admin-room-reservations-reservation-id" class="route">/api/admin/room-reservations/{reservation_id}</a></h4>
 <ul><li><strong>权限</strong>：前台；<strong>Body</strong>：无。</li><li><strong>响应</strong>：<code>{ ok: true }</code>。软取消，不删除记录。</li></ul>
 </section>
-<h3 id="8-11-新建课程">8.11 新建课程<a class="anchor" href="#8-11-新建课程" aria-label="链接到此节">#</a></h3>
+<h3 id="8-11-课程库列表">8.11 课程库列表<a class="anchor" href="#8-11-课程库列表" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="get /api/admin/courses">
+<h4 id="get-api-admin-courses"><span class="method method-get">GET</span><a href="#get-api-admin-courses" class="route">/api/admin/courses</a></h4>
+<ul><li><strong>权限</strong>：只读（<code>catalog.view</code>）；<strong>Query</strong>：<code>course_type</code>（课程类别，可逗号分隔多值）、<code>q</code>（按中英文名称模糊搜索）、<code>active_only</code>（默认 <code>false</code>，只返回启用课程）。</li><li><strong>响应</strong>：<code>{ items: Course[], total }</code>，按课程类别和 ID 排序，不含已删除课程；后台“课程库”页面据此渲染卡片与表格两种视图。</li></ul>
+</section>
+<h3 id="8-12-新建课程">8.12 新建课程<a class="anchor" href="#8-12-新建课程" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/courses">
 <h4 id="post-api-admin-courses"><span class="method method-post">POST</span><a href="#post-api-admin-courses" class="route">/api/admin/courses</a></h4>
 <ul><li><strong>权限</strong>：管理员。</li><li><strong>Body</strong>：Course 字段中的 <code>course_type</code>、<code>name</code>、<code>name_en</code>、<code>description</code>、<code>description_en</code>、<code>duration_minutes</code>、<code>price</code>、<code>color</code>、<code>image_url</code>、<code>active</code>；未在代码中额外强制必填，但业务上应提供类型和名称。</li><li><strong>响应</strong>：Course。</li></ul>
 </section>
-<h3 id="8-12-修改课程">8.12 修改课程<a class="anchor" href="#8-12-修改课程" aria-label="链接到此节">#</a></h3>
+<h3 id="8-13-修改课程">8.13 修改课程<a class="anchor" href="#8-13-修改课程" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="patch /api/admin/courses/{course_id}">
 <h4 id="patch-api-admin-courses-course-id"><span class="method method-patch">PATCH</span><a href="#patch-api-admin-courses-course-id" class="route">/api/admin/courses/{course_id}</a></h4>
 <ul><li><strong>权限</strong>：管理员；<strong>Body</strong>：与新建相同，部分更新。</li><li><strong>响应</strong>：Course；不存在返回 <code>404</code>。</li></ul>
 </section>
-<h3 id="8-13-新建教室">8.13 新建教室<a class="anchor" href="#8-13-新建教室" aria-label="链接到此节">#</a></h3>
+<h3 id="8-14-新建教室">8.14 新建教室<a class="anchor" href="#8-14-新建教室" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/rooms">
 <h4 id="post-api-admin-rooms"><span class="method method-post">POST</span><a href="#post-api-admin-rooms" class="route">/api/admin/rooms</a></h4>
 <ul><li><strong>权限</strong>：管理员；<strong>Body</strong>：<code>name</code>、<code>name_en</code>、<code>capacity</code>、<code>floor</code>、<code>sort_order</code>、<code>color</code>、<code>active</code>。</li><li><strong>响应</strong>：Room。<code>sort_order</code> 省略时按当前教室数量生成。</li></ul>
 </section>
-<h3 id="8-14-修改教室">8.14 修改教室<a class="anchor" href="#8-14-修改教室" aria-label="链接到此节">#</a></h3>
+<h3 id="8-15-修改教室">8.15 修改教室<a class="anchor" href="#8-15-修改教室" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="patch /api/admin/rooms/{room_id}">
 <h4 id="patch-api-admin-rooms-room-id"><span class="method method-patch">PATCH</span><a href="#patch-api-admin-rooms-room-id" class="route">/api/admin/rooms/{room_id}</a></h4>
 <ul><li><strong>权限</strong>：管理员；<strong>Body</strong>：与新建相同，部分更新；<strong>响应</strong>：Room。</li></ul>
 </section>
-<h3 id="8-15-新建教练">8.15 新建教练<a class="anchor" href="#8-15-新建教练" aria-label="链接到此节">#</a></h3>
+<h3 id="8-16-新建教练">8.16 新建教练<a class="anchor" href="#8-16-新建教练" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/teachers">
 <h4 id="post-api-admin-teachers"><span class="method method-post">POST</span><a href="#post-api-admin-teachers" class="route">/api/admin/teachers</a></h4>
 <ul><li><strong>权限</strong>：管理员；<strong>Body</strong>：<code>user_id</code>、<code>name</code>、<code>name_en</code>、<code>phone</code>、<code>gender</code>、<code>specialties</code>、<code>specialties_en</code>、<code>bio</code>、<code>bio_en</code>、<code>image_url</code>、<code>visible</code>、<code>active</code>。</li><li><code>user_id</code> 可为空表示不关联；传入时必须是存在、已启用且角色为 <code>teacher</code> 的员工账号，且未被其他教练占用，否则返回 <code>400</code> / <code>409</code>。</li><li><strong>响应</strong>：Teacher。</li></ul>
 </section>
-<h3 id="8-16-修改教练">8.16 修改教练<a class="anchor" href="#8-16-修改教练" aria-label="链接到此节">#</a></h3>
+<h3 id="8-17-修改教练">8.17 修改教练<a class="anchor" href="#8-17-修改教练" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="patch /api/admin/teachers/{teacher_id}">
 <h4 id="patch-api-admin-teachers-teacher-id"><span class="method method-patch">PATCH</span><a href="#patch-api-admin-teachers-teacher-id" class="route">/api/admin/teachers/{teacher_id}</a></h4>
 <ul><li><strong>权限</strong>：管理员；<strong>Body</strong>：与新建相同，部分更新；<strong>响应</strong>：Teacher。</li><li>传入与当前一致的 <code>user_id</code> 不会重复校验，便于在不改变关联关系时修改其他资料。</li></ul>
 </section>
-<h3 id="8-17-一步完成私教排课与预约">8.17 一步完成私教排课与预约<a class="anchor" href="#8-17-一步完成私教排课与预约" aria-label="链接到此节">#</a></h3>
+<h3 id="8-18-一步完成私教排课与预约">8.18 一步完成私教排课与预约<a class="anchor" href="#8-18-一步完成私教排课与预约" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/private-bookings">
 <h4 id="post-api-admin-private-bookings"><span class="method method-post">POST</span><a href="#post-api-admin-private-bookings" class="route">/api/admin/private-bookings</a></h4>
 <ul><li><strong>权限</strong>：前台。一次事务中创建一节容量为 1 的私教/评估课程和会员预约，避免先排课再选会员的两步操作。</li></ul>
@@ -625,39 +659,39 @@
   &quot;notes&quot;: &quot;初次私教&quot;
 }</code></pre></div>
 <p>课程必须是 <code>private</code> 或 <code>assessment</code>，教练、教室冲突返回 <code>409</code>，课程已开始返回 <code>400</code>。成功响应包含 <code>session</code> 和 <code>booking</code>，任一失败则整体不保存。发送预约通知的规则与普通后台预约一致，保存后仍是 <code>booked</code>，签到时才扣次。</p>
-<h3 id="8-18-空排课移入回收站">8.18 空排课移入回收站<a class="anchor" href="#8-18-空排课移入回收站" aria-label="链接到此节">#</a></h3>
+<h3 id="8-19-空排课移入回收站">8.19 空排课移入回收站<a class="anchor" href="#8-19-空排课移入回收站" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="delete /api/admin/sessions/{session_id}/permanent">
 <h4 id="delete-api-admin-sessions-session-id-permanent"><span class="method method-delete">DELETE</span><a href="#delete-api-admin-sessions-session-id-permanent" class="route">/api/admin/sessions/{session_id}/permanent</a></h4>
 <ul><li><strong>权限</strong>：前台；<strong>Body</strong>：无；<strong>响应</strong>：<code>{ ok, item, message }</code>。</li><li>路径名为历史兼容保留，实际执行软删除而非物理删除。仅从未产生任何预约的排课可通过此入口删除；已有预约（包括已取消预约）返回 <code>400</code>，应使用取消课程保留历史。恢复与到期彻底删除见第 16 章。</li></ul>
 </section>
-<h3 id="8-19-编辑教室占用">8.19 编辑教室占用<a class="anchor" href="#8-19-编辑教室占用" aria-label="链接到此节">#</a></h3>
+<h3 id="8-20-编辑教室占用">8.20 编辑教室占用<a class="anchor" href="#8-20-编辑教室占用" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="patch /api/admin/room-reservations/{reservation_id}">
 <h4 id="patch-api-admin-room-reservations-reservation-id"><span class="method method-patch">PATCH</span><a href="#patch-api-admin-room-reservations-reservation-id" class="route">/api/admin/room-reservations/{reservation_id}</a></h4>
 <ul><li><strong>权限</strong>：前台；<strong>Body</strong>：<code>room_id</code>、<code>title</code>、<code>reservation_date</code>、<code>start_time</code>、<code>end_time</code>、<code>usage_type</code>、<code>notes</code> 的任意子集。</li><li><strong>响应</strong>：<code>{ ok: true }</code>。省略字段沿用原值，保存前排除自身并检查课程及其他占用冲突；取消占用仍使用 DELETE 接口。</li></ul>
 </section>
-<h3 id="8-20-教室自定义排序">8.20 教室自定义排序<a class="anchor" href="#8-20-教室自定义排序" aria-label="链接到此节">#</a></h3>
+<h3 id="8-21-教室自定义排序">8.21 教室自定义排序<a class="anchor" href="#8-21-教室自定义排序" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/rooms/reorder">
 <h4 id="post-api-admin-rooms-reorder"><span class="method method-post">POST</span><a href="#post-api-admin-rooms-reorder" class="route">/api/admin/rooms/reorder</a></h4>
 <ul><li><strong>权限</strong>：管理员。接收完整 <code>room_ids</code> 数组，按数组顺序写入 <code>sort_order</code>。</li></ul>
 </section>
 <div class="code-block"><button class="copy-code" type="button">复制</button><pre><code class="language-json">{ &quot;room_ids&quot;: [5, 1, 2, 3, 4] }</code></pre></div>
 <p>ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、自定义顺序和 ID 排列；此接口不修改 <code>floor</code>。</p>
-<h3 id="8-21-上传教练照片">8.21 上传教练照片<a class="anchor" href="#8-21-上传教练照片" aria-label="链接到此节">#</a></h3>
+<h3 id="8-22-上传教练照片">8.22 上传教练照片<a class="anchor" href="#8-22-上传教练照片" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/teachers/{teacher_id}/photo">
 <h4 id="post-api-admin-teachers-teacher-id-photo"><span class="method method-post">POST</span><a href="#post-api-admin-teachers-teacher-id-photo" class="route">/api/admin/teachers/{teacher_id}/photo</a></h4>
 <ul><li><strong>权限</strong>：管理员；<code>multipart/form-data</code> 上传字段名为 <code>file</code>，支持 PNG、JPG、WebP，最大 4 MiB。</li><li><strong>响应</strong>：更新后的 Teacher。服务端校验真实文件头，<code>image_url</code> 为 <code>/uploads/teachers/...</code> 路径；上传文件需与数据库一起备份。</li></ul>
 </section>
-<h3 id="8-22-查询各教室指定时段占用">8.22 查询各教室指定时段占用<a class="anchor" href="#8-22-查询各教室指定时段占用" aria-label="链接到此节">#</a></h3>
+<h3 id="8-23-查询各教室指定时段占用">8.23 查询各教室指定时段占用<a class="anchor" href="#8-23-查询各教室指定时段占用" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/rooms/availability">
 <h4 id="get-api-admin-rooms-availability"><span class="method method-get">GET</span><a href="#get-api-admin-rooms-availability" class="route">/api/admin/rooms/availability</a></h4>
-<ul><li><strong>权限</strong>：只读；<strong>Query</strong>：<code>date</code>、<code>start_time</code>、<code>end_time</code> 必填，<code>exclude_session_id</code> 可选（编辑排课时排除自身）。</li><li><strong>响应</strong>：<code>{ date, start_time, end_time, rooms }</code>，按楼层和排序返回启用教室；每项在 Room 基础上增加 <code>available</code> 和 <code>conflicts</code>。</li><li><code>conflicts[]</code> 同时包含重叠课程和内部占用：<code>kind=class|reservation</code>、<code>title</code>、<code>title_en</code>、<code>teacher_name</code>、<code>teacher_name_en</code>、<code>start_time</code>、<code>end_time</code>。</li><li>结束时间必须晚于开始时间。此接口用于在排课编辑器中即时禁用并标注冲突教室；新建和修改排课仍会执行服务端最终冲突校验。</li></ul>
+<ul><li><strong>权限</strong>：只读（<code>catalog.view</code>）；<strong>Query</strong>：<code>date</code>、<code>start_time</code>、<code>end_time</code> 必填，<code>exclude_session_id</code> 可选（编辑排课时排除自身）。</li><li><strong>响应</strong>：<code>{ date, start_time, end_time, rooms }</code>，按楼层和排序返回启用教室；每项在 Room 基础上增加 <code>available</code> 和 <code>conflicts</code>。</li><li><code>conflicts[]</code> 同时包含重叠课程和内部占用：<code>kind=class|reservation</code>、<code>title</code>、<code>title_en</code>、<code>teacher_name</code>、<code>teacher_name_en</code>、<code>start_time</code>、<code>end_time</code>。</li><li>结束时间必须晚于开始时间。此接口用于在排课编辑器中即时禁用并标注冲突教室；新建和修改排课仍会执行服务端最终冲突校验。</li></ul>
 </section>
-<h3 id="8-23-获取课程动态签到码">8.23 获取课程动态签到码<a class="anchor" href="#8-23-获取课程动态签到码" aria-label="链接到此节">#</a></h3>
+<h3 id="8-24-获取课程动态签到码">8.24 获取课程动态签到码<a class="anchor" href="#8-24-获取课程动态签到码" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/sessions/{session_id}/check-in-code">
 <h4 id="get-api-admin-sessions-session-id-check-in-code"><span class="method method-get">GET</span><a href="#get-api-admin-sessions-session-id-check-in-code" class="route">/api/admin/sessions/{session_id}/check-in-code</a></h4>
 <ul><li><strong>权限</strong>：前台（<code>admin</code>、<code>frontdesk</code>）；API Key 需要 <code>read</code>。</li><li><strong>响应</strong>：<code>{ token, expires_at, expires_in, refresh_after, session }</code>；<code>token</code> 以 <code>YYS1.</code> 开头，前端据此生成供会员扫描的课程二维码。</li><li>仅在开课前 30 分钟至课程结束提供签到码；未开放或已结束返回 <code>400</code>，取消或删除课程不可生成。</li><li>二维码有效期 60 秒，建议每 30 秒刷新。课程码不能代替会员登录，会员扫描后仍需通过本人 Bearer Token 调用自助签到接口。</li></ul>
 </section>
-<h3 id="8-24-前台扫描会员动态码签到">8.24 前台扫描会员动态码签到<a class="anchor" href="#8-24-前台扫描会员动态码签到" aria-label="链接到此节">#</a></h3>
+<h3 id="8-25-前台扫描会员动态码签到">8.25 前台扫描会员动态码签到<a class="anchor" href="#8-25-前台扫描会员动态码签到" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/check-in/scan">
 <h4 id="post-api-admin-check-in-scan"><span class="method method-post">POST</span><a href="#post-api-admin-check-in-scan" class="route">/api/admin/check-in/scan</a></h4>
 <ul><li><strong>权限</strong>：前台（<code>admin</code>、<code>frontdesk</code>）；API Key 需要 <code>bookings:write</code>。</li><li><strong>Body</strong>：<code>{ token, session_id? }</code>；<code>token</code> 为会员 <code>YYM1....</code> 动态码。存在多个可签到预约时，使用 <code>session_id</code> 完成指定课程签到。</li><li><strong>响应</strong>：签到后的 Booking，增加 <code>already_checked_in</code>、<code>check_in_method=member_code</code>、<code>member_reminders</code>。</li><li>系统只在当天的签到时段内自动匹配。仅一个待签到预约时直接消课；多个待签到预约时先返回以下选择响应且<strong>不扣次</strong>：</li></ul>
@@ -668,22 +702,22 @@
   &quot;choices&quot;: [{ &quot;id&quot;: 101, &quot;session_id&quot;: 39, &quot;session&quot;: { &quot;id&quot;: 39, &quot;start_time&quot;: &quot;18:30&quot; } }]
 }</code></pre></div>
 <ul><li>重复扫描已消课预约返回 <code>already_checked_in=true</code>，不会重复扣次。无效、篡改或过期签到码返回 <code>400</code>；无匹配预约时转预约名单人工核对。</li></ul>
-<h3 id="8-25-私教-评估消课营收入账">8.25 私教/评估消课营收入账<a class="anchor" href="#8-25-私教-评估消课营收入账" aria-label="链接到此节">#</a></h3>
+<h3 id="8-26-私教-评估消课营收入账">8.26 私教/评估消课营收入账<a class="anchor" href="#8-26-私教-评估消课营收入账" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/bookings/{booking_id}/revenue">
 <h4 id="post-api-admin-bookings-booking-id-revenue"><span class="method method-post">POST</span><a href="#post-api-admin-bookings-booking-id-revenue" class="route">/api/admin/bookings/{booking_id}/revenue</a></h4>
 <ul><li><strong>权限</strong>：前台或财务；<strong>Body</strong>：<code>amount</code>（大于 0，必填）、<code>payment_method</code>（默认 <code>fitness_member</code>）、<code>note</code> 可选。</li><li><strong>响应</strong>：<code>kind=consumption</code>、<code>cash_basis=false</code>、<code>revenue_mode=immediate</code> 的 Transaction。</li><li>仅已签到消课的私教/评估预约可用。金额可参考 Booking 的 <code>consumption_amount</code>，也允许按财务口径修改；本接口只入营收，不重复计入现金流水。</li><li>同一预约当前存在未冲销营收时返回 <code>409</code>，不得重复入账。<code>booking_id + revenue_sequence + kind</code> 唯一索引防止并发重复；取消签到后自动冲销，再次签到可开启新的营收周期。</li></ul>
 </section>
-<h3 id="8-26-上传课程图片">8.26 上传课程图片<a class="anchor" href="#8-26-上传课程图片" aria-label="链接到此节">#</a></h3>
+<h3 id="8-27-上传课程图片">8.27 上传课程图片<a class="anchor" href="#8-27-上传课程图片" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/courses/{course_id}/image">
 <h4 id="post-api-admin-courses-course-id-image"><span class="method method-post">POST</span><a href="#post-api-admin-courses-course-id-image" class="route">/api/admin/courses/{course_id}/image</a></h4>
 <ul><li><strong>权限</strong>：管理员；<strong>multipart</strong>：字段 <code>file</code>。</li><li>支持 PNG、JPG、WebP，最大 6 MiB，校验文件签名；<strong>响应</strong>：更新后的 Course，<code>image_url</code> 指向 <code>/uploads/courses/</code>。</li><li>新建课程时先保存课程取得 <code>course_id</code>，再调用本接口；也可在课程表单中仅填写已有图片 URL。</li></ul>
 </section>
-<h3 id="8-27-移除教练照片">8.27 移除教练照片<a class="anchor" href="#8-27-移除教练照片" aria-label="链接到此节">#</a></h3>
+<h3 id="8-28-移除教练照片">8.28 移除教练照片<a class="anchor" href="#8-28-移除教练照片" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="delete /api/admin/teachers/{teacher_id}/photo">
 <h4 id="delete-api-admin-teachers-teacher-id-photo"><span class="method method-delete">DELETE</span><a href="#delete-api-admin-teachers-teacher-id-photo" class="route">/api/admin/teachers/{teacher_id}/photo</a></h4>
 <ul><li><strong>权限</strong>：管理员；<strong>Body</strong>：无。</li><li>清空教练的 <code>image_url</code> 并删除服务器上的旧文件；<strong>响应</strong>：更新后的 Teacher。</li></ul>
 </section>
-<h3 id="8-28-移除课程图片">8.28 移除课程图片<a class="anchor" href="#8-28-移除课程图片" aria-label="链接到此节">#</a></h3>
+<h3 id="8-29-移除课程图片">8.29 移除课程图片<a class="anchor" href="#8-29-移除课程图片" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="delete /api/admin/courses/{course_id}/image">
 <h4 id="delete-api-admin-courses-course-id-image"><span class="method method-delete">DELETE</span><a href="#delete-api-admin-courses-course-id-image" class="route">/api/admin/courses/{course_id}/image</a></h4>
 <ul><li><strong>权限</strong>：管理员；<strong>Body</strong>：无。</li><li>清空课程的 <code>image_url</code> 并删除服务器上的旧文件；<strong>响应</strong>：更新后的 Course。</li></ul>
@@ -692,7 +726,7 @@
 <h3 id="9-1-产品列表">9.1 产品列表<a class="anchor" href="#9-1-产品列表" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/products">
 <h4 id="get-api-admin-products"><span class="method method-get">GET</span><a href="#get-api-admin-products" class="route">/api/admin/products</a></h4>
-<ul><li><strong>权限</strong>：只读；<strong>响应</strong>：<code>{ items: CardProduct[] }</code>，包含停用产品。</li></ul>
+<ul><li><strong>权限</strong>：只读（<code>products.view</code>；教练角色不可见）；<strong>响应</strong>：<code>{ items: CardProduct[] }</code>，包含停用产品。</li></ul>
 </section>
 <h3 id="9-2-新建产品">9.2 新建产品<a class="anchor" href="#9-2-新建产品" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/products">
@@ -707,7 +741,7 @@
 <h3 id="9-4-查询财务流水">9.4 查询财务流水<a class="anchor" href="#9-4-查询财务流水" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/transactions">
 <h4 id="get-api-admin-transactions"><span class="method method-get">GET</span><a href="#get-api-admin-transactions" class="route">/api/admin/transactions</a></h4>
-<ul><li><strong>权限</strong>：只读。</li><li><strong>Query</strong>：<code>date_from</code>、<code>date_to</code>、<code>category</code>、<code>member_id</code>，均可选。</li><li><strong>响应</strong>：<code>{ items: Transaction[]（最多1000）, total_amount }</code>。</li><li><code>total_amount</code> 仅汇总 <code>cash_basis=true</code> 且状态为 <code>paid</code>、<code>refunded</code> 的记录；仅营收和待核销记录不计入。类别筛选 <code>private</code> 包含历史 <code>assessment</code>，<code>annual</code> 包含历史 <code>package</code>。</li></ul>
+<ul><li><strong>权限</strong>：财务查看（<code>finance.view</code>：<code>admin</code>、<code>finance</code>、<code>viewer</code>）。</li><li><strong>Query</strong>：<code>date_from</code>、<code>date_to</code>、<code>category</code>、<code>member_id</code>，均可选。</li><li><strong>响应</strong>：<code>{ items: Transaction[]（最多1000）, total_amount }</code>。</li><li><code>total_amount</code> 仅汇总 <code>cash_basis=true</code> 且状态为 <code>paid</code>、<code>refunded</code> 的记录；仅营收和待核销记录不计入。类别筛选 <code>private</code> 包含历史 <code>assessment</code>，<code>annual</code> 包含历史 <code>package</code>。</li></ul>
 </section>
 <h3 id="9-5-手工入账">9.5 手工入账<a class="anchor" href="#9-5-手工入账" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/transactions/manual">
@@ -727,7 +761,7 @@
 <h3 id="9-8-综合经营报表">9.8 综合经营报表<a class="anchor" href="#9-8-综合经营报表" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/reports">
 <h4 id="get-api-admin-reports"><span class="method method-get">GET</span><a href="#get-api-admin-reports" class="route">/api/admin/reports</a></h4>
-<ul><li><strong>权限</strong>：只读；<strong>Query</strong>：<code>date_from</code>（默认本月 1 日）、<code>date_to</code>（默认今日）。</li><li><strong>响应</strong>：<code>range</code>、<code>summary</code>、<code>amortized_revenue</code>、<code>private_recognized_revenue</code>、<code>revenue_by_category</code>、<code>cash_by_category</code>、<code>course_stats</code>、<code>teacher_stats</code>、<code>weekday</code>、<code>hour</code>、<code>room_usage</code>。</li><li><code>summary</code> 含 <code>revenue</code>（确认营收）、<code>cash_received</code>（现金实收）、<code>sessions</code>、<code>cancelled_sessions</code>、<code>attendees</code>、<code>booking_count</code>、<code>cancelled_bookings</code>。</li><li>现金实收只统计查询范围内 <code>cash_basis=true</code> 的 <code>paid</code> / <code>refunded</code> 记录净额；<code>cash_by_category</code> 与 <code>revenue_by_category</code> 分别展示流水和营收分类。</li><li><code>revenue_mode=immediate</code> 在发生时全额确认；<code>amortized</code> 按 <code>revenue_start_on + revenue_days</code> 直线分摊，查询未来期间也会计算重叠天数；<code>none</code> 不确认营收。</li><li>私教/评估购买只入流水，实际消课后通过 <code>consumption</code> 记录营收；<code>consumption_reversal</code> 负向冲销。历史 <code>legacy</code> 数据保持原 365 天分摊、私教自动消课和其他即时营收规则，避免重复计算。</li><li><code>weekday.label</code> 为 0–6（周一至周日），<code>hour.label</code> 为两位小时；<code>value</code> 是实际到课人次。</li><li>教室统计含 <code>used_hours</code>、<code>internal_hours</code>、<code>utilization</code>；利用率分母按范围内每天 07:00–20:00 的 13 小时计算。</li></ul>
+<ul><li><strong>权限</strong>：报表（<code>reports.view</code>：<code>admin</code>、<code>finance</code>、<code>frontdesk</code>、<code>viewer</code>）；<strong>Query</strong>：<code>date_from</code>（默认本月 1 日）、<code>date_to</code>（默认今日）。</li><li><strong>响应</strong>：<code>range</code>、<code>summary</code>、<code>amortized_revenue</code>、<code>private_recognized_revenue</code>、<code>revenue_by_category</code>、<code>cash_by_category</code>、<code>course_stats</code>、<code>teacher_stats</code>、<code>weekday</code>、<code>hour</code>、<code>room_usage</code>。</li><li><code>summary</code> 含 <code>revenue</code>（确认营收）、<code>cash_received</code>（现金实收）、<code>sessions</code>、<code>cancelled_sessions</code>、<code>attendees</code>、<code>booking_count</code>、<code>cancelled_bookings</code>。</li><li>现金实收只统计查询范围内 <code>cash_basis=true</code> 的 <code>paid</code> / <code>refunded</code> 记录净额；<code>cash_by_category</code> 与 <code>revenue_by_category</code> 分别展示流水和营收分类。</li><li><code>revenue_mode=immediate</code> 在发生时全额确认；<code>amortized</code> 按 <code>revenue_start_on + revenue_days</code> 直线分摊，查询未来期间也会计算重叠天数；<code>none</code> 不确认营收。</li><li>私教/评估购买只入流水，实际消课后通过 <code>consumption</code> 记录营收；<code>consumption_reversal</code> 负向冲销。历史 <code>legacy</code> 数据保持原 365 天分摊、私教自动消课和其他即时营收规则，避免重复计算。</li><li><code>weekday.label</code> 为 0–6（周一至周日），<code>hour.label</code> 为两位小时；<code>value</code> 是实际到课人次。</li><li>教室统计含 <code>used_hours</code>、<code>internal_hours</code>、<code>utilization</code>；利用率分母按范围内每天 07:00–20:00 的 13 小时计算。</li></ul>
 </section>
 <h3 id="9-9-编辑手工入账">9.9 编辑手工入账<a class="anchor" href="#9-9-编辑手工入账" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="patch /api/admin/transactions/{transaction_id}">
@@ -739,7 +773,7 @@
 <h4 id="delete-api-admin-transactions-transaction-id"><span class="method method-delete">DELETE</span><a href="#delete-api-admin-transactions-transaction-id" class="route">/api/admin/transactions/{transaction_id}</a></h4>
 <ul><li><strong>权限</strong>：财务；<strong>响应</strong>：<code>{ ok, item, message }</code>。</li><li>只允许手工入账。删除后立即从流水、现金实收、确认营收和导出中排除，恢复后重新计入；购买、升卡和退款流水不可删除。</li></ul>
 </section>
-<h2 id="10-场馆-品牌与账号-8">10. 场馆、品牌与账号（8）<a class="anchor" href="#10-场馆-品牌与账号-8" aria-label="链接到此节">#</a></h2>
+<h2 id="10-场馆-品牌与账号-9">10. 场馆、品牌与账号（9）<a class="anchor" href="#10-场馆-品牌与账号-9" aria-label="链接到此节">#</a></h2>
 <h3 id="10-1-读取系统设置">10.1 读取系统设置<a class="anchor" href="#10-1-读取系统设置" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/settings">
 <h4 id="get-api-admin-settings"><span class="method method-get">GET</span><a href="#get-api-admin-settings" class="route">/api/admin/settings</a></h4>
@@ -780,7 +814,12 @@
 <h4 id="delete-api-admin-users-user-id"><span class="method method-delete">DELETE</span><a href="#delete-api-admin-users-user-id" class="route">/api/admin/users/{user_id}</a></h4>
 <ul><li><strong>权限</strong>：管理员；<strong>响应</strong>：<code>{ ok, item, message }</code>。</li><li>删除后账号立即不能登录，已签发 Token 也不能继续使用。不能删除当前登录账号或最后一个有效管理员；可由管理员恢复。</li></ul>
 </section>
-<h3 id="10-9-品牌静态文件">10.9 品牌静态文件<a class="anchor" href="#10-9-品牌静态文件" aria-label="链接到此节">#</a></h3>
+<h3 id="10-9-角色权限矩阵">10.9 角色权限矩阵<a class="anchor" href="#10-9-角色权限矩阵" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="get /api/admin/role-permissions">
+<h4 id="get-api-admin-role-permissions"><span class="method method-get">GET</span><a href="#get-api-admin-role-permissions" class="route">/api/admin/role-permissions</a></h4>
+<ul><li><strong>权限</strong>：管理员（<code>settings.view</code>）；API Key 需要 <code>settings:write</code>。</li><li><strong>响应</strong>：<code>{ roles: [{ role, label, capabilities: string[] }], matrix: [{ capability, label, hint, roles: string[] }] }</code>，供后台“账号权限”页面展示当前权限矩阵。</li></ul>
+</section>
+<h3 id="10-10-品牌静态文件">10.10 品牌静态文件<a class="anchor" href="#10-10-品牌静态文件" aria-label="链接到此节">#</a></h3>
 <p>上传后的图片通过 <code>GET /uploads/branding/logo.png</code> 或 <code>GET /uploads/branding/favicon.png</code> 访问，属于静态资源而不是 <code>/api</code> 业务接口。实际使用时应采用 AppSettings 返回的带版本 URL。</p>
 <h2 id="11-短信与审计日志-5">11. 短信与审计日志（5）<a class="anchor" href="#11-短信与审计日志-5" aria-label="链接到此节">#</a></h2>
 <h3 id="11-1-读取短信配置">11.1 读取短信配置<a class="anchor" href="#11-1-读取短信配置" aria-label="链接到此节">#</a></h3>
@@ -890,7 +929,7 @@
 <h3 id="13-8-导出-csv">13.8 导出 CSV<a class="anchor" href="#13-8-导出-csv" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/maintenance/export/{kind}.csv">
 <h4 id="get-api-admin-maintenance-export-kind-csv"><span class="method method-get">GET</span><a href="#get-api-admin-maintenance-export-kind-csv" class="route">/api/admin/maintenance/export/{kind}.csv</a></h4>
-<ul><li>路径 <code>kind</code>：<code>members</code>、<code>bookings</code>、<code>transactions</code>；其他值 <code>404</code>。</li><li><strong>响应</strong>：带 UTF-8 BOM 的 <code>text/csv</code>，可直接用 Excel 打开；导出全部记录，无日期筛选。</li><li>会员列：<code>id,name,name_en,phone,gender,birth_date,source,wechat,emergency_phone,notes,created_at</code>。</li><li>预约列：<code>id,member,phone,course,teacher,room,date,start_time,end_time,status,source,booked_at,cancelled_at,cancelled_by</code>。</li><li>流水列：<code>id,member,category,kind,amount,payment_method,status,occurred_at,note,redemption_code</code>。</li></ul>
+<ul><li>路径 <code>kind</code>：<code>members</code>、<code>bookings</code>、<code>transactions</code>；其他值 <code>404</code>。</li><li><strong>权限</strong>：按导出类型判定——<code>members</code> 需 <code>members.view</code>，<code>bookings</code> 需 <code>bookings.view</code>，<code>transactions</code> 需 <code>finance.view</code>；API Key 需 <code>maintenance:write</code>。</li><li><strong>响应</strong>：带 UTF-8 BOM 的 <code>text/csv</code>，可直接用 Excel 打开；导出全部记录，无日期筛选。</li><li>会员列：<code>id,name,name_en,phone,gender,birth_date,source,wechat,emergency_phone,notes,created_at</code>。</li><li>预约列：<code>id,member,phone,course,teacher,room,date,start_time,end_time,status,source,booked_at,cancelled_at,cancelled_by</code>。</li><li>流水列：<code>id,member,category,kind,amount,payment_method,status,occurred_at,note,redemption_code</code>。</li></ul>
 </section>
 <h3 id="13-9-下载会员导入模板">13.9 下载会员导入模板<a class="anchor" href="#13-9-下载会员导入模板" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/maintenance/members-template.csv">
@@ -979,7 +1018,7 @@ const dashboard = await api(&quot;/api/admin/dashboard&quot;, {
 <ul><li>员工与会员 Token 分开存储，不用 Query String 传 Token 或 API Key；系统对接使用 <code>X-API-Key</code>。</li><li>API Key 按最小权限分配 scopes 和有效期，完整明文只保存在安全的密码管理器中；泄露或员工离职时立即轮换、停用或删除，并定期检查使用日志。</li><li>不在前端信任 <code>available</code>、卡余额或角色，最终校验始终以服务端响应为准。</li><li>预约、签到、核销后重新读取关联资源，不自行累加金额或次数。</li><li>对 <code>400/409</code> 展示具体原因；只有网络中断等明确可重试场景才考虑重试。</li><li>对预约、购卡核销、退款、恢复数据库等写操作提供用户确认，避免重复点击。</li><li>生产环境更换默认 JWT 密钥、停用演示数据与开发验证码，并限制文档和后台的公网访问。</li><li>密钥、短信密码、数据库和合同文件不得提交到前端代码或公开仓库。</li><li>备份数据库的同时备份上传目录，并定期实际验证恢复流程。</li></ul>
 <h2 id="16-回收站与-180-天保留-4">16. 回收站与 180 天保留（4）<a class="anchor" href="#16-回收站与-180-天保留-4" aria-label="链接到此节">#</a></h2>
 <p>回收站资源标识：<code>users</code>、<code>members</code>、<code>teachers</code>、<code>rooms</code>、<code>courses</code>、<code>sessions</code>、<code>products</code>、<code>cards</code>、<code>bookings</code>、<code>shares</code>、<code>vouchers</code>、<code>reminders</code>、<code>room-reservations</code>、<code>records</code>、<code>documents</code>、<code>transactions</code>、<code>api-keys</code>。</p>
-<p>删除接口按调用者当前角色和资源写入权限校验；读取回收站、恢复和彻底删除仅允许管理员 JWT 会话。<code>RecycleItem</code> 包含 <code>id</code>、<code>resource</code>、<code>resource_label</code>、<code>title</code>、<code>subtitle</code>、<code>deleted_at</code>、<code>deleted_by</code>、<code>days_in_recycle</code>、<code>purge_after</code>、<code>can_purge</code>。</p>
+<p>删除接口按调用者当前角色的资源写入能力校验（见第 1.4 节与 <code>RESOURCE_CAPABILITIES</code>）；读取回收站、恢复和彻底删除仅允许管理员 JWT 会话。<code>RecycleItem</code> 包含 <code>id</code>、<code>resource</code>、<code>resource_label</code>、<code>title</code>、<code>subtitle</code>、<code>deleted_at</code>、<code>deleted_by</code>、<code>days_in_recycle</code>、<code>purge_after</code>、<code>can_purge</code>。</p>
 <h3 id="16-1-查询回收站">16.1 查询回收站<a class="anchor" href="#16-1-查询回收站" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/recycle">
 <h4 id="get-api-admin-recycle"><span class="method method-get">GET</span><a href="#get-api-admin-recycle" class="route">/api/admin/recycle</a></h4>
@@ -988,7 +1027,7 @@ const dashboard = await api(&quot;/api/admin/dashboard&quot;, {
 <h3 id="16-2-移入回收站">16.2 移入回收站<a class="anchor" href="#16-2-移入回收站" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="delete /api/admin/recycle/{resource}/{entity_id}">
 <h4 id="delete-api-admin-recycle-resource-entity-id"><span class="method method-delete">DELETE</span><a href="#delete-api-admin-recycle-resource-entity-id" class="route">/api/admin/recycle/{resource}/{entity_id}</a></h4>
-<ul><li><strong>权限</strong>：管理员，或具有该资源写入权限的前台/财务角色；不接受 API Key。</li><li><strong>响应</strong>：<code>{ ok, item, message }</code>。已删除或不存在返回 <code>404</code>，关联业务或角色限制返回 <code>400</code> / <code>403</code>。</li><li>课程、教室、教练、产品、会员、会员卡、共享、提醒、体验券、会员记录、附件、手工入账等按第 1.7 节规则软删除。</li></ul>
+<ul><li><strong>权限</strong>：管理员，或具有该资源写入权限的前台/财务角色；不接受 API Key。</li><li><strong>响应</strong>：<code>{ ok, item, message }</code>。已删除或不存在返回 <code>404</code>，关联业务或角色限制返回 <code>400</code> / <code>403</code>。</li><li>课程、教室、教练、产品、会员、会员卡、共享、提醒、体验券、会员记录、附件、手工入账等按第 1.8 节规则软删除。</li></ul>
 </section>
 <h3 id="16-3-恢复数据">16.3 恢复数据<a class="anchor" href="#16-3-恢复数据" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/recycle/{resource}/{entity_id}/restore">
@@ -1000,29 +1039,29 @@ const dashboard = await api(&quot;/api/admin/dashboard&quot;, {
 <h4 id="delete-api-admin-recycle-resource-entity-id-permanent"><span class="method method-delete">DELETE</span><a href="#delete-api-admin-recycle-resource-entity-id-permanent" class="route">/api/admin/recycle/{resource}/{entity_id}/permanent</a></h4>
 <ul><li><strong>权限</strong>：管理员登录会话；<strong>Body</strong>：无；<strong>响应</strong>：<code>{ ok, message }</code>。</li><li>只有服务器确认删除时间已满 180 天才执行，提前返回 <code>400</code> 和可删除时间。外键关联未清理时返回 <code>409</code>。</li><li>合同/评估附件会同时删除磁盘文件；其他业务记录删除后不可恢复，操作写入审计日志。</li></ul>
 </section>
-<h2 id="15-品牌-pdf-导出与账单-4">15. 品牌 PDF 导出与账单（4）<a class="anchor" href="#15-品牌-pdf-导出与账单-4" aria-label="链接到此节">#</a></h2>
-<p>以下接口均返回 <code>application/pdf</code> 文件流和 <code>Cache-Control: no-store</code>，权限为只读；可使用员工 Bearer Token 或具备 <code>read</code> 范围的 API Key。PDF 使用场馆名称、地址、电话和已上传 Logo；未上传时使用系统默认品牌标识。表格采用 A4 横向、重复表头、交替行底色、筛选条件和页码，适合直接发送或打印。</p>
-<h3 id="15-1-导出某日教室安排">15.1 导出某日教室安排<a class="anchor" href="#15-1-导出某日教室安排" aria-label="链接到此节">#</a></h3>
+<h2 id="17-品牌-pdf-导出与账单-4">17. 品牌 PDF 导出与账单（4）<a class="anchor" href="#17-品牌-pdf-导出与账单-4" aria-label="链接到此节">#</a></h2>
+<p>以下接口均返回 <code>application/pdf</code> 文件流和 <code>Cache-Control: no-store</code>；可使用员工 Bearer Token，API Key 还需具备 <code>read</code> 范围。各接口的读取能力见下。PDF 使用场馆名称、地址、电话和已上传 Logo；未上传时使用系统默认品牌标识。表格采用 A4 横向、重复表头、交替行底色、筛选条件和页码，适合直接发送或打印。</p>
+<h3 id="17-1-导出某日教室安排">17.1 导出某日教室安排<a class="anchor" href="#17-1-导出某日教室安排" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/rooms/overview.pdf">
 <h4 id="get-api-admin-rooms-overview-pdf"><span class="method method-get">GET</span><a href="#get-api-admin-rooms-overview-pdf" class="route">/api/admin/rooms/overview.pdf</a></h4>
-<ul><li><strong>Query</strong>：<code>date</code>（默认今日）、<code>floor</code> 可选。</li><li>包含所选日期的团课、私教/评估、工作坊、培训及内部/公司/企业活动；列为课程/活动名称、类型、时间、教练、教室、预约人数和备注。</li><li>预约人数显示“已约/容量”，内部占用不显示人数；按开始时间、教室和名称排序。</li></ul>
+<ul><li><strong>权限</strong>：只读（<code>catalog.view</code>）；<strong>Query</strong>：<code>date</code>（默认今日）、<code>floor</code> 可选。</li><li>包含所选日期的团课、私教/评估、工作坊、培训及内部/公司/企业活动；列为课程/活动名称、类型、时间、教练、教室、预约人数和备注。</li><li>预约人数显示“已约/容量”，内部占用不显示人数；按开始时间、教室和名称排序。</li></ul>
 </section>
-<h3 id="15-2-导出财务流水-pdf">15.2 导出财务流水 PDF<a class="anchor" href="#15-2-导出财务流水-pdf" aria-label="链接到此节">#</a></h3>
+<h3 id="17-2-导出财务流水-pdf">17.2 导出财务流水 PDF<a class="anchor" href="#17-2-导出财务流水-pdf" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/transactions.pdf">
 <h4 id="get-api-admin-transactions-pdf"><span class="method method-get">GET</span><a href="#get-api-admin-transactions-pdf" class="route">/api/admin/transactions.pdf</a></h4>
-<ul><li><strong>Query</strong>：<code>date_from</code>、<code>date_to</code>、<code>category</code>、<code>member_id</code>，与流水列表一致。</li><li>包含编号/时间、会员、类别、业务、入账类型、结账方式、金额、状态和备注，并区分流水、流水+营收、营收、每日均摊及营收冲销。</li></ul>
+<ul><li><strong>权限</strong>：财务查看（<code>finance.view</code>）；<strong>Query</strong>：<code>date_from</code>、<code>date_to</code>、<code>category</code>、<code>member_id</code>，与流水列表一致。</li><li>包含编号/时间、会员、类别、业务、入账类型、结账方式、金额、状态和备注，并区分流水、流水+营收、营收、每日均摊及营收冲销。</li></ul>
 </section>
-<h3 id="15-3-导出经营分析-pdf">15.3 导出经营分析 PDF<a class="anchor" href="#15-3-导出经营分析-pdf" aria-label="链接到此节">#</a></h3>
+<h3 id="17-3-导出经营分析-pdf">17.3 导出经营分析 PDF<a class="anchor" href="#17-3-导出经营分析-pdf" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/reports.pdf">
 <h4 id="get-api-admin-reports-pdf"><span class="method method-get">GET</span><a href="#get-api-admin-reports-pdf" class="route">/api/admin/reports.pdf</a></h4>
-<ul><li><strong>Query</strong>：<code>date_from</code>（默认本月 1 日）、<code>date_to</code>（默认今日），开始日期不能晚于结束日期。</li><li>包含流水与营收汇总、分类汇总、课程经营、教练课时、教室使用及到课时段表格。</li></ul>
+<ul><li><strong>权限</strong>：报表（<code>reports.view</code>）；<strong>Query</strong>：<code>date_from</code>（默认本月 1 日）、<code>date_to</code>（默认今日），开始日期不能晚于结束日期。</li><li>包含流水与营收汇总、分类汇总、课程经营、教练课时、教室使用及到课时段表格。</li></ul>
 </section>
-<h3 id="15-4-导出账单小票-pdf">15.4 导出账单小票 PDF<a class="anchor" href="#15-4-导出账单小票-pdf" aria-label="链接到此节">#</a></h3>
+<h3 id="17-4-导出账单小票-pdf">17.4 导出账单小票 PDF<a class="anchor" href="#17-4-导出账单小票-pdf" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/transactions/{transaction_id}/receipt.pdf">
 <h4 id="get-api-admin-transactions-transaction-id-receipt-pdf"><span class="method method-get">GET</span><a href="#get-api-admin-transactions-transaction-id-receipt-pdf" class="route">/api/admin/transactions/{transaction_id}/receipt.pdf</a></h4>
-<ul><li><strong>响应</strong>：单页 <strong>75 × 145 mm</strong> 小票；待核销或已取消记录返回 <code>400</code>。</li><li>包含 Octave/自定义品牌 Logo、健康管理 Wellness、日期时间、项目、金额、入账类型、客户、结账方式、备注、入账人、6% 增值税与去税金额、签字栏及场馆地址电话。</li><li>去税金额按“含税金额 ÷ 1.06”计算，增值税为含税金额减去去税金额；退款或冲销记录以负数展示。</li></ul>
+<ul><li><strong>权限</strong>：财务查看（<code>finance.view</code>）。</li><li><strong>响应</strong>：单页 <strong>75 × 145 mm</strong> 小票；待核销或已取消记录返回 <code>400</code>。</li><li>包含 Octave/自定义品牌 Logo、健康管理 Wellness、日期时间、项目、金额、入账类型、客户、结账方式、备注、入账人、6% 增值税与去税金额、签字栏及场馆地址电话。</li><li>去税金额按“含税金额 ÷ 1.06”计算，增值税为含税金额减去去税金额；退款或冲销记录以负数展示。</li></ul>
 </section>
-      <footer class="docs-footer"><span>音昱 Wellness · API v1.0.0 · 123 个业务接口</span><span><a href="/help.html">系统操作指南</a> · <a href="/openapi.json">OpenAPI 3</a> · 文档源：<a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md">docs/API.md</a></span></footer>
+      <footer class="docs-footer"><span>音昱 Wellness · API v1.0.0 · 125 个业务接口</span><span><a href="/help.html">系统操作指南</a> · <a href="/openapi.json">OpenAPI 3</a> · 文档源：<a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md">docs/API.md</a></span></footer>
     </main>
   </div>
   <script>

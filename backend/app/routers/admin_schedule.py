@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 from ..booking_service import create_booking, transition_booking
 from ..config import UPLOAD_DIR
 from ..database import get_db
-from ..deps import require_admin, require_read, require_staff
+from ..deps import require_bookings_view, require_bookings_write, require_catalog_view, require_catalog_write
 from ..log_util import audit
 from ..membership_service import due_reminders
 from ..models import Booking, ClassSession, Course, Member, Room, RoomReservation, Teacher, User
@@ -83,7 +83,7 @@ def _validate_room_reservation(db: Session, room: Room, day: str, start: str, en
 
 
 @router.get("/sessions")
-def list_sessions(date_from: str = Query(""), date_to: str = Query(""), detailed: bool = Query(False), course_type: str = Query(""), db: Session = Depends(get_db), _: User = Depends(require_read)):
+def list_sessions(date_from: str = Query(""), date_to: str = Query(""), detailed: bool = Query(False), course_type: str = Query(""), db: Session = Depends(get_db), _: User = Depends(require_bookings_view)):
     start = valid_date(date_from or today())
     end = valid_date(date_to or add_days(start, 6))
     query = _session_query(db).filter(ClassSession.session_date >= start, ClassSession.session_date <= end)
@@ -94,7 +94,7 @@ def list_sessions(date_from: str = Query(""), date_to: str = Query(""), detailed
 
 
 @router.post("/sessions")
-def create_session(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+def create_session(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_bookings_write)):
     data = clean_payload(payload, SESSION_FIELDS)
     _validate_session(db, data)
     row = ClassSession(**data)
@@ -107,7 +107,7 @@ def create_session(payload: dict = Body(...), db: Session = Depends(get_db), use
 
 
 @router.post("/private-bookings")
-def create_private_booking(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+def create_private_booking(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_bookings_write)):
     member = db.get(Member, as_int(payload.get("member_id", 0), "会员"))
     course = db.get(Course, as_int(payload.get("course_id", 0), "课程"))
     if not member or not course or course.course_type not in {"private", "assessment"}:
@@ -128,7 +128,7 @@ def create_private_booking(payload: dict = Body(...), db: Session = Depends(get_
 
 
 @router.patch("/sessions/{session_id}")
-def update_session(session_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+def update_session(session_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_bookings_write)):
     row = db.get(ClassSession, session_id)
     if not row or row.deleted_at is not None:
         raise HTTPException(404, "排课不存在")
@@ -143,7 +143,7 @@ def update_session(session_id: int, payload: dict = Body(...), db: Session = Dep
 
 
 @router.delete("/sessions/{session_id}")
-def cancel_session(session_id: int, db: Session = Depends(get_db), user: User = Depends(require_staff)):
+def cancel_session(session_id: int, db: Session = Depends(get_db), user: User = Depends(require_bookings_write)):
     row = db.get(ClassSession, session_id)
     if not row or row.deleted_at is not None:
         raise HTTPException(404, "排课不存在")
@@ -161,7 +161,7 @@ def cancel_session(session_id: int, db: Session = Depends(get_db), user: User = 
 
 
 @router.delete("/sessions/{session_id}/permanent")
-def delete_session(session_id: int, db: Session = Depends(get_db), user: User = Depends(require_staff)):
+def delete_session(session_id: int, db: Session = Depends(get_db), user: User = Depends(require_bookings_write)):
     row = db.get(ClassSession, session_id)
     if not row or row.deleted_at is not None:
         raise HTTPException(404, "排课不存在")
@@ -171,7 +171,7 @@ def delete_session(session_id: int, db: Session = Depends(get_db), user: User = 
 
 
 @router.post("/sessions/copy-week")
-def copy_week(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+def copy_week(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_bookings_write)):
     target = valid_date(str(payload.get("week_start", "")), "目标周日期")
     source = add_days(target, -7)
     rows = db.query(ClassSession).filter(ClassSession.session_date >= source, ClassSession.session_date <= add_days(source, 6), ClassSession.status == "scheduled", ClassSession.deleted_at.is_(None)).all()
@@ -197,7 +197,7 @@ def copy_week(payload: dict = Body(...), db: Session = Depends(get_db), user: Us
 
 
 @router.post("/sessions/{session_id}/bookings")
-def admin_create_booking(session_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+def admin_create_booking(session_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_bookings_write)):
     session = db.get(ClassSession, session_id)
     member = db.get(Member, as_int(payload.get("member_id", 0), "会员"))
     if not session or session.deleted_at is not None or not member or member.deleted_at is not None:
@@ -211,7 +211,7 @@ def admin_create_booking(session_id: int, payload: dict = Body(...), db: Session
 
 
 @router.post("/bookings/{booking_id}/{action}")
-def booking_action(booking_id: int, action: str, db: Session = Depends(get_db), user: User = Depends(require_staff)):
+def booking_action(booking_id: int, action: str, db: Session = Depends(get_db), user: User = Depends(require_bookings_write)):
     booking = db.get(Booking, booking_id)
     if not booking or booking.deleted_at is not None:
         raise HTTPException(404, "预约不存在")
@@ -225,7 +225,7 @@ def booking_action(booking_id: int, action: str, db: Session = Depends(get_db), 
 
 
 @router.get("/rooms/availability")
-def room_availability(date: str = Query(...), start_time: str = Query(...), end_time: str = Query(...), exclude_session_id: int = Query(0), db: Session = Depends(get_db), _: User = Depends(require_read)):
+def room_availability(date: str = Query(...), start_time: str = Query(...), end_time: str = Query(...), exclude_session_id: int = Query(0), db: Session = Depends(get_db), _: User = Depends(require_catalog_view)):
     day = valid_date(date, "上课日期")
     start = valid_time(start_time, "开始时间")
     end = valid_time(end_time, "结束时间")
@@ -248,7 +248,7 @@ def room_availability(date: str = Query(...), start_time: str = Query(...), end_
 
 
 @router.get("/rooms/overview")
-def room_overview(date: str = Query(""), floor: str = Query(""), db: Session = Depends(get_db), _: User = Depends(require_read)):
+def room_overview(date: str = Query(""), floor: str = Query(""), db: Session = Depends(get_db), _: User = Depends(require_catalog_view)):
     day = valid_date(date or today())
     query = db.query(Room).filter(Room.active.is_(True), Room.deleted_at.is_(None))
     if floor:
@@ -260,7 +260,7 @@ def room_overview(date: str = Query(""), floor: str = Query(""), db: Session = D
 
 
 @router.post("/room-reservations")
-def reserve_room(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+def reserve_room(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_bookings_write)):
     room = db.get(Room, as_int(payload.get("room_id", 0), "教室"))
     if not room or room.deleted_at is not None:
         raise HTTPException(404, "教室不存在")
@@ -289,7 +289,7 @@ def reserve_room(payload: dict = Body(...), db: Session = Depends(get_db), user:
 
 
 @router.patch("/room-reservations/{reservation_id}")
-def update_room_reservation(reservation_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+def update_room_reservation(reservation_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_bookings_write)):
     row = db.get(RoomReservation, reservation_id)
     if not row or row.deleted_at is not None:
         raise HTTPException(404, "教室预约不存在")
@@ -318,7 +318,7 @@ def update_room_reservation(reservation_id: int, payload: dict = Body(...), db: 
 
 
 @router.delete("/room-reservations/{reservation_id}")
-def cancel_room_reservation(reservation_id: int, db: Session = Depends(get_db), user: User = Depends(require_staff)):
+def cancel_room_reservation(reservation_id: int, db: Session = Depends(get_db), user: User = Depends(require_bookings_write)):
     row = db.get(RoomReservation, reservation_id)
     if not row or row.deleted_at is not None:
         raise HTTPException(404, "教室预约不存在")
@@ -328,8 +328,23 @@ def cancel_room_reservation(reservation_id: int, db: Session = Depends(get_db), 
     return {"ok": True}
 
 
+@router.get("/courses")
+def list_courses(course_type: str = Query(""), q: str = Query(""), active_only: bool = Query(False), db: Session = Depends(get_db), _: User = Depends(require_catalog_view)):
+    """课程库列表：课程库页面与排课页共用同一份数据。"""
+    query = db.query(Course).filter(Course.deleted_at.is_(None))
+    if course_type:
+        query = query.filter(Course.course_type.in_(course_type.split(",")))
+    if active_only:
+        query = query.filter(Course.active.is_(True))
+    if q.strip():
+        term = f"%{q.strip()}%"
+        query = query.filter(or_(Course.name.like(term), Course.name_en.like(term)))
+    rows = query.order_by(Course.course_type, Course.id).all()
+    return {"items": [course_dict(row) for row in rows], "total": len(rows)}
+
+
 @router.post("/courses")
-def create_course(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_admin)):
+def create_course(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_catalog_write)):
     allowed = {"course_type", "name", "name_en", "description", "description_en", "duration_minutes", "price", "color", "image_url", "active"}
     data = clean_payload(payload, allowed)
     data["name"] = str(data.get("name", "")).strip()
@@ -353,7 +368,7 @@ def create_course(payload: dict = Body(...), db: Session = Depends(get_db), user
 
 
 @router.patch("/courses/{course_id}")
-def update_course(course_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_admin)):
+def update_course(course_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_catalog_write)):
     row = db.get(Course, course_id)
     if not row or row.deleted_at is not None:
         raise HTTPException(404, "课程不存在")
@@ -381,7 +396,7 @@ def update_course(course_id: int, payload: dict = Body(...), db: Session = Depen
 
 
 @router.post("/courses/{course_id}/image")
-def upload_course_image(course_id: int, file: UploadFile = File(...), db: Session = Depends(get_db), user: User = Depends(require_admin)):
+def upload_course_image(course_id: int, file: UploadFile = File(...), db: Session = Depends(get_db), user: User = Depends(require_catalog_write)):
     row = db.get(Course, course_id)
     if not row or row.deleted_at is not None:
         raise HTTPException(404, "课程不存在")
@@ -405,7 +420,7 @@ def upload_course_image(course_id: int, file: UploadFile = File(...), db: Sessio
 
 
 @router.delete("/courses/{course_id}/image")
-def delete_course_image(course_id: int, db: Session = Depends(get_db), user: User = Depends(require_admin)):
+def delete_course_image(course_id: int, db: Session = Depends(get_db), user: User = Depends(require_catalog_write)):
     row = db.get(Course, course_id)
     if not row or row.deleted_at is not None:
         raise HTTPException(404, "课程不存在")
@@ -418,7 +433,7 @@ def delete_course_image(course_id: int, db: Session = Depends(get_db), user: Use
 
 
 @router.post("/rooms")
-def create_room(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_admin)):
+def create_room(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_catalog_write)):
     data = clean_payload(payload, ROOM_FIELDS)
     data["name"] = str(data.get("name", "")).strip()
     if not data["name"]:
@@ -436,7 +451,7 @@ def create_room(payload: dict = Body(...), db: Session = Depends(get_db), user: 
 
 
 @router.patch("/rooms/{room_id}")
-def update_room(room_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_admin)):
+def update_room(room_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_catalog_write)):
     row = db.get(Room, room_id)
     if not row or row.deleted_at is not None:
         raise HTTPException(404, "教室不存在")
@@ -459,7 +474,7 @@ def update_room(room_id: int, payload: dict = Body(...), db: Session = Depends(g
 
 
 @router.post("/rooms/reorder")
-def reorder_rooms(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_admin)):
+def reorder_rooms(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_catalog_write)):
     ids = [as_int(value, "教室编号") for value in payload.get("room_ids", [])]
     rooms = db.query(Room).filter(Room.id.in_(ids), Room.deleted_at.is_(None)).all() if ids else []
     if len(rooms) != len(set(ids)) or len(ids) != db.query(Room).filter(Room.deleted_at.is_(None)).count():
@@ -507,7 +522,7 @@ def _validate_teacher_account(db: Session, user_id, exclude_teacher_id: int | No
 
 
 @router.post("/teachers")
-def create_teacher(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_admin)):
+def create_teacher(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_catalog_write)):
     allowed = {"user_id", "name", "name_en", "phone", "gender", "specialties", "specialties_en", "bio", "bio_en", "image_url", "visible", "active"}
     data = clean_payload(payload, allowed)
     linked_user = _validate_teacher_account(db, data.pop("user_id", None))
@@ -527,7 +542,7 @@ def create_teacher(payload: dict = Body(...), db: Session = Depends(get_db), use
 
 
 @router.patch("/teachers/{teacher_id}")
-def update_teacher(teacher_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_admin)):
+def update_teacher(teacher_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_catalog_write)):
     row = db.get(Teacher, teacher_id)
     if not row or row.deleted_at is not None:
         raise HTTPException(404, "教练不存在")
@@ -552,7 +567,7 @@ def update_teacher(teacher_id: int, payload: dict = Body(...), db: Session = Dep
 
 
 @router.post("/teachers/{teacher_id}/photo")
-def upload_teacher_photo(teacher_id: int, file: UploadFile = File(...), db: Session = Depends(get_db), user: User = Depends(require_admin)):
+def upload_teacher_photo(teacher_id: int, file: UploadFile = File(...), db: Session = Depends(get_db), user: User = Depends(require_catalog_write)):
     row = db.get(Teacher, teacher_id)
     if not row or row.deleted_at is not None:
         raise HTTPException(404, "教练不存在")
@@ -576,7 +591,7 @@ def upload_teacher_photo(teacher_id: int, file: UploadFile = File(...), db: Sess
 
 
 @router.delete("/teachers/{teacher_id}/photo")
-def delete_teacher_photo(teacher_id: int, db: Session = Depends(get_db), user: User = Depends(require_admin)):
+def delete_teacher_photo(teacher_id: int, db: Session = Depends(get_db), user: User = Depends(require_catalog_write)):
     row = db.get(Teacher, teacher_id)
     if not row or row.deleted_at is not None:
         raise HTTPException(404, "教练不存在")

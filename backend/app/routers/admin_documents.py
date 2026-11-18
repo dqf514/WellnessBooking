@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from ..config import UPLOAD_DIR
 from ..database import get_db
-from ..deps import require_read, require_staff
+from ..deps import require_members_view, require_members_write
 from ..log_util import audit
 from ..models import Member, MemberDocument, User
 from ..recycle_service import move_to_recycle
@@ -22,7 +22,7 @@ def document_dict(row: MemberDocument) -> dict:
 
 
 @router.get("/members/{member_id}/documents")
-def list_documents(member_id: int, category: str = "", db: Session = Depends(get_db), _: User = Depends(require_read)):
+def list_documents(member_id: int, category: str = "", db: Session = Depends(get_db), _: User = Depends(require_members_view)):
     member = db.get(Member, member_id)
     if not member or member.deleted_at is not None:
         raise HTTPException(404, "会员不存在")
@@ -34,7 +34,7 @@ def list_documents(member_id: int, category: str = "", db: Session = Depends(get
 
 
 @router.post("/members/{member_id}/documents")
-def upload_document(member_id: int, file: UploadFile = File(...), category: str = Form("contract"), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+def upload_document(member_id: int, file: UploadFile = File(...), category: str = Form("contract"), db: Session = Depends(get_db), user: User = Depends(require_members_write)):
     if not (member := db.get(Member, member_id)) or member.deleted_at is not None:
         raise HTTPException(404, "会员不存在")
     if category not in {"contract", "assessment"}:
@@ -59,7 +59,7 @@ def upload_document(member_id: int, file: UploadFile = File(...), category: str 
 
 
 @router.get("/documents/{document_id}")
-def get_document(document_id: int, db: Session = Depends(get_db), _: User = Depends(require_read)):
+def get_document(document_id: int, db: Session = Depends(get_db), _: User = Depends(require_members_view)):
     row = db.get(MemberDocument, document_id)
     if not row or row.deleted_at is not None:
         raise HTTPException(404, "文件不存在")
@@ -67,7 +67,7 @@ def get_document(document_id: int, db: Session = Depends(get_db), _: User = Depe
 
 
 @router.patch("/documents/{document_id}")
-def update_document(document_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+def update_document(document_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_members_write)):
     row = db.get(MemberDocument, document_id)
     if not row or row.deleted_at is not None:
         raise HTTPException(404, "文件不存在")
@@ -86,12 +86,12 @@ def update_document(document_id: int, payload: dict = Body(...), db: Session = D
 
 
 @router.delete("/documents/{document_id}")
-def delete_document(document_id: int, db: Session = Depends(get_db), user: User = Depends(require_staff)):
+def delete_document(document_id: int, db: Session = Depends(get_db), user: User = Depends(require_members_write)):
     return move_to_recycle(db, "documents", document_id, user)
 
 
 @router.get("/documents/{document_id}/view")
-def view_document(document_id: int, db: Session = Depends(get_db), _: User = Depends(require_read)):
+def view_document(document_id: int, db: Session = Depends(get_db), _: User = Depends(require_members_view)):
     row = db.get(MemberDocument, document_id)
     if not row or row.deleted_at is not None:
         raise HTTPException(404, "文件不存在")
@@ -102,7 +102,7 @@ def view_document(document_id: int, db: Session = Depends(get_db), _: User = Dep
 
 
 @router.get("/documents/{document_id}/download")
-def download_document(document_id: int, db: Session = Depends(get_db), _: User = Depends(require_read)):
+def download_document(document_id: int, db: Session = Depends(get_db), _: User = Depends(require_members_view)):
     row = db.get(MemberDocument, document_id)
     if not row or row.deleted_at is not None:
         raise HTTPException(404, "文件不存在")

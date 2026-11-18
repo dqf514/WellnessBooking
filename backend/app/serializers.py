@@ -1,9 +1,10 @@
 from .models import Booking, CardProduct, ClassSession, Course, Member, MemberCard, Room, Teacher, Transaction, User
+from .permissions import role_capabilities
 from .utils import dt, json_loads, today
 
 
 def user_dict(row: User) -> dict:
-    return {"id": row.id, "username": row.username, "full_name": row.full_name, "phone": row.phone or "", "role": row.role, "active": row.active, "created_at": dt(row.created_at)}
+    return {"id": row.id, "username": row.username, "full_name": row.full_name, "phone": row.phone or "", "role": row.role, "active": row.active, "created_at": dt(row.created_at), "capabilities": role_capabilities(row.role)}
 
 
 def member_dict(row: Member, include_cards: bool = False) -> dict:

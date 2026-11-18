@@ -28,14 +28,12 @@ from .models import (
     Transaction,
     User,
 )
+from .permissions import can_manage_resource
 from .utils import dt, json_loads, overlaps, today
 
 logger = logging.getLogger(__name__)
 RETENTION_DAYS = 180
 RESERVED_STATE_KEYS = {"__linked_user_active"}
-FRONTDESK_RESOURCES = {"members", "cards", "bookings", "sessions", "room-reservations", "records", "documents", "reminders", "vouchers", "shares"}
-FINANCE_RESOURCES = {"products", "transactions"}
-ADMIN_RESOURCES = {"users", "teachers", "rooms", "courses", "api-keys"}
 RESOURCE_MODELS = {
     "users": User,
     "members": Member,
@@ -84,10 +82,8 @@ def resource_model(resource: str):
 
 
 def _check_write_role(resource: str, user: User) -> None:
-    if user.role == "admin":
-        return
-    allowed = (resource in FRONTDESK_RESOURCES and user.role == "frontdesk") or (resource in FINANCE_RESOURCES and user.role == "finance")
-    if not allowed:
+    """按能力校验：能把某类资源移入回收站的角色，见 permissions.RESOURCE_CAPABILITIES。"""
+    if not can_manage_resource(user.role, resource):
         raise HTTPException(403, "当前角色无权删除此类型数据")
 
 

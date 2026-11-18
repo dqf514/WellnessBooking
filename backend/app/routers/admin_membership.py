@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from ..card_service import issue_card
 from ..database import get_db
-from ..deps import require_revenue, require_staff
+from ..deps import require_cards_write, require_members_write, require_revenue
 from ..log_util import audit
 from ..membership_service import reminder_dict, voucher_dict
 from ..models import Booking, CardProduct, ExperienceVoucher, Member, MemberCard, MemberCardShare, MemberReminder, Transaction, User
@@ -51,7 +51,7 @@ def upgrade_card(card_id: int, payload: dict = Body(...), db: Session = Depends(
 
 
 @router.post("/cards/{card_id}/transfer")
-def transfer_card(card_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+def transfer_card(card_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_cards_write)):
     card = _active_card(db, card_id)
     target = db.get(Member, as_int(payload.get("target_member_id", 0), "接收会员"))
     if not target or not target.active or target.deleted_at is not None or target.id == card.member_id:
@@ -69,7 +69,7 @@ def transfer_card(card_id: int, payload: dict = Body(...), db: Session = Depends
 
 
 @router.post("/cards/{card_id}/share")
-def share_card(card_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+def share_card(card_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_cards_write)):
     card = _active_card(db, card_id)
     target = db.get(Member, as_int(payload.get("target_member_id", 0), "共享会员"))
     if not target or not target.active or target.deleted_at is not None or target.id == card.member_id:
@@ -84,7 +84,7 @@ def share_card(card_id: int, payload: dict = Body(...), db: Session = Depends(ge
 
 
 @router.delete("/cards/{card_id}/shares/{member_id}")
-def unshare_card(card_id: int, member_id: int, db: Session = Depends(get_db), user: User = Depends(require_staff)):
+def unshare_card(card_id: int, member_id: int, db: Session = Depends(get_db), user: User = Depends(require_cards_write)):
     share = db.query(MemberCardShare).filter(MemberCardShare.card_id == card_id, MemberCardShare.member_id == member_id, MemberCardShare.deleted_at.is_(None)).first()
     if not share:
         raise HTTPException(404, "共享关系不存在")
@@ -95,7 +95,7 @@ def unshare_card(card_id: int, member_id: int, db: Session = Depends(get_db), us
 
 
 @router.post("/members/{member_id}/reminders")
-def create_reminder(member_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+def create_reminder(member_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_members_write)):
     if not (member := db.get(Member, member_id)) or member.deleted_at is not None:
         raise HTTPException(404, "会员不存在")
     content = str(payload.get("content", "")).strip()
@@ -112,7 +112,7 @@ def create_reminder(member_id: int, payload: dict = Body(...), db: Session = Dep
 
 
 @router.patch("/reminders/{reminder_id}")
-def update_reminder(reminder_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+def update_reminder(reminder_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_members_write)):
     row = db.get(MemberReminder, reminder_id)
     if not row or row.deleted_at is not None:
         raise HTTPException(404, "提醒不存在")
@@ -126,7 +126,7 @@ def update_reminder(reminder_id: int, payload: dict = Body(...), db: Session = D
 
 
 @router.post("/members/{member_id}/vouchers")
-def create_voucher(member_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+def create_voucher(member_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_cards_write)):
     if not (member := db.get(Member, member_id)) or member.deleted_at is not None:
         raise HTTPException(404, "会员不存在")
     course_type = str(payload.get("course_type", "group"))
@@ -147,7 +147,7 @@ def create_voucher(member_id: int, payload: dict = Body(...), db: Session = Depe
 
 
 @router.patch("/vouchers/{voucher_id}")
-def update_voucher(voucher_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+def update_voucher(voucher_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_cards_write)):
     row = db.get(ExperienceVoucher, voucher_id)
     if not row or row.deleted_at is not None:
         raise HTTPException(404, "体验券不存在")

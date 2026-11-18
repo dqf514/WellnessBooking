@@ -5,18 +5,34 @@ import sqlite3
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.orm import Session
 
 from ..config import BACKUP_DIR, DATABASE_URL, DATA_DIR
 from ..database import SessionLocal, engine, get_db
-from ..deps import require_admin
+from ..deps import get_current_user, require_settings_write, required_api_key_scope
 from ..log_util import audit
 from ..models import BackupPlanSettings, Booking, Member, Transaction, User
+from ..permissions import has_capability
 from ..utils import dt, valid_phone
 
 router = APIRouter(prefix="/api/admin/maintenance", tags=["maintenance"])
+
+# 各类 CSV 导出所需的能力：会员名单、预约名单、财务流水各自对应一项读取能力。
+EXPORT_CAPABILITIES = {"members": "members.view", "bookings": "bookings.view", "transactions": "finance.view"}
+
+
+def require_export_capability(kind: str, request: Request, user: User = Depends(get_current_user)) -> User:
+    """按导出类型判定能力：财务流水只有财务角色可导出，会员与预约名单按各自读取能力。"""
+    capability = EXPORT_CAPABILITIES.get(kind, "settings.write")
+    if not has_capability(user.role, capability):
+        raise HTTPException(403, "当前角色无权导出该数据")
+    if getattr(request.state, "auth_kind", "jwt") == "api_key":
+        scope = required_api_key_scope(request)
+        if not scope or scope not in getattr(request.state, "api_key_scopes", []):
+            raise HTTPException(403, f"API Key 缺少所需权限范围：{scope or '不支持此接口'}")
+    return user
 
 
 def _database_path() -> Path:
@@ -67,7 +83,7 @@ def _csv(filename: str, fieldnames: list[str], rows: list[dict]) -> StreamingRes
 
 
 @router.post("/backup-db")
-def backup_now(db: Session = Depends(get_db), user: User = Depends(require_admin)):
+def backup_now(db: Session = Depends(get_db), user: User = Depends(require_settings_write)):
     path = create_backup()
     cleanup_backups(_backup_plan(db).keep_last)
     audit(db, user, "maintenance", "backup_db", "database", detail={"filename": path.name, "size": path.stat().st_size})
@@ -76,13 +92,13 @@ def backup_now(db: Session = Depends(get_db), user: User = Depends(require_admin
 
 
 @router.get("/backups")
-def list_backups(_: User = Depends(require_admin)):
+def list_backups(_: User = Depends(require_settings_write)):
     items = [{"filename": path.name, "size_bytes": path.stat().st_size, "modified_at": datetime.fromtimestamp(path.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S")} for path in BACKUP_DIR.glob("*.db") if path.is_file()]
     return {"items": sorted(items, key=lambda item: item["modified_at"], reverse=True)}
 
 
 @router.get("/backups/download")
-def download_backup(filename: str = Query(...), _: User = Depends(require_admin)):
+def download_backup(filename: str = Query(...), _: User = Depends(require_settings_write)):
     if Path(filename).name != filename or not filename.endswith(".db"):
         raise HTTPException(400, "文件名不合法")
     path = BACKUP_DIR / filename
@@ -126,7 +142,7 @@ def _restore(path: Path, actor: User) -> str:
 
 
 @router.post("/restore-db/from-backup")
-def restore_backup(filename: str = Query(...), db: Session = Depends(get_db), user: User = Depends(require_admin)):
+def restore_backup(filename: str = Query(...), db: Session = Depends(get_db), user: User = Depends(require_settings_write)):
     if Path(filename).name != filename or not filename.endswith(".db"):
         raise HTTPException(400, "文件名不合法")
     path = BACKUP_DIR / filename
@@ -138,7 +154,7 @@ def restore_backup(filename: str = Query(...), db: Session = Depends(get_db), us
 
 
 @router.post("/restore-db/upload")
-def restore_upload(file: UploadFile = File(...), db: Session = Depends(get_db), user: User = Depends(require_admin)):
+def restore_upload(file: UploadFile = File(...), db: Session = Depends(get_db), user: User = Depends(require_settings_write)):
     if not file.filename or not file.filename.lower().endswith(".db"):
         raise HTTPException(400, "请上传 .db 文件")
     raw = file.file.read(101 * 1024 * 1024)
@@ -152,13 +168,13 @@ def restore_upload(file: UploadFile = File(...), db: Session = Depends(get_db), 
 
 
 @router.get("/backup-plan")
-def get_backup_plan(db: Session = Depends(get_db), _: User = Depends(require_admin)):
+def get_backup_plan(db: Session = Depends(get_db), _: User = Depends(require_settings_write)):
     row = _backup_plan(db)
     return {"enabled": row.enabled, "daily_time_hm": row.daily_time_hm, "keep_last": row.keep_last, "last_run_date": row.last_run_date}
 
 
 @router.put("/backup-plan")
-def put_backup_plan(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_admin)):
+def put_backup_plan(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_settings_write)):
     row = _backup_plan(db)
     hm = str(payload.get("daily_time_hm", row.daily_time_hm))
     try:
@@ -175,7 +191,7 @@ def put_backup_plan(payload: dict = Body(...), db: Session = Depends(get_db), us
 
 
 @router.get("/export/{kind}.csv")
-def export_csv(kind: str, db: Session = Depends(get_db), user: User = Depends(require_admin)):
+def export_csv(kind: str, db: Session = Depends(get_db), user: User = Depends(require_export_capability)):
     if kind == "members":
         rows = [{"id": row.id, "name": row.name, "name_en": row.name_en, "phone": row.phone, "gender": row.gender, "birth_date": row.birth_date, "source": row.source, "wechat": row.wechat, "emergency_phone": row.emergency_phone, "notes": row.notes, "created_at": dt(row.created_at)} for row in db.query(Member).filter(Member.deleted_at.is_(None)).order_by(Member.id).all()]
         fields = ["id", "name", "name_en", "phone", "gender", "birth_date", "source", "wechat", "emergency_phone", "notes", "created_at"]
@@ -193,12 +209,12 @@ def export_csv(kind: str, db: Session = Depends(get_db), user: User = Depends(re
 
 
 @router.get("/members-template.csv")
-def members_template(_: User = Depends(require_admin)):
+def members_template(_: User = Depends(require_settings_write)):
     return _csv("members-import-template.csv", ["name", "name_en", "phone", "gender", "birth_date", "source", "wechat", "emergency_phone", "notes"], [{"name": "张三", "name_en": "San Zhang", "phone": "13800000000", "gender": "女", "birth_date": "1990-01-01", "source": "朋友推荐", "wechat": "demo", "emergency_phone": "13900000000", "notes": "示例"}])
 
 
 @router.post("/members/import.csv")
-def import_members(duplicate_strategy: str = Query("skip", pattern="^(skip|update)$"), file: UploadFile = File(...), db: Session = Depends(get_db), user: User = Depends(require_admin)):
+def import_members(duplicate_strategy: str = Query("skip", pattern="^(skip|update)$"), file: UploadFile = File(...), db: Session = Depends(get_db), user: User = Depends(require_settings_write)):
     raw = file.file.read(5 * 1024 * 1024 + 1)
     if len(raw) > 5 * 1024 * 1024:
         raise HTTPException(400, "CSV 文件不能超过 5MB")

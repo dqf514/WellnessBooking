@@ -9,9 +9,10 @@ from sqlalchemy.orm import Session
 
 from ..config import UPLOAD_DIR
 from ..database import get_db
-from ..deps import require_admin, require_read
+from ..deps import require_settings_view, require_settings_write
 from ..log_util import audit, sms_log
 from ..models import AppSettings, OperationLog, SmsSendLog, SmsSettings, User
+from ..permissions import ROLE_LABELS, permission_matrix, role_capabilities
 from ..recycle_service import move_to_recycle
 from ..security import hash_password
 from ..serializers import user_dict
@@ -27,12 +28,12 @@ def _settings_dict(row: AppSettings) -> dict:
 
 
 @router.get("/settings")
-def get_app_settings(db: Session = Depends(get_db), _: User = Depends(require_admin)):
+def get_app_settings(db: Session = Depends(get_db), _: User = Depends(require_settings_view)):
     return _settings_dict(db.get(AppSettings, 1))
 
 
 @router.put("/settings")
-def put_app_settings(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_admin)):
+def put_app_settings(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_settings_write)):
     row = db.get(AppSettings, 1)
     allowed = {"venue_name", "venue_name_en", "address", "address_en", "phone", "booking_cutoff_minutes", "no_show_block_days", "reminder_hours"}
     for key, value in payload.items():
@@ -53,7 +54,7 @@ def put_app_settings(payload: dict = Body(...), db: Session = Depends(get_db), u
 
 
 @router.post("/settings/branding/{kind}")
-def upload_branding_image(kind: str, file: UploadFile = File(...), db: Session = Depends(get_db), user: User = Depends(require_admin)):
+def upload_branding_image(kind: str, file: UploadFile = File(...), db: Session = Depends(get_db), user: User = Depends(require_settings_write)):
     if kind not in {"logo", "favicon"}:
         raise HTTPException(404, "不支持的品牌图片类型")
     raw = file.file.read(2 * 1024 * 1024 + 1)
@@ -78,7 +79,7 @@ def upload_branding_image(kind: str, file: UploadFile = File(...), db: Session =
 
 
 @router.delete("/settings/branding/{kind}")
-def reset_branding_image(kind: str, db: Session = Depends(get_db), user: User = Depends(require_admin)):
+def reset_branding_image(kind: str, db: Session = Depends(get_db), user: User = Depends(require_settings_write)):
     if kind not in {"logo", "favicon"}:
         raise HTTPException(404, "不支持的品牌图片类型")
     row = db.get(AppSettings, 1)
@@ -88,13 +89,22 @@ def reset_branding_image(kind: str, db: Session = Depends(get_db), user: User = 
     return _settings_dict(row)
 
 
+@router.get("/role-permissions")
+def role_permissions(_: User = Depends(require_settings_view)):
+    """角色 → 能力矩阵，供后台展示当前权限模型（与 permissions.py 同源）。"""
+    return {
+        "roles": [{"role": role, "label": label, "capabilities": role_capabilities(role)} for role, label in ROLE_LABELS.items()],
+        "matrix": permission_matrix(),
+    }
+
+
 @router.get("/users")
-def list_users(db: Session = Depends(get_db), _: User = Depends(require_admin)):
+def list_users(db: Session = Depends(get_db), _: User = Depends(require_settings_view)):
     return {"items": [user_dict(row) for row in db.query(User).filter(User.deleted_at.is_(None)).order_by(User.id).all()]}
 
 
 @router.post("/users")
-def create_user(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_admin)):
+def create_user(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_settings_write)):
     username = str(payload.get("username", "")).strip().lower()
     password = str(payload.get("password", ""))
     role = str(payload.get("role", "viewer"))
@@ -118,7 +128,7 @@ def create_user(payload: dict = Body(...), db: Session = Depends(get_db), user: 
 
 
 @router.patch("/users/{user_id}")
-def update_user(user_id: int, payload: dict = Body(...), db: Session = Depends(get_db), actor: User = Depends(require_admin)):
+def update_user(user_id: int, payload: dict = Body(...), db: Session = Depends(get_db), actor: User = Depends(require_settings_write)):
     row = db.get(User, user_id)
     if not row or row.deleted_at is not None:
         raise HTTPException(404, "账号不存在")
@@ -156,7 +166,7 @@ def update_user(user_id: int, payload: dict = Body(...), db: Session = Depends(g
 
 
 @router.delete("/users/{user_id}")
-def delete_user(user_id: int, db: Session = Depends(get_db), actor: User = Depends(require_admin)):
+def delete_user(user_id: int, db: Session = Depends(get_db), actor: User = Depends(require_settings_write)):
     return move_to_recycle(db, "users", user_id, actor)
 
 
@@ -165,12 +175,12 @@ def _sms_public(row: SmsSettings) -> dict:
 
 
 @router.get("/sms-settings")
-def get_sms_settings(db: Session = Depends(get_db), _: User = Depends(require_admin)):
+def get_sms_settings(db: Session = Depends(get_db), _: User = Depends(require_settings_view)):
     return _sms_public(get_settings(db))
 
 
 @router.put("/sms-settings")
-def put_sms_settings(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_admin)):
+def put_sms_settings(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_settings_write)):
     row = get_settings(db)
     for key in {"enabled", "sp_id", "send_url", "balance_url", "notify_booking", "notify_cancel", "notify_reminder", "template_booking", "template_cancel", "template_reminder"}:
         if key in payload:
@@ -188,7 +198,7 @@ def put_sms_settings(payload: dict = Body(...), db: Session = Depends(get_db), u
 
 
 @router.post("/sms-settings/test")
-def test_sms(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_admin)):
+def test_sms(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_settings_write)):
     row = get_settings(db)
     phone = valid_phone(str(payload.get("phone", "")))
     if not sp_id(row) or not password_md5(row):
@@ -208,7 +218,7 @@ def test_sms(payload: dict = Body(...), db: Session = Depends(get_db), user: Use
 
 
 @router.get("/sms-settings/balance")
-def sms_balance(db: Session = Depends(get_db), _: User = Depends(require_admin)):
+def sms_balance(db: Session = Depends(get_db), _: User = Depends(require_settings_view)):
     row = get_settings(db)
     if not sp_id(row) or not password_md5(row):
         raise HTTPException(400, "请先填写 sp_id 和接口密码")
@@ -219,7 +229,7 @@ def sms_balance(db: Session = Depends(get_db), _: User = Depends(require_admin))
 
 
 @router.get("/logs")
-def operation_logs(kind: str = Query("operation"), page: int = Query(1, ge=1), q: str = Query(""), db: Session = Depends(get_db), _: User = Depends(require_admin)):
+def operation_logs(kind: str = Query("operation"), page: int = Query(1, ge=1), q: str = Query(""), db: Session = Depends(get_db), _: User = Depends(require_settings_view)):
     model = SmsSendLog if kind == "sms" else OperationLog
     query = db.query(model)
     if q:

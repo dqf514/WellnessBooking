@@ -6,11 +6,11 @@ import { DynamicQrCode } from "@/components/QrCode";
 import { MemberPicker } from "@/components/MemberPicker";
 import { RecycleDeleteButton } from "@/components/RecycleDeleteButton";
 import { Badge, Empty, Icon, Modal, ResponsiveTable, Spinner } from "@/components/UI";
-import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { apiFetch } from "@/lib/api";
 import { endTimeFor, formatDateTime, money, timeToMinutes, today } from "@/lib/date";
 import { paymentLabel, paymentMethods } from "@/lib/financeCopy";
+import { useCan } from "@/lib/permissions";
 import type { Booking, Member, Meta, Session } from "@/types";
 
 const statusTones: Record<string, "neutral" | "green" | "red" | "amber" | "blue"> = { booked: "amber", checked_in: "green", completed: "green", cancelled: "neutral", no_show: "red" };
@@ -20,12 +20,11 @@ function endFor(start: string, duration: number) {
 }
 
 export function BookingsPage() {
-  const { user } = useAuth();
   const { type: routeType } = useParams();
   const type = ["group", "private", "workshop"].includes(routeType ?? "") ? routeType! : "group";
   const { local } = useLanguage();
   const statusLabels: Record<string, string> = { booked: local("待签到", "Upcoming"), checked_in: local("已签到并消课", "Checked in"), completed: local("已签到并消课", "Checked in"), cancelled: local("已取消", "Cancelled"), no_show: local("爽约", "No show") };
-  const canWrite = ["admin", "frontdesk"].includes(user?.role ?? "");
+  const canWrite = useCan("bookings.write");
   const [date, setDate] = useState(today());
   const [sessions, setSessions] = useState<Session[]>([]);
   const [members, setMembers] = useState<Member[]>([]);

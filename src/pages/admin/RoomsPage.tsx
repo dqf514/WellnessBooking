@@ -3,10 +3,10 @@ import { Field, Notice, PageHeader } from "@/components/AdminUI";
 import { SessionEditor } from "@/components/SessionEditor";
 import { RecycleDeleteButton } from "@/components/RecycleDeleteButton";
 import { Badge, Icon, Modal, Spinner } from "@/components/UI";
-import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { apiFetch, downloadFile } from "@/lib/api";
 import { addDays, today } from "@/lib/date";
+import { useCan } from "@/lib/permissions";
 import { useSwipeNavigation } from "@/lib/useSwipeNavigation";
 import type { Meta, Room, Session } from "@/types";
 
@@ -16,9 +16,8 @@ function toMinutes(value: string) { const [h, m] = value.split(":").map(Number);
 function plusHour(value: string) { return `${String(Math.min(23, Number(value.slice(0, 2)) + 1)).padStart(2, "0")}:${value.slice(3)}`; }
 
 export function RoomsPage() {
-  const { user } = useAuth();
   const { local } = useLanguage();
-  const canWrite = ["admin", "frontdesk"].includes(user?.role ?? "");
+  const canWrite = useCan("bookings.write");
   const [date, setDate] = useState(today());
   const [floor, setFloor] = useState("");
   const [rooms, setRooms] = useState<OverviewRoom[]>([]);

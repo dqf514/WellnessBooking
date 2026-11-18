@@ -8,6 +8,7 @@ from starlette.requests import Request
 from .api_key_service import api_key_scopes, authenticate_api_key
 from .database import get_db
 from .models import Member, User
+from .permissions import has_capability
 from .security import decode_token
 
 bearer = HTTPBearer(auto_error=False)
@@ -56,9 +57,12 @@ def get_current_member(creds: HTTPAuthorizationCredentials | None = Depends(bear
 
 
 def required_api_key_scope(request: Request) -> str | None:
+    path = request.url.path
+    # 权限矩阵属于管理端内部信息，即使只读也不对外暴露。
+    if path == "/api/admin/role-permissions":
+        return "settings:write"
     if request.method in {"GET", "HEAD", "OPTIONS"}:
         return "read"
-    path = request.url.path
     # 记收入账与会员卡升额属于财务动作，优先于通用的 bookings / members 前缀判断。
     if re.fullmatch(r"/api/admin/bookings/\d+/revenue", path) or re.fullmatch(r"/api/admin/cards/\d+/upgrade", path):
         return "finance:write"
@@ -79,29 +83,46 @@ def required_api_key_scope(request: Request) -> str | None:
     return None
 
 
-def require_roles(*roles: str):
+def require_capability(capability: str):
+    """按“能力”而非“角色”校验权限；角色 → 能力的唯一映射在 permissions.py。"""
+
     def dependency(request: Request, user: User = Depends(get_current_user)) -> User:
-        if user.role not in roles:
+        if not has_capability(user.role, capability):
             raise HTTPException(status_code=403, detail="当前角色无权执行此操作")
         if getattr(request.state, "auth_kind", "jwt") == "api_key":
             scope = required_api_key_scope(request)
             if not scope or scope not in getattr(request.state, "api_key_scopes", []):
                 raise HTTPException(status_code=403, detail=f"API Key 缺少所需权限范围：{scope or '不支持此接口'}")
         return user
+
     return dependency
 
 
 def require_interactive_admin(request: Request, user: User = Depends(get_current_user)) -> User:
-    if user.role != "admin":
+    if not has_capability(user.role, "settings.write"):
         raise HTTPException(status_code=403, detail="当前角色无权执行此操作")
     if getattr(request.state, "auth_kind", "jwt") != "jwt":
         raise HTTPException(status_code=403, detail="API Key 管理仅允许管理员登录会话操作")
     return user
 
 
-require_admin = require_roles("admin")
-require_staff = require_roles("admin", "frontdesk")
-require_finance = require_roles("admin", "finance")
-# 涉及收款 / 计费的写操作：管理员、财务与前台均可执行，避免角色之间互相锁死。
-require_revenue = require_roles("admin", "finance", "frontdesk")
-require_read = require_roles("admin", "frontdesk", "finance", "teacher", "viewer")
+# —— 以下依赖项是接口层的“能力门”，新增接口请直接复用对应能力 ——
+require_dashboard = require_capability("dashboard.view")
+require_bookings_view = require_capability("bookings.view")
+require_bookings_write = require_capability("bookings.write")
+require_members_view = require_capability("members.view")
+require_members_write = require_capability("members.write")
+require_records_write = require_capability("records.write")
+require_cards_write = require_capability("cards.write")
+require_revenue = require_capability("revenue.write")
+require_catalog_view = require_capability("catalog.view")
+require_catalog_write = require_capability("catalog.write")
+require_products_view = require_capability("products.view")
+require_products_write = require_capability("products.write")
+require_finance_view = require_capability("finance.view")
+require_finance = require_capability("finance.write")
+require_reports = require_capability("reports.view")
+require_recycle_write = require_capability("recycle.write")
+require_recycle_view = require_capability("recycle.view")
+require_settings_view = require_capability("settings.view")
+require_settings_write = require_capability("settings.write")

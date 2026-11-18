@@ -7,11 +7,12 @@ from sqlalchemy.orm import Session, joinedload
 
 from ..card_service import issue_card
 from ..database import get_db
-from ..deps import require_read, require_revenue, require_staff
+from ..deps import require_cards_write, require_catalog_view, require_dashboard, require_members_view, require_members_write, require_records_write, require_revenue
 from ..finance_service import recognized_revenue
 from ..log_util import audit
 from ..membership_service import due_reminders, reminder_dict, voucher_dict
 from ..models import Booking, CardProduct, ClassSession, Course, ExperienceVoucher, Member, MemberCard, MemberCardShare, MemberRecord, MemberReminder, Room, Teacher, Transaction, User
+from ..permissions import has_capability
 from ..serializers import booking_dict, card_dict, course_dict, member_dict, product_dict, room_dict, session_dict, teacher_dict, transaction_dict, user_dict
 from ..utils import add_days, as_bool, as_float, as_int, clean_payload, today, valid_benefits, valid_date, valid_phone
 
@@ -38,7 +39,7 @@ def _validated_teacher_id(db: Session, value) -> int:
 
 
 @router.get("/dashboard")
-def dashboard(db: Session = Depends(get_db), _: User = Depends(require_read)):
+def dashboard(db: Session = Depends(get_db), _: User = Depends(require_dashboard)):
     day = today()
     month = day[:7]
     sessions = db.query(ClassSession).filter(ClassSession.session_date == day, ClassSession.deleted_at.is_(None)).order_by(ClassSession.start_time).all()
@@ -58,18 +59,20 @@ def dashboard(db: Session = Depends(get_db), _: User = Depends(require_read)):
 
 
 @router.get("/meta")
-def meta(db: Session = Depends(get_db), _: User = Depends(require_read)):
+def meta(db: Session = Depends(get_db), user: User = Depends(require_catalog_view)):
+    """下拉框用的基础字典；按角色能力裁剪，避免越权看到产品与员工账号。"""
+    role = user.role
     return {
         "courses": [course_dict(row) for row in db.query(Course).filter(Course.deleted_at.is_(None)).order_by(Course.course_type, Course.id).all()],
         "rooms": [room_dict(row) for row in db.query(Room).filter(Room.deleted_at.is_(None)).order_by(Room.floor, Room.sort_order, Room.id).all()],
         "teachers": [teacher_dict(row) for row in db.query(Teacher).filter(Teacher.deleted_at.is_(None)).order_by(Teacher.id).all()],
-        "products": [product_dict(row) for row in db.query(CardProduct).filter(CardProduct.deleted_at.is_(None)).order_by(CardProduct.id).all()],
-        "users": [user_dict(row) for row in db.query(User).filter(User.deleted_at.is_(None)).order_by(User.id).all()],
+        "products": [product_dict(row) for row in db.query(CardProduct).filter(CardProduct.deleted_at.is_(None)).order_by(CardProduct.id).all()] if has_capability(role, "products.view") else [],
+        "users": [user_dict(row) for row in db.query(User).filter(User.deleted_at.is_(None)).order_by(User.id).all()] if has_capability(role, "settings.view") or has_capability(role, "members.write") else [],
     }
 
 
 @router.get("/members")
-def list_members(q: str = Query(""), category: str = Query(""), active_only: bool = Query(False), db: Session = Depends(get_db), _: User = Depends(require_read)):
+def list_members(q: str = Query(""), category: str = Query(""), active_only: bool = Query(False), db: Session = Depends(get_db), _: User = Depends(require_members_view)):
     query = db.query(Member).options(joinedload(Member.advisor), joinedload(Member.cards).joinedload(MemberCard.product)).filter(Member.deleted_at.is_(None))
     if q.strip():
         term = f"%{q.strip()}%"
@@ -83,7 +86,7 @@ def list_members(q: str = Query(""), category: str = Query(""), active_only: boo
 
 
 @router.post("/members")
-def create_member(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+def create_member(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_members_write)):
     data = clean_payload(payload, MEMBER_FIELDS)
     name = str(data.get("name", "")).strip()
     if not name:
@@ -104,7 +107,7 @@ def create_member(payload: dict = Body(...), db: Session = Depends(get_db), user
 
 
 @router.get("/members/{member_id}")
-def get_member(member_id: int, db: Session = Depends(get_db), _: User = Depends(require_read)):
+def get_member(member_id: int, db: Session = Depends(get_db), _: User = Depends(require_members_view)):
     row = db.get(Member, member_id)
     if not row or row.deleted_at is not None:
         raise HTTPException(404, "会员不存在")
@@ -118,7 +121,7 @@ def get_member(member_id: int, db: Session = Depends(get_db), _: User = Depends(
 
 
 @router.patch("/members/{member_id}")
-def update_member(member_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+def update_member(member_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_members_write)):
     row = db.get(Member, member_id)
     if not row or row.deleted_at is not None:
         raise HTTPException(404, "会员不存在")
@@ -163,7 +166,7 @@ def purchase_card(member_id: int, payload: dict = Body(...), db: Session = Depen
 
 
 @router.patch("/cards/{card_id}")
-def update_card(card_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+def update_card(card_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_cards_write)):
     card = db.get(MemberCard, card_id)
     if not card or card.deleted_at is not None:
         raise HTTPException(404, "会员卡不存在")
@@ -208,7 +211,7 @@ def update_card(card_id: int, payload: dict = Body(...), db: Session = Depends(g
 
 
 @router.post("/cards/batch-extend")
-def batch_extend_cards(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+def batch_extend_cards(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_cards_write)):
     days = as_int(payload.get("days", 0), "批量延期天数")
     if days <= 0 or days > 365:
         raise HTTPException(400, "批量延期天数需在 1 至 365 之间")
@@ -226,7 +229,7 @@ def _record_dict(row: MemberRecord) -> dict:
 
 
 @router.post("/members/{member_id}/records")
-def add_member_record(member_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+def add_member_record(member_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_records_write)):
     member = db.get(Member, member_id)
     if not member or member.deleted_at is not None:
         raise HTTPException(404, "会员不存在")
@@ -241,7 +244,7 @@ def add_member_record(member_id: int, payload: dict = Body(...), db: Session = D
 
 
 @router.get("/records/{record_id}")
-def get_member_record(record_id: int, db: Session = Depends(get_db), _: User = Depends(require_read)):
+def get_member_record(record_id: int, db: Session = Depends(get_db), _: User = Depends(require_members_view)):
     row = db.get(MemberRecord, record_id)
     if not row or row.deleted_at is not None:
         raise HTTPException(404, "会员记录不存在")
@@ -249,7 +252,7 @@ def get_member_record(record_id: int, db: Session = Depends(get_db), _: User = D
 
 
 @router.patch("/records/{record_id}")
-def update_member_record(record_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+def update_member_record(record_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_records_write)):
     row = db.get(MemberRecord, record_id)
     if not row or row.deleted_at is not None:
         raise HTTPException(404, "会员记录不存在")
@@ -270,13 +273,13 @@ def update_member_record(record_id: int, payload: dict = Body(...), db: Session 
 
 
 @router.get("/no-shows")
-def no_shows(db: Session = Depends(get_db), _: User = Depends(require_read)):
+def no_shows(db: Session = Depends(get_db), _: User = Depends(require_members_view)):
     rows = db.query(Booking).filter(Booking.status == "no_show", Booking.deleted_at.is_(None)).order_by(Booking.booked_at.desc()).all()
     return {"items": [booking_dict(row) for row in rows]}
 
 
 @router.post("/members/{member_id}/clear-no-show")
-def clear_no_show(member_id: int, db: Session = Depends(get_db), user: User = Depends(require_staff)):
+def clear_no_show(member_id: int, db: Session = Depends(get_db), user: User = Depends(require_members_write)):
     member = db.get(Member, member_id)
     if not member or member.deleted_at is not None:
         raise HTTPException(404, "会员不存在")

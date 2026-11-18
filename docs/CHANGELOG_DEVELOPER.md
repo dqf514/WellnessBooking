@@ -201,7 +201,7 @@
   - 覆盖会员、前台、排课、会员卡、财务、报表、短信、权限、备份、回收站及故障排查。
   - 增加每日、每周和每月运营检查清单。
 - 新增并持续同步完整 API 文档：
-  - 当前共 **123 个接口**。
+  - 当前共 **123 个接口**（本批次后为 125 个）。
   - 包含鉴权、角色、API Key、数据结构、错误码、分页、并发规则及典型业务调用顺序。
   - 提供 `docs/API.md` 和可视化 `public/api-docs.html`。
 - 二维码签到、购卡取消、回收站和教室冲突查询等最新能力均已同步到帮助与 API 文档。
@@ -224,6 +224,53 @@
 **最终业务闭环：**
 
 > 课程与资源维护 → 会员购卡与入账 → 课程预约 → 双向扫码签到 → 自动消课 → 撤销与异常处理 → 财务及经营报表 → 短信通知与审计 → 数据备份与恢复
+
+---
+
+## 八、后台导航重构与角色能力矩阵（2026-11-18）
+
+### 1. 能力模型（单一事实来源）
+
+- 新增 `backend/app/permissions.py`：全系统唯一的“角色 → 能力”定义处，含 19 项能力、5 个角色、`RESOURCE_CAPABILITIES`（可回收资源 → 所需能力）与 `permission_matrix()`。
+- 新增 `src/lib/permissions.ts`：前端镜像矩阵（`Capability`、`ROLE_CAPABILITIES`、`hasCapability()`、`useCan()`、`RESOURCE_CAPABILITIES`），优先使用服务端下发的 `user.capabilities`，缺失时才回退本地矩阵。
+- `serializers.user_dict` 增加 `capabilities` 字段，登录与 `GET /api/auth/me` 均返回，菜单与按钮显隐不再硬编码角色名。
+
+### 2. 后端鉴权改造
+
+- `deps.py` 新增 `require_capability(capability)` 能力门，取代 `require_admin` / `require_read` / `require_staff` 等按角色名写死的依赖；新增 `require_dashboard`、`require_bookings_view/write`、`require_members_view/write`、`require_records_write`、`require_cards_write`、`require_catalog_view/write`、`require_products_view/write`、`require_finance_view`、`require_reports`、`require_recycle_view/write`、`require_settings_view/write`。
+- 全部 `routers/*.py` 依赖项重映射到对应能力门；`checkin.py` 的课程码与前台扫码改用 `require_bookings_write`。
+- `recycle_service._check_write_role` 改为按 `can_manage_resource(role, resource)` 校验，移除 `FRONTDESK_RESOURCES` / `FINANCE_RESOURCES` / `ADMIN_RESOURCES` 三份角色白名单常量。
+- `GET /api/admin/meta` 按能力裁剪：`products` 仅在 `products.view` 时返回，`users` 仅在 `settings.view` 或 `members.write` 时返回。
+- `deps.py` 移除 `require_roles` 与 `require_admin` / `require_staff` 别名，接口层只保留能力门，避免再次出现按角色名写死的分支。
+- `checkin.py` 的课程码与前台扫码改用 `require_bookings_write`；`recycle_service` 的删除校验改为 `can_manage_resource(role, resource)`。
+
+### 4. 组合权限入口
+
+- 前端新增 `hasAnyCapability()`，导航项与路由守卫支持“满足其中之一即可”，用于“财务入账”这类既能看流水、也能只做电子码核销的组合入口。
+- `FinancePage` 拆分渲染：具备 `finance.view` 的角色看到完整流水、汇总与导出；仅有 `revenue.write` 的前台只看到电子码核销，并给出说明，避免前台被挡在核销流程之外。
+- `GET /api/admin/maintenance/export/{kind}.csv` 改为按导出类型判定能力（`members.view` / `bookings.view` / `finance.view`），不再一律要求管理员；API Key 仍需 `maintenance:write`。
+- `App.tsx` 的路由守卫在概览页本身无权访问时给出提示页，避免反复跳回同一路由形成死循环。
+
+### 3. 新增接口
+
+- `GET /api/admin/courses`：课程库列表，支持 `course_type`、`q`、`active_only` 筛选，供独立页面渲染卡片/表格两种视图。
+- `GET /api/admin/role-permissions`：返回角色能力清单与权限矩阵；`required_api_key_scope` 对该路径强制要求 `settings:write`，只读 scope 不返回。
+
+### 4. 前端导航与页面
+
+- `AdminLayout` 导航改为声明式 `navSections()`，按能力过滤菜单项与分组；分组无可见子项时整体隐藏。
+- `App.tsx` 的 `Protected` 组件新增能力守卫，路由与菜单使用同一份能力判定，无权访问时回落到经营概览。
+- 新增 `src/pages/admin/CoursesPage.tsx`：课程库独立页面，支持筛选、搜索、增删改查、图片上传与移除、卡片/表格视图切换、移入回收站。
+- 删除 `src/components/CourseLibraryModal.tsx`，排课页改为跳转新页面。
+- `RecycleDeleteButton` 按 `RESOURCE_CAPABILITIES` 自动隐藏无权删除的按钮；`MemberProfileDrawer` 改为接收 `can(capability)` 回调，按能力逐项控制购卡、赠券、共享、转卡、跟进记录等操作。
+- `ProductsPage` / `FinancePage` / `BookingsPage` / `RoomsPage` / `MembersPage` 的写操作按钮统一改为 `useCan(...)` 判定。
+
+### 5. 文档
+
+- `docs/API.md` 新增 1.4 节角色能力矩阵、第 8 章课程库列表、第 10 章角色权限矩阵接口，接口总数更新为 **125 个**（与 `/openapi.json` 逐条比对一致）。
+- `public/api-docs.html` 由 `python docs/build_api_docs.py` 重新生成（17 章节 / 125 接口）。
+
+**验证：** `npm run build`（`tsc -b` + `vite build`）通过；`python -m compileall -q backend/app` 通过；五个角色冒烟测试覆盖课程库、权限矩阵、流水、报表、产品、会员与回收站接口的读写，权限外请求均返回 `403` 且未落库。
 
 ---
 
@@ -283,7 +330,7 @@
 
 ### 9. 文档
 
-- `docs/API.md` 同步教练账号关联规则、`PATCH /api/auth/me`、两张图片删除接口、权限措辞与 API Key 范围说明，共 **123 个接口**。
+- `docs/API.md` 同步教练账号关联规则、`PATCH /api/auth/me`、两张图片删除接口、权限措辞与 API Key 范围说明，共 **123 个接口**（本批次后为 125 个）。
 - `public/api-docs.html` 由 `python docs/build_api_docs.py` 重新生成。
 
 **验证：** `npx tsc -b` 无错误；`npm run build` 通过；`python -m compileall -q backend/app` 通过。

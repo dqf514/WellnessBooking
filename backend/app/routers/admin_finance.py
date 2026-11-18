@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from ..card_service import issue_card
 from ..database import get_db
-from ..deps import require_finance, require_read, require_revenue
+from ..deps import require_finance, require_finance_view, require_products_view, require_products_write, require_reports, require_revenue
 from ..finance_service import create_consumption_revenue, normalized_category, recognized_revenue, resolve_entry_options, resolve_revenue_details
 from ..log_util import audit
 from ..models import Booking, CardProduct, ClassSession, Member, Room, RoomReservation, Transaction, User
@@ -37,7 +37,7 @@ def query_transactions(db: Session, date_from: str = "", date_to: str = "", cate
 
 
 @router.get("/products")
-def list_products(db: Session = Depends(get_db), _: User = Depends(require_read)):
+def list_products(db: Session = Depends(get_db), _: User = Depends(require_products_view)):
     rows = db.query(CardProduct).filter(CardProduct.deleted_at.is_(None)).order_by(CardProduct.id).all()
     order = {"group": 0, "private": 1, "assessment": 1, "annual": 2, "package": 2, "workshop": 3, "training": 4}
     rows.sort(key=lambda row: (order.get(row.category, 99), row.id))
@@ -45,7 +45,7 @@ def list_products(db: Session = Depends(get_db), _: User = Depends(require_read)
 
 
 @router.post("/products")
-def create_product(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_finance)):
+def create_product(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_products_write)):
     data = clean_payload(payload, PRODUCT_FIELDS)
     if not str(data.get("name", "")).strip():
         raise HTTPException(400, "产品名称不能为空")
@@ -65,7 +65,7 @@ def create_product(payload: dict = Body(...), db: Session = Depends(get_db), use
 
 
 @router.patch("/products/{product_id}")
-def update_product(product_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_finance)):
+def update_product(product_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_products_write)):
     row = db.get(CardProduct, product_id)
     if not row or row.deleted_at is not None:
         raise HTTPException(404, "产品不存在")
@@ -92,7 +92,7 @@ def update_product(product_id: int, payload: dict = Body(...), db: Session = Dep
 
 
 @router.get("/transactions")
-def list_transactions(date_from: str = Query(""), date_to: str = Query(""), category: str = Query(""), member_id: int = Query(0), db: Session = Depends(get_db), _: User = Depends(require_read)):
+def list_transactions(date_from: str = Query(""), date_to: str = Query(""), category: str = Query(""), member_id: int = Query(0), db: Session = Depends(get_db), _: User = Depends(require_finance_view)):
     rows = query_transactions(db, date_from, date_to, category, member_id)
     return {"items": [transaction_dict(row) for row in rows], "total_amount": round(sum(row.amount for row in rows if row.cash_basis and row.status in {"paid", "refunded"}), 2)}
 
@@ -274,7 +274,7 @@ def build_report(db: Session, start: str, end: str) -> dict:
 
 
 @router.get("/reports")
-def reports(date_from: str = Query(""), date_to: str = Query(""), db: Session = Depends(get_db), _: User = Depends(require_read)):
+def reports(date_from: str = Query(""), date_to: str = Query(""), db: Session = Depends(get_db), _: User = Depends(require_reports)):
     start = valid_date(date_from or today()[:8] + "01", "开始日期")
     end = valid_date(date_to or today(), "结束日期")
     if end < start:

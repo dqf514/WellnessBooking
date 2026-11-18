@@ -6,17 +6,38 @@ import { PersonalProfilePanel } from "@/components/PersonalProfilePanel";
 import { Icon, LogoutConfirm, type IconName } from "@/components/UI";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
+import { hasAnyCapability, type Capability } from "@/lib/permissions";
 
-interface NavChild { to: string; label: string; roles?: string[] }
+interface NavChild { to: string; label: string; capability: Capability | Capability[] }
+interface NavSection { to?: string; label?: string; title?: string; icon: IconName; capability?: Capability | Capability[]; children?: NavChild[] }
 
-function NavGroup({ title, icon, links, onNavigate }: { title: string; icon: IconName; links: NavChild[]; onNavigate: () => void }) {
-  const { user } = useAuth();
-  const visibleLinks = links.filter((link) => !link.roles || link.roles.includes(user?.role ?? ""));
-  if (!visibleLinks.length) return null;
-  return <div className="admin-nav-group">
-    <div className="admin-nav-heading"><Icon name={icon}/><span>{title}</span></div>
-    <div className="admin-nav-children">{visibleLinks.map((link) => <NavLink key={link.to} to={link.to} onClick={onNavigate}><span>{link.label}</span></NavLink>)}</div>
-  </div>;
+// 后台导航：按“从日常到配置”的顺序分组，菜单可见性由服务端下发的能力清单决定。
+function navSections(a: (zh: string, en?: string) => string, local: (zh: string, en: string) => string): NavSection[] {
+  return [
+    { to: "/admin", label: a("经营概览"), icon: "home", capability: "dashboard.view" },
+    { title: a("预约与签到"), icon: "check", children: [
+      { to: "/admin/bookings/group", label: local("团课预约", "Group bookings"), capability: "bookings.view" },
+      { to: "/admin/bookings/private", label: local("私教预约", "PT bookings"), capability: "bookings.view" },
+      { to: "/admin/bookings/workshop", label: local("工作坊预约", "Workshop bookings"), capability: "bookings.view" },
+    ] },
+    { title: a("排课与场地"), icon: "calendar", children: [
+      { to: "/admin/schedule/group", label: local("团课排课", "Group schedule"), capability: "bookings.view" },
+      { to: "/admin/schedule/workshop", label: local("工作坊排课", "Workshop schedule"), capability: "bookings.view" },
+      { to: "/admin/rooms", label: a("教室总览"), capability: "catalog.view" },
+    ] },
+    { to: "/admin/members", label: a("会员管理"), icon: "users", capability: "members.view" },
+    { title: a("资源与商品", "Resources & products"), icon: "database", children: [
+      { to: "/admin/resources/courses", label: a("课程库"), capability: "catalog.view" },
+      { to: "/admin/resources/teachers", label: a("教练管理"), capability: "catalog.write" },
+      { to: "/admin/resources/rooms", label: a("教室管理"), capability: "catalog.write" },
+      { to: "/admin/products", label: local("卡课产品", "Cards & products"), capability: "products.view" },
+    ] },
+    { title: a("财务与报表", "Finance & reports"), icon: "money", children: [
+      { to: "/admin/finance", label: a("财务入账"), capability: ["finance.view", "revenue.write"] },
+      { to: "/admin/reports", label: a("报表分析"), capability: "reports.view" },
+    ] },
+    { to: "/admin/settings", label: a("系统设置"), icon: "settings", capability: "settings.view" },
+  ];
 }
 
 export function AdminLayout() {
@@ -26,22 +47,26 @@ export function AdminLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const roleLabels: Record<string, string> = { admin: a("IT / 管理员"), finance: a("财务"), frontdesk: a("前台"), teacher: a("教练 · 只读"), viewer: a("只读", "View only") };
+  const roleLabels: Record<string, string> = { admin: a("IT / 管理员"), finance: a("财务"), frontdesk: a("前台"), teacher: a("教练"), viewer: a("只读", "View only") };
   const languageToggle = <button className="language-toggle admin-language-toggle" type="button" onClick={() => setLanguage(language === "zh" ? "en" : "zh")} aria-label={language === "zh" ? "Switch to English" : "切换为中文"}>{t("language")}</button>;
   const closeMenu = () => setMenuOpen(false);
   function confirmLogout() { logout(); navigate("/login"); }
-  const canFinance = ["admin", "finance"].includes(user?.role ?? "");
+  const allowed = (capability: Capability | Capability[]) => hasAnyCapability(user?.role, capability, user?.capabilities);
+  const sections = navSections(a, local);
   return <div className="admin-shell">
     <aside className={`admin-sidebar ${menuOpen ? "open" : ""}`}><Link to="/admin" className="brand admin-brand"><BrandLogo/><span><strong>音昱</strong><small>WELLNESS OS</small></span></Link><nav className="admin-nav" aria-label={a("后台导航", "Staff navigation")}>
-      <NavLink to="/admin" end onClick={closeMenu}><Icon name="home"/><span>{a("经营概览")}</span></NavLink>
-      <NavLink to="/admin/rooms" onClick={closeMenu}><Icon name="room"/><span>{a("教室总览")}</span></NavLink>
-      <NavGroup title={a("预约与签到")} icon="check" onNavigate={closeMenu} links={[{ to: "/admin/bookings/group", label: local("团课预约", "Group bookings") }, { to: "/admin/bookings/private", label: local("私教预约", "PT bookings") }, { to: "/admin/bookings/workshop", label: local("工作坊预约", "Workshop bookings") }]}/>
-      <NavGroup title={a("排课中心")} icon="calendar" onNavigate={closeMenu} links={[{ to: "/admin/schedule/group", label: local("团课排课", "Group schedule") }, { to: "/admin/schedule/workshop", label: local("工作坊排课", "Workshop schedule") }]}/>
-      <NavLink to="/admin/members" onClick={closeMenu}><Icon name="users"/><span>{a("会员管理")}</span></NavLink>
-      <NavGroup title={a("资源管理", "Resources")} icon="database" onNavigate={closeMenu} links={[{ to: "/admin/products", label: local("卡课产品", "Cards & products"), roles: ["admin", "finance"] }, { to: "/admin/resources/rooms", label: local("教室管理", "Room management"), roles: ["admin"] }, { to: "/admin/resources/teachers", label: local("教练管理", "Instructor management"), roles: ["admin"] }]}/>
-      {canFinance && <NavLink to="/admin/finance" onClick={closeMenu}><Icon name="money"/><span>{a("财务入账")}</span></NavLink>}
-      <NavLink to="/admin/reports" onClick={closeMenu}><Icon name="chart"/><span>{a("报表分析")}</span></NavLink>
-      {user?.role === "admin" && <NavLink to="/admin/settings" onClick={closeMenu}><Icon name="settings"/><span>{a("系统设置")}</span></NavLink>}
+      {sections.map((section) => {
+        if (section.children) {
+          const children = section.children.filter((child) => allowed(child.capability));
+          if (!children.length) return null;
+          return <div className="admin-nav-group" key={section.title}>
+            <div className="admin-nav-heading"><Icon name={section.icon}/><span>{section.title}</span></div>
+            <div className="admin-nav-children">{children.map((child) => <NavLink key={child.to} to={child.to} onClick={closeMenu}><span>{child.label}</span></NavLink>)}</div>
+          </div>;
+        }
+        if (!section.to || !section.capability || !allowed(section.capability)) return null;
+        return <NavLink key={section.to} to={section.to} end={section.to === "/admin"} onClick={closeMenu}><Icon name={section.icon}/><span>{section.label}</span></NavLink>;
+      })}
     </nav><div className="sidebar-bottom">{languageToggle}<a className="view-public admin-help-link" href="/help.html" target="_blank" rel="noreferrer"><Icon name="book" size={17}/>{a("操作指南", "User guide")}</a><Link to="/" className="view-public"><Icon name="arrow" size={17}/>{a("会员预约端")}</Link><div className="sidebar-user"><button className="sidebar-profile-trigger" type="button" onClick={() => setProfileOpen(true)} aria-label={a("个人中心", "My profile")}><span className="user-avatar">{user?.full_name?.slice(0, 1)}</span><span className="sidebar-profile-glyph"><Icon name="user" size={17}/></span><div><strong>{user?.full_name}</strong><small>{roleLabels[user?.role ?? "viewer"]}</small></div></button><button className="icon-button" type="button" aria-label={a("退出登录")} onClick={() => setLogoutOpen(true)}><Icon name="logout" size={18}/></button></div></div></aside>
     {menuOpen && <button className="sidebar-scrim" type="button" aria-label={a("关闭菜单")} onClick={closeMenu}/>}
     <div className="admin-main"><header className="admin-mobile-header"><button className="icon-button" type="button" aria-label={a("打开菜单")} onClick={() => setMenuOpen(true)}><Icon name="menu"/></button><strong>音昱 Wellness</strong>{languageToggle}<Link to="/" aria-label={a("会员预约端")}><Icon name="home"/></Link></header><main className="admin-content"><ErrorBoundary title={a("页面出错了", "This page failed to load")}><Outlet/></ErrorBoundary></main></div>

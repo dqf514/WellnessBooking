@@ -48,7 +48,7 @@ backend/.venv/Scripts/python -m pip install -r backend/requirements.txt
 
 ### 软删除与回收站
 
-所有业务表继承 `SoftDeleteMixin`（`deleted_at` / `deleted_by` / `deleted_state_json`），删除不是 `DELETE` 而是软删除 + 把 `active/status/visible` 快照进 `deleted_state_json`。回收站逻辑集中在 `backend/app/recycle_service.py`：按资源类型做删除前校验（`_validate_delete`）与恢复前冲突校验（`_validate_restore`），保留 180 天后才允许彻底删除。新增可删除实体时，要在 `RESOURCE_MODELS` / `RESOURCE_LABELS` / `_title` / `_subtitle` 四处登记，并按角色归入 `FRONTDESK_RESOURCES` / `FINANCE_RESOURCES` / `ADMIN_RESOURCES`。
+所有业务表继承 `SoftDeleteMixin`（`deleted_at` / `deleted_by` / `deleted_state_json`），删除不是 `DELETE` 而是软删除 + 把 `active/status/visible` 快照进 `deleted_state_json`。回收站逻辑集中在 `backend/app/recycle_service.py`：按资源类型做删除前校验（`_validate_delete`）与恢复前冲突校验（`_validate_restore`），保留 180 天后才允许彻底删除。新增可删除实体时，要在 `RESOURCE_MODELS` / `RESOURCE_LABELS` / `_title` / `_subtitle` 四处登记，并在 `backend/app/permissions.py` 的 `RESOURCE_CAPABILITIES` 里声明“删除该类数据所需的能力”。
 
 ### 预约与消课的核心语义
 
@@ -64,12 +64,21 @@ backend/.venv/Scripts/python -m pip install -r backend/requirements.txt
 
 ### 权限
 
+权限按**能力（capability）**而不是角色名判定，全系统只有两份矩阵且必须同步：
+
+- 后端 `backend/app/permissions.py` —— 唯一事实来源。`CAPABILITY_GROUPS` 定义 19 项能力，`ROLE_CAPABILITIES` 定义 5 个角色（`admin` / `finance` / `frontdesk` / `teacher` / `viewer`）各自拥有的能力，`RESOURCE_CAPABILITIES` 声明每类可回收资源删除所需的能力。
+- 前端 `src/lib/permissions.ts` —— 镜像矩阵，`hasCapability(role, capability, granted?)` 优先用服务端下发的 `user.capabilities`，缺失时回退本地 `ROLE_CAPABILITIES`；组件里用 `useCan("members.write")`。
+
+**改权限时两边都要改**，并同步 `docs/API.md` 第 1.4 节的能力矩阵表。
+
 两套鉴权并存，可在 `backend/app/deps.py` 看到：
 
-1. **JWT Bearer**（员工与会员）。token 的 `sub` 带前缀区分身份：`staff:<user_id>` 或 `member:<member_id>`；`get_current_user` / `get_current_member` 分别解析。员工角色：`admin` / `finance` / `frontdesk` / `teacher` / `viewer`。依赖项 `require_admin` / `require_staff` / `require_finance` / `require_read`。
+1. **JWT Bearer**（员工与会员）。token 的 `sub` 带前缀区分身份：`staff:<user_id>` 或 `member:<member_id>`；`get_current_user` / `get_current_member` 分别解析。接口层用能力门 `require_capability("…")` 派生的依赖项：`require_dashboard`、`require_bookings_view/write`、`require_members_view/write`、`require_records_write`、`require_cards_write`、`require_revenue`、`require_catalog_view/write`、`require_products_view/write`、`require_finance_view`、`require_finance`、`require_reports`、`require_recycle_view/write`、`require_settings_view/write`。**新增接口不要再引入 `require_admin` / `require_read` 这类按角色名写死的依赖**，直接复用对应能力门。
 2. **API Key**（`X-API-Key: yyk_...`），仅限开放 API，带 scope（`read` / `members:write` / `bookings:write` / `schedule:write` / `catalog:write` / `finance:write` / `settings:write` / `maintenance:write`）。scope 是**按请求路径**映射的（`required_api_key_scope`），新增受保护端点时必须同步更新这个映射，否则 API Key 会以"不支持此接口"被拒。`X-API-Key` 与 Bearer 不能同时使用；API Key 不能用于改密码和查询自身信息（`require_interactive_admin`）。
 
 前端令牌存在 localStorage：员工 `wellness_staff_token`，会员 `wellness_member_token`。前端 API 封装在 `src/lib/api.ts`（`apiFetch` / `downloadFile` / `viewFile`）。
+
+后台侧边栏（`src/layouts/AdminLayout.tsx`）用声明式 `navSections()` 描述分组与子项，按能力过滤；路由守卫在 `src/App.tsx` 的 `Protected` 组件里用同一套能力判定。
 
 ### 财务口径
 
