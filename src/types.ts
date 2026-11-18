@@ -19,7 +19,7 @@ export interface MemberRecord { id: number; record_type: string; title: string; 
 export interface MemberDocument { id: number; category: "contract" | "assessment"; original_name: string; content_type: string; size_bytes: number; uploaded_by: string; created_at: string }
 export interface MemberDetail extends Member { shared_cards?: MemberCard[]; bookings: Booking[]; records: MemberRecord[]; transactions: Transaction[]; documents?: MemberDocument[]; vouchers?: ExperienceVoucher[]; reminders?: MemberReminder[]; reminder_alerts?: string[] }
 export interface Bootstrap { venue: Venue; courses: Course[]; teachers: Teacher[]; products: Product[] }
-export interface Meta { courses: Course[]; rooms: Room[]; teachers: Teacher[]; products: Product[]; users: User[] }
+export interface Meta { courses: Course[]; rooms: Room[]; teachers: Teacher[]; products: Product[]; users: User[]; member_sources: string[] }
 export interface MemberMe { member: Member; cards: MemberCard[]; bookings: Booking[]; transactions: Transaction[] }
 export interface SmsSettings { enabled: boolean; sp_id: string; password_set: boolean; send_url: string; balance_url: string; signature_prefix: string; notify_booking: boolean; notify_cancel: boolean; notify_reminder: boolean; template_booking: string; template_cancel: string; template_reminder: string }
 export interface ApiKey { id: number; name: string; key_prefix: string; key_suffix: string; masked_key: string; scopes: string[]; active: boolean; expired: boolean; expires_at?: string; created_by: number; creator_name: string; created_at: string; updated_at: string; rotated_at?: string; last_used_at?: string; last_used_ip: string; usage_count: number }

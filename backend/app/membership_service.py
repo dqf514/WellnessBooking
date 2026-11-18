@@ -1,9 +1,48 @@
 from datetime import datetime, timedelta
 
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from .models import ExperienceVoucher, Member, MemberReminder
 from .utils import dt, today
+
+# 获客来源的常用选项：按健身与康养场馆的常见渠道整理，后台改为下拉选择。
+MEMBER_SOURCE_OPTIONS = [
+    "到店路过",
+    "朋友推荐",
+    "教练推荐",
+    "老会员复购",
+    "线上注册",
+    "小红书",
+    "抖音",
+    "微信公众号/视频号",
+    "微信朋友圈/社群",
+    "搜索引擎",
+    "大众点评",
+    "美团团购",
+    "异业合作",
+    "企业团建",
+    "活动/体验课",
+    "其他",
+]
+SOURCE_OTHER = "其他"
+SOURCE_PREFIX = f"{SOURCE_OTHER} · "
+
+
+def normalize_member_source(value) -> str:
+    """获客来源是有限选项，这里只做空白与长度规整，保留历史自定义写法。"""
+    source = str(value or "").strip()
+    if len(source) > 20:
+        raise HTTPException(400, "获客来源不能超过 20 个字")
+    return source
+
+
+def split_member_source(source: str) -> tuple[str, str]:
+    """把“其他 · 说明”这类来源拆成（选项，说明）两部分。"""
+    value = (source or "").strip()
+    if value.startswith(SOURCE_PREFIX):
+        return SOURCE_OTHER, value[len(SOURCE_PREFIX):].strip()
+    return value, ""
 
 
 def voucher_dict(row: ExperienceVoucher) -> dict:

@@ -371,3 +371,33 @@
 - `package.json` 版本号由 1.0.0 提升为 1.1.0；API 契约版本仍为 v1.0.0（无破坏性变更，接口总数仍为 125）。
 
 **验证：** `npm run build`（`tsc -b` + `vite build`）通过；后台“系统设置 → 更新日志”已截图核对中英文渲染。
+
+---
+
+## 十一、会员自助资料与获客来源下拉（2026-11-18）
+
+### 1. 会员端自助维护个人资料
+
+- `backend/app/routers/public.py` 新增三个会员端接口：
+  - `PATCH /api/public/me/profile` —— 会员自助修改姓名与生日（姓名非空、≤ 40 字；生日须为 `YYYY-MM-DD`、不晚于今天、不超出 120 年；空生日视为清空）。
+  - `POST /api/public/me/phone/code` —— 发送换号验证码，`purpose` 取 `current` / `new`，分别复用 `send_otp` 的 `member_phone_current`、`member_phone_new` 两个用途，验证码 5 分钟有效、60 秒防重发。
+  - `POST /api/public/me/phone` —— 原号与新号两段验证码均通过后才改号，改号前校验新号未被其他会员占用，写入 `member / change_phone` 操作日志（日志中手机号掩码）。
+- 短信验证码表沿用既有 `SmsOtpCode`，未新增表；`ensure_schema()` 无需改动（未新增数据库列）。
+- 新增 `src/components/MemberProfilePanel.tsx`：会员端“个人信息”面板，含会员编号、入会时间、绑定手机号（掩码）、姓名与生日表单、双验证码换号流程，演示模式下显示 `dev_code`。
+- `src/pages/PublicHome.tsx`：“我的”弹窗新增 `profile` 标签页并设为默认页签，渲染 `MemberProfilePanel`，保存后调用既有的 `loadMe` 刷新。
+- `src/styles.css` 新增 `.member-profile-panel` / `.profile-block` / `.profile-summary` / `.profile-notice` 样式，窄屏下摘要转单列。
+
+### 2. 获客来源改为下拉选择
+
+- `backend/app/membership_service.py` 新增 `MEMBER_SOURCE_OPTIONS`（16 个行业常用渠道）、`normalize_member_source()`（空白规整与 20 字上限）与 `split_member_source()`（拆出“其他 · 说明”）。
+- `backend/app/routers/admin_core.py`：`GET /api/admin/meta` 增加 `member_sources`；`create_member` / `update_member` 对 `source` 做归一化校验，保留历史自定义写法（不做枚举拒绝，避免开放 API 写入被拦截）。
+- `src/pages/admin/MembersPage.tsx`：“获客来源”输入框改为 `<select>`，选项取自 `meta.member_sources`；选择“其他”时展开“来源说明”输入框，保存时拼成 `其他 · 说明`；档案中的历史自定义值以“历史记录”选项形式保留，不会被静默改写。
+- `src/types.ts`：`Meta` 增加 `member_sources` 字段。
+
+### 3. 文档
+
+- `docs/API.md`：会员端章节由 12 个接口增至 15 个（新增 4.13 ~ 4.15），`GET /api/admin/meta` 补充 `member_sources` 说明，`POST /api/admin/members` 补充来源字段规则。
+- `python docs/build_api_docs.py` 重新生成 `public/api-docs.html`（接口总数 125 → 128）。
+- `src/lib/changelog.ts`：`API_ENDPOINT_COUNT` 同步为 128，并在 2026-11-18 批次新增“会员自助资料与获客来源”分组。
+
+**验证：** `npm run build`（`tsc -b` + `vite build`）通过；`curl` 覆盖 11 项接口行为（含未来生日、空姓名、验证码用途错误、换号后旧号失效、新号被占用等异常分支）；会员端桌面/移动端与后台会员编辑弹窗均已截图核对。

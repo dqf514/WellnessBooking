@@ -10,7 +10,7 @@ from ..database import get_db
 from ..deps import require_cards_write, require_catalog_view, require_dashboard, require_members_view, require_members_write, require_records_write, require_revenue
 from ..finance_service import recognized_revenue
 from ..log_util import audit
-from ..membership_service import due_reminders, reminder_dict, voucher_dict
+from ..membership_service import MEMBER_SOURCE_OPTIONS, due_reminders, normalize_member_source, reminder_dict, voucher_dict
 from ..models import Booking, CardProduct, ClassSession, Course, ExperienceVoucher, Member, MemberCard, MemberCardShare, MemberRecord, MemberReminder, Room, Teacher, Transaction, User
 from ..permissions import has_capability
 from ..serializers import booking_dict, card_dict, course_dict, member_dict, product_dict, room_dict, session_dict, teacher_dict, transaction_dict, user_dict
@@ -68,6 +68,7 @@ def meta(db: Session = Depends(get_db), user: User = Depends(require_catalog_vie
         "teachers": [teacher_dict(row) for row in db.query(Teacher).filter(Teacher.deleted_at.is_(None)).order_by(Teacher.id).all()],
         "products": [product_dict(row) for row in db.query(CardProduct).filter(CardProduct.deleted_at.is_(None)).order_by(CardProduct.id).all()] if has_capability(role, "products.view") else [],
         "users": [user_dict(row) for row in db.query(User).filter(User.deleted_at.is_(None)).order_by(User.id).all()] if has_capability(role, "settings.view") or has_capability(role, "members.write") else [],
+        "member_sources": MEMBER_SOURCE_OPTIONS,
     }
 
 
@@ -95,6 +96,8 @@ def create_member(payload: dict = Body(...), db: Session = Depends(get_db), user
     if db.query(Member).filter(Member.phone == phone).first():
         raise HTTPException(400, "该手机号已存在会员档案")
     data.update({"name": name, "phone": phone})
+    if "source" in data:
+        data["source"] = normalize_member_source(data["source"])
     if data.get("advisor_id"):
         data["advisor_id"] = _validated_advisor_id(db, data["advisor_id"])
     row = Member(**data)
@@ -133,6 +136,8 @@ def update_member(member_id: int, payload: dict = Body(...), db: Session = Depen
             raise HTTPException(400, "该手机号已被其他会员使用")
     if "advisor_id" in data:
         data["advisor_id"] = _validated_advisor_id(db, data["advisor_id"]) if data["advisor_id"] else None
+    if "source" in data:
+        data["source"] = normalize_member_source(data["source"])
     for key, value in data.items():
         setattr(row, key, value)
     audit(db, user, "member", "update", "member", member_id, data)

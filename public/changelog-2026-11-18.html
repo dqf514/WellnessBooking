@@ -53,6 +53,7 @@
           <li><a href="#batch-1117">2026-11-17 · 1117 需求落地</a></li>
           <li><a href="#a-finance">A9 流水与营收分离</a></li>
           <li><a href="#batch-1118">2026-11-18 · 后台导航与权限</a></li>
+          <li><a href="#batch-1118b">2026-11-18 · 会员自助与获客来源</a></li>
           <li><a href="#matrix">角色能力矩阵</a></li>
           <li><a href="#fixes">本次修复与加固</a></li>
           <li><a href="#api">接口与文档变化</a></li>
@@ -66,15 +67,15 @@
       <section class="hero">
         <p class="hero-eyebrow">CHANGELOG · 2026-11-17 → 2026-11-18</p>
         <h1>财务口径落地，<br>权限体系重构</h1>
-        <p class="hero-description">本次更新分两批推进：11 月 17 日按《MODIFY1117》需求完成财务与运营侧改造，把“流水”和“营收”彻底分开，并补齐导出与小票；11 月 18 日重构后台导航，把课程库提升为独立页面，并建立角色能力矩阵——菜单可见性、页面可达性与操作权限统一由服务端下发的能力清单决定。</p>
-        <p class="hero-note">共 14 项 1117 需求全部落地 · 19 项角色能力 · 后台接口总数 125 个</p>
+        <p class="hero-description">本次更新分三批推进：11 月 17 日按《MODIFY1117》需求完成财务与运营侧改造，把“流水”和“营收”彻底分开，并补齐导出与小票；11 月 18 日重构后台导航，把课程库提升为独立页面，并建立角色能力矩阵——菜单可见性、页面可达性与操作权限统一由服务端下发的能力清单决定；同日再补一批会员自助能力，姓名与生日开放自助维护，换手机号需原号与新号双验证，后台获客来源统一为下拉选项。</p>
+        <p class="hero-note">共 14 项 1117 需求全部落地 · 19 项角色能力 · 后台接口总数 128 个</p>
       </section>
 
       <section id="overview">
         <div class="stats">
           <div class="stat"><small>REQUIREMENTS</small><strong>14 / 14</strong><span>《MODIFY1117》全部 14 条需求已落地并逐条对照</span></div>
           <div class="stat"><small>CAPABILITIES</small><strong>19</strong><span>角色能力项，覆盖 5 种员工角色</span></div>
-          <div class="stat"><small>ENDPOINTS</small><strong>125</strong><span>后台接口总数，本批新增与调整 6 个</span></div>
+          <div class="stat"><small>ENDPOINTS</small><strong>128</strong><span>后台接口总数，本批新增与调整 9 个</span></div>
           <div class="stat"><small>FIXES</small><strong>6</strong><span>数据一致性、并发与权限校验缺陷修复</span></div>
         </div>
         <div class="batch">
@@ -86,6 +87,11 @@
           <small>BATCH 02 · 2026-11-18</small>
           <h2>后台导航、课程库与角色能力矩阵</h2>
           <p>左侧菜单重新分组并按角色显示；课程库从排课弹窗提升为“资源与商品 → 课程库”独立页面；新建能力矩阵（单一事实来源在后端），菜单、路由守卫与操作按钮共用同一套判断；教练档案可关联员工账号，员工可在左下角自助修改资料与密码。</p>
+        </div>
+        <div class="batch">
+          <small>BATCH 03 · 2026-11-18</small>
+          <h2>会员自助资料与获客来源规范化</h2>
+          <p>会员端新增“个人信息”，姓名与生日可自行维护；更换绑定手机号需要原手机号与新手机号分别通过短信验证，两段验证码都通过才生效。后台“获客来源”由自由输入改为下拉选择，内置 16 个行业常用渠道，历史自定义写法保留不覆盖。</p>
         </div>
       </section>
 
@@ -356,11 +362,11 @@
           </ul>
           <figure>
             <img src="changelog-2026-11-18/08-permission-matrix.jpg" alt="账号权限矩阵" loading="lazy">
-            <figcaption><b>图 19 · 账号权限矩阵。</b>19 项能力 × 5 种角色，✓ 即为允许；页面上方同时列出员工账号并可直接调整。</figcaption>
+            <figcaption><b>图 21 · 账号权限矩阵。</b>19 项能力 × 5 种角色，✓ 即为允许；页面上方同时列出员工账号并可直接调整。</figcaption>
           </figure>
           <figure>
             <img src="changelog-2026-11-18/10-finance-redemption.png" alt="前台视角的财务页" loading="lazy">
-            <figcaption><b>图 20 · 前台看到的“收款与核销”。</b>不显示收支流水，只保留电子码核销，完整账目交由财务与管理员查看。</figcaption>
+            <figcaption><b>图 22 · 前台看到的“收款与核销”。</b>不显示收支流水，只保留电子码核销，完整账目交由财务与管理员查看。</figcaption>
           </figure>
         </article>
 
@@ -374,7 +380,7 @@
           </ul>
           <figure>
             <img src="changelog-2026-11-18/11-teacher-edit.png" alt="编辑教练弹窗" loading="lazy">
-            <figcaption><b>图 21 · 编辑教练。</b>新增“关联员工账号”下拉（图中已关联“程天澜”账号），照片区只有上传与移除，没有图片网址输入框。</figcaption>
+            <figcaption><b>图 23 · 编辑教练。</b>新增“关联员工账号”下拉（图中已关联“程天澜”账号），照片区只有上传与移除，没有图片网址输入框。</figcaption>
           </figure>
         </article>
 
@@ -387,7 +393,7 @@
           </ul>
           <figure>
             <img src="changelog-2026-11-18/12-profile-panel.png" alt="个人中心面板" loading="lazy">
-            <figcaption><b>图 22 · 个人中心。</b>可改姓名与手机号（登录名与角色为只读），下方为修改密码区。</figcaption>
+            <figcaption><b>图 24 · 个人中心。</b>可改姓名与手机号（登录名与角色为只读），下方为修改密码区。</figcaption>
           </figure>
         </article>
 
@@ -399,11 +405,11 @@
           </ul>
           <figure>
             <img src="changelog-2026-11-18/13-schedule-viewer.png" alt="只读账号的排课页" loading="lazy">
-            <figcaption><b>图 23 · 只读账号的排课页。</b>没有新建排课与编辑按钮，页面仅供查看。</figcaption>
+            <figcaption><b>图 25 · 只读账号的排课页。</b>没有新建排课与编辑按钮，页面仅供查看。</figcaption>
           </figure>
           <figure>
             <img src="changelog-2026-11-18/14-recycle-bin.png" alt="回收站" loading="lazy">
-            <figcaption><b>图 24 · 回收站。</b>按资源类型分组展示已删除数据，可恢复或彻底删除（保留 180 天）。</figcaption>
+            <figcaption><b>图 26 · 回收站。</b>按资源类型分组展示已删除数据，可恢复或彻底删除（保留 180 天）。</figcaption>
           </figure>
         </article>
 
@@ -417,7 +423,50 @@
           </ul>
           <figure>
             <img src="changelog-2026-11-18/27-changelog-tab.jpg" alt="更新日志页" loading="lazy">
-            <figcaption><b>图 25 · 更新日志。</b>顶部为版本卡片（当前版本 / 接口版本 / 更新批次），下方按日期分界的时间线列出各批次主要内容。</figcaption>
+            <figcaption><b>图 27 · 更新日志。</b>顶部为版本卡片（当前版本 / 接口版本 / 更新批次），下方按日期分界的时间线列出各批次主要内容。</figcaption>
+          </figure>
+        </article>
+      </section>
+
+      <section id="batch-1118b" class="section">
+        <span class="section-kicker">BATCH 03</span>
+        <h2>2026-11-18 · 会员自助资料与获客来源规范化</h2>
+        <p class="section-intro">这一批把“会员自己能改的”和“必须由前台核实的”分开：姓名与生日开放给会员自助维护，换手机号则要求原号与新号双重短信验证；后台的获客来源由自由输入改为下拉选择，来源口径统一后才好复盘各渠道的转化。</p>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">N8</span><h3>会员端新增“个人信息”，姓名与生日可自助维护</h3><span class="change-tag">已完成</span></div>
+          <ul>
+            <li>会员端“我的”新增“个人信息”标签页，汇总会员编号、入会时间与当前绑定手机号（手机号掩码显示，不在页面上暴露完整号码）。</li>
+            <li>姓名与生日由会员自行修改：姓名不可为空、不可超过 40 字；生日必须是有效日期、不可填未来日期、不可超出 120 年范围。</li>
+            <li>保存后立即同步到后台会员档案，前台无需再代为修改，减少来回确认。</li>
+          </ul>
+          <figure>
+            <img src="changelog-2026-11-18/28-member-profile.jpg" alt="会员端个人信息" loading="lazy">
+            <figcaption><b>图 19 · 会员端“个人信息”。</b>上方为会员编号、入会时间与掩码手机号，下方为姓名、生日与换手机号入口。</figcaption>
+          </figure>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">N9</span><h3>更换手机号需原号与新号双重短信验证</h3><span class="change-tag">已完成</span></div>
+          <ul>
+            <li>换号流程分两步：先向<b>原绑定手机号</b>发验证码，再向<b>新手机号</b>发验证码，两段验证码都通过后才会真正换号。</li>
+            <li>新手机号如果已被其他会员占用，系统直接拦截并说明原因，避免出现一号两人、会员记录串号。</li>
+            <li>验证码 5 分钟内有效、60 秒内不可重复发送，且一次性使用；换号后旧号码不能再作为验证码接收方。</li>
+            <li>每次换号都写入操作日志（手机号掩码保存），便于核查是谁、什么时候改的号。</li>
+          </ul>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">N10</span><h3>后台“获客来源”由输入框改为下拉选项</h3><span class="change-tag">已完成</span></div>
+          <ul>
+            <li>选项按健身与康养场馆的常见渠道整理：到店路过、朋友推荐、教练推荐、老会员复购、线上注册、小红书、抖音、微信公众号/视频号、微信朋友圈/社群、搜索引擎、大众点评、美团团购、异业合作、企业团建、活动/体验课、其他。</li>
+            <li>选择“其他”时可再补充一句说明（如“小区业主群”），保留渠道来源的具体信息。</li>
+            <li>历史档案中已有的自定义来源不会被自动改写，仍在下拉框中以“历史记录”形式保留，不会因本次改动丢失。</li>
+            <li>选项清单由服务端统一下发（会员与后台共用一份），后续新增渠道只需改一处。</li>
+          </ul>
+          <figure>
+            <img src="changelog-2026-11-18/29-member-source.jpg" alt="后台会员编辑获客来源" loading="lazy">
+            <figcaption><b>图 20 · 后台编辑会员资料。</b>“获客来源”改为下拉选择，历史自定义写法以“历史记录”选项保留。</figcaption>
           </figure>
         </article>
       </section>
@@ -469,10 +518,13 @@
       <section id="api" class="section">
         <span class="section-kicker">API &amp; DOCS</span>
         <h2>接口与文档变化</h2>
-        <p class="section-intro">后台接口总数由 123 个增加到 125 个，接口文档与可视化页面已同步重新生成。</p>
+        <p class="section-intro">后台接口总数由 123 个增加到 128 个，接口文档与可视化页面已同步重新生成。</p>
         <table>
           <thead><tr><th>接口</th><th>说明</th><th>批次</th></tr></thead>
           <tbody>
+            <tr><td class="code">PATCH /api/public/me/profile</td><td>会员自助修改姓名与生日</td><td>2026-11-18</td></tr>
+            <tr><td class="code">POST /api/public/me/phone/code</td><td>发送换号验证码（原号 / 新号两个用途）</td><td>2026-11-18</td></tr>
+            <tr><td class="code">POST /api/public/me/phone</td><td>双验证码校验通过后更换绑定手机号</td><td>2026-11-18</td></tr>
             <tr><td class="code">GET /api/admin/courses</td><td>课程库列表，支持按类别、状态与名称筛选</td><td>2026-11-18</td></tr>
             <tr><td class="code">GET /api/admin/role-permissions</td><td>角色能力矩阵，供后台权限页展示</td><td>2026-11-18</td></tr>
             <tr><td class="code">PATCH /api/auth/me</td><td>员工自助修改姓名与手机号</td><td>2026-11-18</td></tr>
@@ -489,15 +541,15 @@
       <section id="member-site" class="section">
         <span class="section-kicker">MEMBER SITE</span>
         <h2>会员端同步</h2>
-        <p class="section-intro">会员预约端保持原有的预约、购卡与扫码签到流程，本次随批次调整了课程类目与字号，移动端布局同步复核。</p>
+        <p class="section-intro">会员预约端保持原有的预约、购卡与扫码签到流程，本次随批次调整了课程类目与字号，并新增“个人信息”标签页（资料查看与自助维护），移动端布局同步复核。</p>
         <div class="figure-pair">
           <figure>
             <img src="changelog-2026-11-18/23-public-home.jpg" alt="会员预约端首页" loading="lazy">
-            <figcaption><b>图 26 · 会员预约端首页。</b>课程类别按新的中文类目显示。</figcaption>
+            <figcaption><b>图 28 · 会员预约端首页。</b>课程类别按新的中文类目显示。</figcaption>
           </figure>
           <figure>
             <img src="changelog-2026-11-18/24-public-mobile.png" alt="会员端手机视图" loading="lazy">
-            <figcaption><b>图 27 · 会员端手机视图（390×844）。</b>课程卡片与课表在窄屏下仍可完整操作。</figcaption>
+            <figcaption><b>图 29 · 会员端手机视图（390×844）。</b>课程卡片与课表在窄屏下仍可完整操作。</figcaption>
           </figure>
         </div>
       </section>
@@ -509,7 +561,7 @@
 
       <footer class="footer">
         <span>音昱 Wellness · 系统更新说明 · 2026-11-17 ~ 2026-11-18</span>
-        <span>截图取自实际运行版本 · 共 27 张界面示例</span>
+        <span>截图取自实际运行版本 · 共 29 张界面示例</span>
       </footer>
     </main>
   </div>

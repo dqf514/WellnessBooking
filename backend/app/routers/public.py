@@ -1,6 +1,6 @@
 import random
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session, joinedload
@@ -14,7 +14,7 @@ from ..models import AppSettings, Booking, CardProduct, ClassSession, Course, Ex
 from ..security import create_access_token
 from ..serializers import booking_dict, card_dict, course_dict, member_dict, product_dict, session_dict, teacher_dict, transaction_dict
 from ..sms_service import notify_booking, send_otp, verify_otp
-from ..utils import add_days, as_int, session_datetime, today, valid_date, valid_phone
+from ..utils import add_days, as_int, clean_payload, session_datetime, today, valid_date, valid_phone
 
 router = APIRouter(prefix="/api/public", tags=["public"])
 
@@ -84,6 +84,76 @@ def member_me(db: Session = Depends(get_db), member: Member = Depends(get_curren
     shared = db.query(MemberCard).join(MemberCardShare, MemberCardShare.card_id == MemberCard.id).filter(MemberCardShare.member_id == member.id, MemberCardShare.deleted_at.is_(None), MemberCard.deleted_at.is_(None)).all()
     vouchers = db.query(ExperienceVoucher).filter(ExperienceVoucher.member_id == member.id, ExperienceVoucher.status == "active", ExperienceVoucher.deleted_at.is_(None)).all()
     return {"member": member_dict(member), "cards": [card_dict(card) for card in [*member.cards, *shared]], "vouchers": [voucher_dict(row) for row in vouchers], "bookings": [booking_dict(row) for row in bookings], "transactions": [transaction_dict(row) for row in transactions]}
+
+
+@router.patch("/me/profile")
+def member_update_profile(payload: dict = Body(...), db: Session = Depends(get_db), member: Member = Depends(get_current_member)):
+    """会员自助维护姓名与生日；手机号变更走原号 + 新号双验证码流程。"""
+    data = clean_payload(payload, {"name", "birth_date"})
+    changes: dict = {}
+    if "name" in data:
+        name = str(data["name"] or "").strip()
+        if not name:
+            raise HTTPException(400, "姓名不能为空")
+        if len(name) > 40:
+            raise HTTPException(400, "姓名不能超过 40 个字")
+        changes["name"] = name
+    if "birth_date" in data:
+        value = str(data["birth_date"] or "").strip()
+        if not value:
+            changes["birth_date"] = ""
+        else:
+            valid_date(value, "出生日期")
+            birth = date.fromisoformat(value)
+            if birth > date.today():
+                raise HTTPException(400, "出生日期不能晚于今天")
+            if (date.today() - birth).days > 365 * 120:
+                raise HTTPException(400, "出生日期超出合理范围")
+            changes["birth_date"] = value
+    if not changes:
+        raise HTTPException(400, "没有需要更新的内容")
+    for key, value in changes.items():
+        setattr(member, key, value)
+    audit(db, None, "member", "update_profile", "member", member.id, changes)
+    db.commit()
+    db.refresh(member)
+    return member_dict(member)
+
+
+@router.post("/me/phone/code")
+def member_phone_code(payload: dict = Body(...), db: Session = Depends(get_db), member: Member = Depends(get_current_member)):
+    """换手机号要两步验证：先验证原手机号，再验证新手机号。"""
+    purpose = str(payload.get("purpose", "")).strip()
+    phone = valid_phone(str(payload.get("phone", "")))
+    if purpose == "current":
+        if phone != member.phone:
+            raise HTTPException(400, "原手机号与当前绑定号码不一致")
+        return send_otp(db, phone=phone, purpose="member_phone_current")
+    if purpose == "new":
+        if phone == member.phone:
+            raise HTTPException(400, "新手机号不能与当前号码相同")
+        if db.query(Member).filter(Member.phone == phone, Member.id != member.id, Member.deleted_at.is_(None)).first():
+            raise HTTPException(400, "该手机号已被其他会员使用")
+        return send_otp(db, phone=phone, purpose="member_phone_new")
+    raise HTTPException(400, "不支持的验证码用途")
+
+
+@router.post("/me/phone")
+def member_change_phone(payload: dict = Body(...), db: Session = Depends(get_db), member: Member = Depends(get_current_member)):
+    """两段验证码都通过后才换号，避免只凭短信验证码被他人顶号。"""
+    new_phone = valid_phone(str(payload.get("new_phone", "")))
+    if new_phone == member.phone:
+        raise HTTPException(400, "新手机号不能与当前号码相同")
+    if db.query(Member).filter(Member.phone == new_phone, Member.id != member.id, Member.deleted_at.is_(None)).first():
+        raise HTTPException(400, "该手机号已被其他会员使用")
+    verify_otp(db, phone=member.phone, purpose="member_phone_current", code=str(payload.get("current_code", "")))
+    verify_otp(db, phone=new_phone, purpose="member_phone_new", code=str(payload.get("new_code", "")))
+    old_phone = member.phone
+    member.phone = new_phone
+    audit(db, None, "member", "change_phone", "member", member.id, {"old_phone": f"{old_phone[:3]}****{old_phone[-4:]}", "new_phone": f"{new_phone[:3]}****{new_phone[-4:]}"})
+    db.commit()
+    db.refresh(member)
+    return member_dict(member)
 
 
 @router.post("/bookings")

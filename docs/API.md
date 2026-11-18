@@ -1,6 +1,6 @@
 # 音昱 Wellness API 对接文档
 
-> 版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 **125 个 HTTP 接口**。
+> 版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 **128 个 HTTP 接口**。
 >
 > 文档更新：2026-11-18 · 功能基线：预约排课、动态二维码签到、购卡申请取消、会员权益与营收业务闭环、角色能力矩阵与课程库独立接口。
 >
@@ -329,7 +329,7 @@ curl -X POST "$API/api/auth/login" \
 - 新密码至少 8 位；原密码错误返回 `400`。
 - **响应**：`{ "ok": true }`。只更新当前 Token 对应员工。
 
-## 4. 会员端接口（12）
+## 4. 会员端接口（15）
 
 ### 4.1 会员端初始化数据
 
@@ -438,6 +438,35 @@ curl -X POST "$API/api/auth/login" \
 - 仅 `pending` 可取消；他人订单返回 `404`，已核销或已取消订单返回 `400`，并发状态变化返回 `409`。
 - 取消采用条件原子更新，与电子码核销互斥。取消后原电子码永久失效，不开卡、不计实收、不删除历史记录；重复取消不会成功。
 
+### 4.13 会员自助修改姓名与生日
+
+#### PATCH /api/public/me/profile
+
+- **权限**：会员，只能修改自己的资料；**Body**：`{ name?, birth_date? }`。
+- **响应**：更新后的 `member`。
+- 姓名为空或超过 40 字返回 `400`；生日需为 `YYYY-MM-DD` 格式，不得晚于今天，且不得超出 120 年。
+- 提交空生日表示清空生日。手机号不在此接口维护，需走 4.14、4.15 的双验证码流程。
+- 修改会写入操作日志（`member / update_profile`）。
+
+### 4.14 发送换号验证码
+
+#### POST /api/public/me/phone/code
+
+- **权限**：会员；**Body**：`{ phone, purpose }`，`purpose` 取 `current`（原手机号）或 `new`（新手机号）。
+- **响应**：与登录验证码一致 `{ ok, message, dev_mode, dev_code? }`，`dev_code` 仅在本地演示模式返回。
+- 原手机号必须与当前绑定号码一致；新手机号不得与当前号码相同，也不得已被其他会员占用，否则返回 `400`。
+- 验证码用途分别为 `member_phone_current` 与 `member_phone_new`，有效期 5 分钟，60 秒内不可重复发送。
+
+### 4.15 会员更换手机号
+
+#### POST /api/public/me/phone
+
+- **权限**：会员；**Body**：`{ new_phone, current_code, new_code }`。
+- **响应**：更新后的 `member`，`phone` 为新号码。
+- 必须同时提供原手机号验证码与新手机号验证码，两段验证码均校验通过后才换号，验证码一次性使用。
+- 新手机号已被其他会员占用返回 `400`；验证码错误或过期返回 `400`。
+- 换号后原号码不能再作为验证码接收方；操作写入日志（`member / change_phone`，日志中手机号做掩码）。
+
 ## 5. 经营概览与基础元数据（2）
 
 ### 5.1 今日经营概览
@@ -455,7 +484,7 @@ curl -X POST "$API/api/auth/login" \
 
 - **权限**：只读（`catalog.view`）；**请求**：无。
 - `products` 仅在具备 `products.view` 时返回，`users` 仅在具备 `settings.view` 或 `members.write` 时返回，避免下发用不到的数据。
-- **响应**：`courses`、`rooms`、`teachers`、`products`、`users` 五个完整数组，包括停用项。
+- **响应**：`courses`、`rooms`、`teachers`、`products`、`users` 五个完整数组，包括停用项；另含 `member_sources`（获客来源下拉选项）。
 - 用于表单选项和关联展示；接口含全部员工账号，前端不应把响应暴露给非授权用户。
 
 ## 6. 会员档案、会员卡、权益与爽约（20）
@@ -476,6 +505,7 @@ curl -X POST "$API/api/auth/login" \
 - **Body 必填**：`name`、`phone`。
 - **Body 可选**：`name_en`、`gender`、`id_number`、`birth_date`、`source`、`advisor_id`、`emergency_phone`、`wechat`、`notes`、`active`。
 - **响应**：Member（含 cards）。手机号须符合 `1xxxxxxxxxx` 且全库唯一。
+- `source` 为获客来源，后台下拉选项来自 `GET /api/admin/meta` 的 `member_sources`；允许沿用历史自定义写法，长度不超过 20 字。
 
 ### 6.3 会员完整档案
 

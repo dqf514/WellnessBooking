@@ -2,7 +2,7 @@
 export const APP_VERSION = "1.1.0";
 export const APP_RELEASE_DATE = "2026-11-18";
 export const API_VERSION = "v1.0.0";
-export const API_ENDPOINT_COUNT = 125;
+export const API_ENDPOINT_COUNT = 128;
 
 export interface ChangelogText { zh: string; en: string }
 export interface ChangelogGroup { title: ChangelogText; points: ChangelogText[] }
@@ -26,6 +26,13 @@ export const changelogReleases: ChangelogRelease[] = [
         { zh: "账单小票按 14.5cm × 7.5cm 输出，含 Octave 抬头、入账类型、去税与增值税、签字栏与店址电话", en: "Receipts print at 14.5 × 7.5 cm with the Octave header, entry type, tax breakdown, signature line and store details" },
         { zh: "教室总览可导出次日排课安排，列出活动名称、类型、时间、教练、教室、预约人数与备注", en: "The room overview exports the next day’s schedule with name, type, time, guide, room, bookings and notes" },
         { zh: "财务流水明细与经营分析报表均可导出 PDF", en: "Transaction details and business reports can both be exported as PDF" },
+      ] },
+      { title: { zh: "会员自助资料与获客来源", en: "Member self-service and acquisition sources" }, points: [
+        { zh: "会员端“我的”新增“个人信息”，可自助查看会员编号、入会时间与绑定手机号", en: "A new “Profile” tab in the member area shows the member number, join date and masked mobile" },
+        { zh: "姓名与生日可自行修改，姓名不可为空、生日不可填未来日期", en: "Members can update their name and birth date, with the same validation as the front desk" },
+        { zh: "更换手机号需原手机号与新手机号分别通过短信验证，两段验证码都通过才生效", en: "Changing the mobile number requires SMS verification of both the old and the new number" },
+        { zh: "后台“获客来源”由自由输入改为下拉选择，内置 16 个行业常用渠道", en: "The acquisition source is now a dropdown with 16 standard industry channels" },
+        { zh: "选择“其他”可补充说明；历史自定义写法仍可保留，不会被自动改写", en: "“Other” allows a detail note; existing custom values stay untouched" },
       ] },
       { title: { zh: "日常操作提效", en: "Everyday efficiency" }, points: [
         { zh: "教室总览时间轴从 07:00 起算，表头与房间名分离", en: "The room timeline now starts at 07:00 with a separate header row" },
