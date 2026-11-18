@@ -57,13 +57,19 @@ export const changelogReleases: ChangelogRelease[] = [
         { zh: "整体压缩上下留白，把会员卡与记录表的可用高度让出来", en: "Vertical padding is trimmed so the cards and record tables below get more room" },
       ] },
       { title: { zh: "教室总览大屏视图", en: "Room overview big screen" }, points: [
-        { zh: "日期栏右侧新增全屏按钮，一键打开整屏排课表，适合放在公共区域的大屏幕", en: "A new button at the right of the date bar opens the full-screen schedule for a public display" },
+        { zh: "右上角新增“全屏排课表”按钮，一键打开整屏排课表，适合放在公共区域的大屏幕", en: "A “Full screen” button in the top-right action bar opens the full-screen schedule for a public display" },
         { zh: "浏览器同时进入全屏（等同按 F11），地址栏与工具栏全部隐藏，屏幕上只剩排课内容", en: "The browser enters full screen too (like pressing F11), hiding the address bar and toolbars so only the schedule remains" },
         { zh: "全屏铺开所有教室，教室多时自动压缩列宽、屏幕放不下时自动压缩行高，无需上下左右滚动", en: "All rooms are laid out at once; column width and row height shrink automatically so nothing needs scrolling" },
         { zh: "日期与实时时钟置于标题栏正中，时钟精确到秒并逐秒走动", en: "The date and a live clock sit in the centre of the header, the clock ticking to the second" },
         { zh: "左右方向键切换日期，Esc 退出，Ctrl+P 直接打印当前画面", en: "Arrow keys change the date, Esc exits, and Ctrl+P prints the current view" },
         { zh: "打印按 A3 横向排版，一天的完整安排正好一页纸", en: "Printing uses A3 landscape, fitting a whole day on a single page" },
         { zh: "排课块高度覆盖所在的整段时间区间，块内只显示时间段与主题，字号随格子大小自适应", en: "Each block covers the full time range it occupies, showing only the time range and title, with the font scaled to the cell" },
+      ] },
+      { title: { zh: "教室总览布局收紧", en: "Tighter room overview layout" }, points: [
+        { zh: "日期选择并入左上角，下拉框左右各加一个箭头，直接翻上一日、下一日", en: "The date picker moved to the top left with arrows on both sides for the previous and next day" },
+        { zh: "表格上方那一整行（上一日/下一日 + 全屏按钮）整体移除，高度全部留给下方表格", en: "The whole row with the date arrows and full-screen button was removed, giving all its height to the table" },
+        { zh: "全屏排课表按钮移到右上角按钮区，放在“导出安排 PDF”与“预约教室”之间", en: "The full-screen button moved to the top-right action bar, between Export PDF and Reserve room" },
+        { zh: "每小时行高由 60px 收到 44px，同一屏可看到 07:00–20:00 的完整安排", en: "Row height dropped from 60px to 44px per hour, so 07:00–20:00 fits on one screen" },
       ] },
       { title: { zh: "经营概览今日安排", en: "Today's schedule on the dashboard" }, points: [
         { zh: "概览面板由“今日课程”改为“今日安排”，教室里的内部使用、公司活动、企业活动也一并列出", en: "The dashboard panel is now “Today's schedule”; internal use, company and corporate events in rooms are listed too" },

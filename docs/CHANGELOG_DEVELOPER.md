@@ -464,7 +464,7 @@
 - 布局按可用空间自适应：`.room-board-body` 为 `grid-template-columns: 52px minmax(0, 1fr)`，列宽 `roomWidth = floor((bodyWidth - 52) / 教室数)`，行高 `hourHeight = floor((bodyHeight - 30) / 小时数)`，分别写入 CSS 变量 `--board-room-width` 与内联高度，保证所有教室与 07:00–22:00 全部落在视口内，无需横向或纵向滚动。
 - 键盘：`document` 上的 `keydown` 监听 `ArrowLeft` / `ArrowRight` 切换日期（复用 `addDays`）、`Escape` 关闭；打开时给 `body` 加 `room-board-open` 类以锁定页面滚动，卸载时移除。
 - 打印：`@media print` 中隐藏 `#root`、把 `.room-board` 改为静态定位、列宽改为 `minmax(0, 1fr)` 均分，并声明 `@page { size: A3 landscape; margin: 8mm }`，实测 `Page.printToPDF` 输出单页 A3 横向（1191×842pt）。
-- 入口：`RoomsPage` 日期导航行右侧新增 `.room-board-trigger`（`Icon name="expand"`，图标在 `src/components/UI.tsx` 补充），`≤700px` 时隐藏（移动端为分页卡片视图，不提供大屏）。
+- 入口：`RoomsPage` 新增 `.room-board-action` 按钮（`Icon name="expand"`，图标在 `src/components/UI.tsx` 补充），现位于右上角 `PageHeader` 的按钮区（详见第十六节），`≤700px` 时隐藏（移动端为分页卡片视图，不提供大屏）。
 - `RoomsPage` 新增 `shiftDate(delta)`，全屏下的前后翻日不与移动端的“翻页”逻辑冲突。
 
 ### 2. 浏览器全屏（等同 F11）
@@ -501,6 +501,7 @@
 
 ---
 
+
 ## 十五、经营概览今日安排与教室大屏直达（2026-11-18）
 
 ### 1. 后端数据复用
@@ -527,4 +528,38 @@
 - CDP 核对：经营概览渲染 12 行，其中 4 行为教室占用，徽标分别为“内部使用 / 公司活动 / 企业活动”；点击“完整课表”后大屏打开，含 17 间教室、68 个排课块。
 - 截图：`public/changelog-2026-11-18/32-room-board.jpg`、`33-rooms-blocks.jpg`、`34-dashboard-schedule.jpg`。
 
+---
 
+## 十六、教室总览布局收紧（2026-11-18）
+
+### 1. 日期选择并入筛选区
+
+- `RoomsPage` 中原本的 `<Field label="查看日期">` 换成自定义的 `.room-date-field`（`div.field` + `span` 标签 + `.room-date-picker`），下拉框左右各放一个 `.icon-button`，分别调用 `shiftDate(-1)` / `shiftDate(1)`。
+- 不用 `Field` 组件的原因：`Field` 渲染的是 `<label>`，内嵌两个 `<button>` 会造成 label 与多个可标记控件关联的无效嵌套。
+- 移动端（`≤700px`）下 `.filter-panel .room-date-field` 占满整行，两个箭头放大到 40×42px 便于点按。
+- `shiftDate()` 原本只被全屏大屏的翻日使用，现在同时服务筛选区箭头；移动端底部“教室 N / M 页”的翻页仍走 `previous()` / `next()`（内部含翻页与翻日的兼容逻辑），行为不变。
+
+### 2. 全屏按钮移到右上角按钮区
+
+- `.room-board-trigger` 从 `.room-date-navigation` 中删除，改为 `.room-board-action`，放进 `PageHeader` 的 `actions`，位置在“导出安排 PDF”与“预约教室”之间，文案为“全屏排课表”，样式沿用 `button-outline`。
+- 移动端隐藏：原先的 `@media (max-width: 700px) { .room-board-trigger { display: none } }` 同步改为 `.room-board-action`。
+
+### 3. 移除中间行
+
+- `.room-date-navigation` 现在只在 `compact`（移动端卡片视图）下渲染，且只保留教室翻页信息与箭头；桌面端整行不再输出，`date` 由筛选区的日期下拉承载。
+
+### 4. 行高压缩（60px → 44px）
+
+- `RoomsPage` 新增模块级常量 `HOUR_HEIGHT = 44`：`blockStyle()` 的 top/height、`.room-slot-button` 的 top、时间刻度的 top 全部改用它。
+- 样式侧不再写死像素：`.room-slots` 与 `.time-axis-track` 高度改为 `calc(var(--room-hour, 60px) * 16)`，`.time-axis` 高度改为 `calc(78px + var(--room-hour, 60px) * 16)`，`.room-slot-button` 高度改为 `var(--room-hour, 60px)`；变量由 `.room-timeline-frame` 的内联样式 `--room-hour` 提供。
+- 用 CSS 变量而不是内联 height 的原因：`≤700px` 媒体查询里 `.room-slots { height: auto }`、`.time-axis { display: none }` 需要继续生效，内联 height 优先级更高会破坏移动端卡片视图。
+- 排课块字号随之微调：`strong` 的容器查询上限由 `min(42cqh, 21cqw)` 改为 `min(38cqh, 19cqw)`（44px 行高下约 16.7px），让课程名多显示一两个字。
+
+### 5. 验证
+
+- `npm run build`（`tsc -b` + `vite build`）通过。
+- CDP 核对：`.room-date-picker` 两个箭头的 aria-label 正确，点击后日期 2026-11-18 → 2026-11-17 → 2026-11-18；页面按钮顺序为「导出安排 PDF / 全屏排课表 / 预约教室」；`.room-date-navigation` 在桌面端不存在；`.room-slots` 高 704px、`.time-axis` 高 782px、`.room-slot-button` 高 44px。
+- 移动端（390px）核对：全屏按钮隐藏，底部仍显示“教室 1 / 9 页”翻页条，日期下拉左右箭头可点。
+- 桌面端点击右上角“全屏排课表”可正常打开大屏，时钟逐秒走动。
+
+---
