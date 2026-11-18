@@ -18,6 +18,15 @@ export function requestBoardFullscreen() {
   if (!document.fullscreenElement && root.requestFullscreen) root.requestFullscreen().catch(() => {});
 }
 
+// 大屏配色模式：浅色 / 深色，选择结果记住，下次打开沿用。
+const THEME_KEY = "wellness_board_theme";
+type BoardTheme = "light" | "dark";
+function useBoardTheme() {
+  const [theme, setTheme] = useState<BoardTheme>(() => (window.localStorage.getItem(THEME_KEY) === "dark" ? "dark" : "light"));
+  useEffect(() => { window.localStorage.setItem(THEME_KEY, theme); }, [theme]);
+  return { theme, toggle: () => setTheme((current) => (current === "dark" ? "light" : "dark")) };
+}
+
 // 大屏时钟：每秒跳动一次。
 function useClock() {
   const [now, setNow] = useState(() => new Date());
@@ -42,6 +51,7 @@ export function RoomScheduleBoard({ rooms, date, hours, local, onPrev, onNext, o
   const closeRef = useRef(onClose);
   const [layout, setLayout] = useState({ hourHeight: 48, roomWidth: 110 });
   const now = useClock();
+  const { theme, toggle } = useBoardTheme();
 
   useEffect(() => { closeRef.current = onClose; }, [onClose]);
 
@@ -96,7 +106,7 @@ export function RoomScheduleBoard({ rooms, date, hours, local, onPrev, onNext, o
   const sizeOf = (start: string, end: string) => Math.max(24, (toMinutes(end) - toMinutes(start)) / 60 * layout.hourHeight);
 
   return createPortal(
-    <div className="room-board" role="dialog" aria-modal="true" aria-label={local("全屏排课表", "Full screen schedule")}>
+    <div className={`room-board ${theme}`} role="dialog" aria-modal="true" aria-label={local("全屏排课表", "Full screen schedule")}>
       <header className="room-board-header">
         <div className="room-board-title"><strong>{local("音昱 Wellness · 今日排课", "Yinyu Wellness · Today schedule")}</strong></div>
         <div className="room-board-center">
@@ -105,6 +115,7 @@ export function RoomScheduleBoard({ rooms, date, hours, local, onPrev, onNext, o
         </div>
         <div className="room-board-tools">
           <p className="room-board-hint">{local("← → 切换日期 · Esc 退出 · Ctrl+P 打印当前画面", "← → change date · Esc to exit · Ctrl+P to print")}</p>
+          <button className="icon-button room-board-theme" type="button" onClick={toggle} title={theme === "dark" ? local("切换到浅色模式", "Switch to light mode") : local("切换到深色模式", "Switch to dark mode")} aria-label={theme === "dark" ? local("切换到浅色模式", "Switch to light mode") : local("切换到深色模式", "Switch to dark mode")}><Icon name={theme === "dark" ? "sun" : "moon"} size={17}/></button>
           <button className="icon-button" type="button" onClick={() => closeRef.current()} aria-label={local("退出全屏", "Exit full screen")}><Icon name="close"/></button>
         </div>
       </header>

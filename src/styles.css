@@ -910,7 +910,35 @@ body.room-board-open { overflow: hidden; }
   .room-board-body { height: auto; overflow: visible; }
   .room-board-grid { grid-auto-columns: minmax(0, 1fr); }
   .room-board-hint, .room-board-header .icon-button { display: none; }
+  /* 打印时无论大屏处于哪种模式，都输出浅色版本，保证白纸上可读 */
+  .room-board.dark { background: #fff; }
+  .room-board.dark .room-board-header, .room-board.dark .room-board-axis > header, .room-board.dark .room-board-column > header { border-color: var(--line); background: var(--paper); }
+  .room-board.dark .room-board-slots { background: #fbfcf9; }
+  .room-board.dark .room-board-slots > i { background: #e9ede5; }
+  .room-board.dark .room-board-block { background: color-mix(in srgb, var(--course-color) 17%, white); }
+  .room-board.dark .room-board-block.internal-block { background: #f3e8d7; }
+  .room-board.dark .room-board-block.internal-block.company, .room-board.dark .room-board-block.internal-block.enterprise { background: var(--blue-soft); }
+  .room-board.dark .room-board-date b, .room-board.dark .room-board-clock, .room-board.dark .room-board-column > header strong, .room-board.dark .room-board-axis > header { color: var(--ink); }
+  .room-board.dark .room-board-block > strong { color: var(--ink); }
+  .room-board.dark .room-board-title strong, .room-board.dark .room-board-hint, .room-board.dark .room-board-date span, .room-board.dark .room-board-axis-track > span, .room-board.dark .room-board-column > header span, .room-board.dark .room-board-block > span { color: var(--muted); }
 }
+
+/* 全屏排课表深色模式：公共区域大屏夜里更耐看，也更省眼睛 */
+.room-board.dark { background: #0c1917; color: #e9f1ec; }
+.room-board.dark .room-board-header { border-color: #223630; background: #122220; }
+.room-board.dark .room-board-title strong, .room-board.dark .room-board-hint, .room-board.dark .room-board-date span, .room-board.dark .room-board-axis-track > span, .room-board.dark .room-board-column > header span { color: #8ba79b; }
+.room-board.dark .room-board-date b, .room-board.dark .room-board-clock { color: #eef5f0; }
+.room-board.dark .room-board-header .icon-button { color: #cfe0d7; }
+.room-board.dark .room-board-header .icon-button:hover { background: rgba(255,255,255,.09); }
+.room-board.dark .room-board-axis, .room-board.dark .room-board-column { border-color: #223630; }
+.room-board.dark .room-board-axis > header, .room-board.dark .room-board-column > header { border-color: #223630; background: #162522; color: #cfe0d7; }
+.room-board.dark .room-board-slots { background: #0f1e1b; }
+.room-board.dark .room-board-slots > i { background: rgba(255,255,255,.07); }
+.room-board.dark .room-board-block { background: color-mix(in srgb, var(--course-color) 42%, #101d1a); }
+.room-board.dark .room-board-block > span { color: #a9c2b6; }
+.room-board.dark .room-board-block > strong { color: #f3f8f5; }
+.room-board.dark .room-board-block.internal-block { border-color: #c98b45; background: #33291a; }
+.room-board.dark .room-board-block.internal-block.company, .room-board.dark .room-board-block.internal-block.enterprise { border-color: #5b8ba1; background: #1a2e39; }
 
 /* 排课块文字铺满格子：两行文字上下撑满，字号随格子高宽自适应 */
 @media (min-width: 961px) {

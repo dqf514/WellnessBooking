@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 
-export type IconName = "calendar" | "users" | "room" | "card" | "chart" | "settings" | "home" | "user" | "plus" | "search" | "close" | "arrow" | "check" | "clock" | "phone" | "logout" | "menu" | "download" | "money" | "book" | "bell" | "database" | "chevron" | "refresh" | "qr" | "scan" | "globe" | "expand";
+export type IconName = "calendar" | "users" | "room" | "card" | "chart" | "settings" | "home" | "user" | "plus" | "search" | "close" | "arrow" | "check" | "clock" | "phone" | "logout" | "menu" | "download" | "money" | "book" | "bell" | "database" | "chevron" | "refresh" | "qr" | "scan" | "globe" | "expand" | "sun" | "moon";
 const paths: Record<IconName, ReactNode> = {
   calendar: <><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></>,
   users: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></>,
@@ -27,6 +27,8 @@ const paths: Record<IconName, ReactNode> = {
   scan: <><path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3M7 12h10"/></>,
   globe: <><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.7 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.7-3.8-9S9.5 5.6 12 3Z"/></>,
   expand: <><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></>,
+  sun: <><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></>,
+  moon: <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>,
 };
 export function Icon({ name, size = 20 }: { name: IconName; size?: number }) { return <svg aria-hidden="true" viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{paths[name]}</svg>; }
 

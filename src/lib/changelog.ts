@@ -65,6 +65,11 @@ export const changelogReleases: ChangelogRelease[] = [
         { zh: "打印按 A3 横向排版，一天的完整安排正好一页纸", en: "Printing uses A3 landscape, fitting a whole day on a single page" },
         { zh: "排课块高度覆盖所在的整段时间区间，块内只显示时间段与主题，字号随格子大小自适应", en: "Each block covers the full time range it occupies, showing only the time range and title, with the font scaled to the cell" },
       ] },
+      { title: { zh: "大屏深色模式", en: "Dark mode for the big screen" }, points: [
+        { zh: "全屏排课表支持浅色 / 深色两种模式，标题栏右上角一键切换，选择结果会被记住", en: "The full-screen schedule now supports light and dark modes, toggled from the header and remembered for next time" },
+        { zh: "深色下底色改为墨绿黑，课程色块保留各自颜色并重新调校对比度，网格线与文字更适合远看", en: "Dark mode uses a deep pine background with re-tuned course colours, grid lines and text for long-distance reading" },
+        { zh: "打印时无论当前模式，一律输出浅色版本，保证白纸上可读", en: "Printing always outputs the light version so it stays readable on paper" },
+      ] },
       { title: { zh: "教室总览布局收紧", en: "Tighter room overview layout" }, points: [
         { zh: "日期选择并入左上角，下拉框左右各加一个箭头，直接翻上一日、下一日", en: "The date picker moved to the top left with arrows on both sides for the previous and next day" },
         { zh: "表格上方那一整行（上一日/下一日 + 全屏按钮）整体移除，高度全部留给下方表格", en: "The whole row with the date arrows and full-screen button was removed, giving all its height to the table" },

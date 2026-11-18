@@ -572,3 +572,25 @@
 - `public/help.html` 顶部的“进入员工后台”、内页的“打开员工后台”，以及 `public/changelog-2026-11-18.html` 顶部的“进入员工后台”同步改为 `/admin`。
 - `LoginPage` 路由与退出登录后的跳转保持 `/login` 不变；`/admin` 与 `/login` 由后端 `SPAStaticFiles` 回落 `index.html`，直接访问均可正常打开。
 - 验证：CDP 实测未登录点击页脚入口后跳到 `/login` 并渲染登录表单；写入员工令牌后点击同一入口停在 `/admin`，渲染后台框架与“今天，从容开始。”概览页。
+
+---
+
+## 十八、全屏排课表深色模式（2026-11-18）
+
+### 1. 组件
+
+- `RoomScheduleBoard.tsx` 新增 `useBoardTheme()`：`theme` 状态为 `"light" | "dark"`，初始值读 `localStorage.getItem("wellness_board_theme")`，变化时写回；根节点 class 由 `room-board` 改为 `room-board ${theme}`。
+- 标题栏 `.room-board-tools` 内、关闭按钮之前插入切换按钮 `.room-board-theme`，图标按当前模式取 `moon`（浅色态）/ `sun`（深色态），`title` 与 `aria-label` 均为中文提示。
+- `src/components/UI.tsx` 的 `IconName` 与 `paths` 补充 `sun`、`moon` 两个图标（24×24 线性图标，风格与既有图标一致）。
+
+### 2. 样式
+
+- 深色配色统一写在 `.room-board.dark` 作用域下（`src/styles.css` 末尾），只覆盖大屏自身的类，不影响后台其他页面：底色 `#0c1917`、表头 `#162522`、网格线 `rgba(255,255,255,.07)`、次要文字 `#8ba79b`、主文字 `#eef5f0`。
+- 课程色块用 `color-mix(in srgb, var(--course-color) 42%, #101d1a)`，保留课程色相的同时适配深底；教室占用块用深琥珀 `#33291a` 与深蓝 `#1a2e39`。
+- `@media print` 中补一组覆盖：无论大屏当前是哪种模式，打印一律输出浅色版本（背景、网格线、文字与色块全部还原为浅色），避免白纸上打印出浅色字。
+
+### 3. 验证
+
+- `npm run build` 通过。
+- CDP 实测：打开大屏时 class 为 `room-board light`、`localStorage` 写入 `light`；点击切换按钮后 class 为 `room-board dark`、背景 `rgb(12, 25, 23)`、标题文字 `rgb(243, 248, 245)`、`localStorage` 为 `dark`；关闭后重新打开仍为 `room-board dark`。
+- 截图核对：浅色与深色两版大屏（`public/changelog-2026-11-18/32-room-board.jpg`、`35-board-dark.jpg`）。
