@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#173f35">
+  <meta name="description" content="音昱 Wellness 更新说明（2026-11-17 ~ 2026-11-18）：1117 财务与运营需求落地、后台导航重构、课程库独立成页与角色能力矩阵，附全部界面截图说明。">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Crect width='36' height='36' rx='18' fill='%23173f35'/%3E%3Cpath d='M28 6C15 7 8 13 8 23c7 1 15-2 20-17ZM8 29c3-8 8-12 16-17' fill='none' stroke='%23e9efe7' stroke-width='1.5'/%3E%3C/svg%3E">
+  <title>更新说明 · 音昱 Wellness</title>
+  <style>
+    :root{--pine-950:#102e27;--pine-900:#173f35;--pine-700:#2f6b5b;--sage-500:#7b9c88;--sage-300:#bdd0c0;--sage-100:#e9efe7;--paper:#f6f7f2;--white:#fff;--ink:#1d2925;--muted:#5c6b63;--line:#dfe4dc;--amber:#83562d;--amber-soft:#f4eadc;--red:#a64843;--red-soft:#f8e9e6;--display:"Noto Serif SC","Songti SC",serif;--body:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;font-family:var(--body);color:var(--ink);background:var(--paper);font-synthesis:none}
+    *{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:92px}body{margin:0;min-width:320px;background:var(--paper)}a{color:inherit;text-decoration:none}img,svg{display:block}h1,h2,h3,h4,p{margin-top:0}::selection{background:var(--sage-300);color:var(--pine-950)}a:focus-visible,button:focus-visible{outline:3px solid #bf793c;outline-offset:3px}
+    .topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;gap:20px;min-height:76px;padding:12px clamp(20px,4vw,64px);border-bottom:1px solid rgba(223,228,220,.9);background:rgba(246,247,242,.95);backdrop-filter:blur(18px)}.brand{display:inline-flex;align-items:center;gap:12px;min-height:44px}.brand-symbol{display:grid;place-items:center;flex:0 0 auto;width:42px;height:42px;border-radius:50%;background:var(--pine-900);color:var(--sage-100)}.brand-symbol svg{width:26px;height:26px}.brand-copy{display:flex;flex-direction:column}.brand-copy strong{color:var(--pine-900);font-family:var(--display);font-size:19px;font-weight:600}.brand-copy small{margin-top:2px;color:var(--muted);font-size:9px;letter-spacing:.17em}.top-actions{display:flex;align-items:center;gap:8px}.action{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:9px 14px;border:1px solid var(--line);border-radius:4px;background:transparent;color:var(--pine-900);font-size:13px;cursor:pointer;transition:background .2s,border-color .2s}.action:hover{background:var(--sage-100);border-color:var(--sage-500)}.action-primary{background:var(--pine-900);color:#fff;border-color:var(--pine-900)}.action-primary:hover{background:var(--pine-700)}
+    .layout{display:grid;grid-template-columns:248px minmax(0,1fr);gap:clamp(32px,4.5vw,70px);width:min(1460px,100%);margin:0 auto;padding:0 clamp(20px,4vw,64px)}
+    .sidebar{align-self:start;position:sticky;top:76px;max-height:calc(100dvh - 76px);padding:34px 0;overflow-y:auto}.toc-title{margin:0 0 12px;color:var(--sage-500);font-size:10px;letter-spacing:.18em}.toc-list{display:grid;gap:3px;margin:0;padding:0;list-style:none}.toc-list a{display:block;min-height:38px;padding:8px 10px;border-left:2px solid transparent;color:var(--muted);font-size:12px;line-height:1.6;transition:color .2s,background .2s,border-color .2s}.toc-list a:hover{border-left-color:var(--pine-700);background:var(--sage-100);color:var(--pine-900)}.sidebar-note{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:11px;line-height:1.9}
+    main{min-width:0;padding:56px 0 90px}
+    .hero{position:relative;padding:clamp(30px,5vw,62px);overflow:hidden;border-radius:6px;background:var(--pine-900);color:#fff}.hero::after{position:absolute;right:-120px;bottom:-220px;z-index:0;width:480px;height:480px;border:1px solid rgba(233,239,231,.16);border-radius:50%;box-shadow:0 0 0 52px rgba(233,239,231,.035),0 0 0 104px rgba(233,239,231,.025);content:""}.hero>*{position:relative;z-index:1}.hero-eyebrow{margin-bottom:24px;color:var(--sage-300);font-size:10px;letter-spacing:.21em}.hero h1{max-width:820px;margin-bottom:20px;font-family:var(--display);font-size:clamp(32px,4.2vw,54px);font-weight:500;line-height:1.35;letter-spacing:-.03em}.hero-description{max-width:720px;margin-bottom:0;color:#d6e0da;font-size:14px;line-height:2}.hero-note{display:flex;align-items:center;gap:12px;margin-top:28px;color:var(--sage-300);font-size:12px}.hero-note::before{flex:0 0 auto;width:32px;height:1px;background:var(--sage-500);content:""}
+    .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:22px 0 12px}.stat{padding:20px 22px;border:1px solid var(--line);border-radius:5px;background:rgba(255,255,255,.6)}.stat small{color:var(--sage-500);font-size:9px;letter-spacing:.16em}.stat strong{display:block;margin:10px 0 6px;color:var(--pine-950);font-family:var(--display);font-size:30px;font-weight:600}.stat span{color:var(--muted);font-size:11px;line-height:1.7}
+    .batch{margin:56px 0 18px;padding:30px clamp(22px,3vw,38px);border-radius:6px;background:var(--sage-100)}.batch small{color:var(--pine-700);font-size:10px;letter-spacing:.18em}.batch h2{margin:10px 0 10px;font-family:var(--display);font-size:clamp(24px,3vw,34px);font-weight:500}.batch p{max-width:760px;margin-bottom:0;color:var(--muted);font-size:13px;line-height:1.95}
+    .section{margin:52px 0 0}.section-kicker{display:block;margin-bottom:10px;color:var(--pine-700);font-size:10px;font-weight:600;letter-spacing:.18em}.section h2{margin-bottom:12px;font-family:var(--display);font-size:clamp(24px,3vw,34px);font-weight:500}.section-intro{max-width:780px;color:var(--muted);font-size:13px;line-height:1.95}
+    .change{grid-column:1/-1;margin-top:18px;padding:26px clamp(20px,3vw,32px);border:1px solid var(--line);border-radius:6px;background:#fff}.change-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6px}.change-id{padding:3px 9px;border-radius:3px;background:var(--pine-900);color:#fff;font-size:11px;font-weight:600;letter-spacing:.06em}.change-head h3{margin:0;font-family:var(--display);font-size:21px;font-weight:600;color:var(--pine-950)}.change-tag{margin-left:auto;padding:4px 9px;border-radius:20px;background:var(--sage-100);color:var(--pine-700);font-size:10px;white-space:nowrap}.change blockquote{margin:0 0 14px;padding:12px 16px;border-left:3px solid var(--sage-300);background:var(--paper);color:var(--muted);font-size:12.5px;line-height:1.9}.change p,.change li{font-size:13px;line-height:1.95}.change ul{margin:0 0 4px;padding-left:20px}.change li::marker{color:var(--pine-700)}.change strong{color:var(--pine-900)}.code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;color:var(--pine-700)}
+    figure{margin:20px 0 0}figure img{width:100%;height:auto;border:1px solid var(--line);border-radius:5px;background:#fff}figcaption{margin-top:9px;color:var(--muted);font-size:11.5px;line-height:1.8}figcaption b{color:var(--pine-700)}
+    .figure-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:20px}.figure-pair figure{margin-top:0}
+    .receipt-wrap{display:flex;gap:22px;align-items:flex-start;margin-top:20px}.receipt-wrap figure{flex:0 0 320px;margin-top:0}.receipt-wrap figure img{border:1px solid var(--line)}
+    table{width:100%;margin-top:18px;border-collapse:collapse;background:#fff;font-size:12.5px}th,td{padding:11px 13px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;line-height:1.7}th{background:var(--sage-100);color:var(--pine-950);font-weight:600}tbody tr:hover{background:#fbfcfa}.yes{color:var(--pine-700);font-weight:600}.no{color:#b9c3bc}.req-id{white-space:nowrap;color:var(--pine-700);font-weight:600}
+    .fixlist{display:grid;gap:0;margin-top:16px;border:1px solid var(--line);border-radius:6px;background:#fff;overflow:hidden}.fixlist div{display:grid;grid-template-columns:120px minmax(0,1fr);gap:16px;padding:14px 18px;border-bottom:1px solid var(--line);font-size:12.5px;line-height:1.9}.fixlist div:last-child{border-bottom:0}.fixlist div:nth-child(odd){background:#fbfcfa}.fixlist span{color:var(--pine-700);font-weight:600}
+    .callout{margin:20px 0 0;padding:16px 18px;border-left:3px solid var(--pine-700);border-radius:0 4px 4px 0;background:var(--sage-100);font-size:12.5px;line-height:1.9}.callout.warn{border-left-color:var(--amber);background:var(--amber-soft)}.callout.warn strong{color:var(--amber)}
+    .closing{margin-top:64px;padding:34px;border-radius:6px;background:var(--pine-900);color:#fff}.closing h2{margin-bottom:12px;font-family:var(--display);font-size:24px;font-weight:500}.closing p{max-width:760px;margin-bottom:0;color:#d6e0da;font-size:13px;line-height:1.95}.footer{display:flex;justify-content:space-between;gap:20px;margin-top:30px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:11px;line-height:1.8}
+    @media(max-width:1080px){.layout{grid-template-columns:200px minmax(0,1fr);gap:28px}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:820px){.layout{display:block;padding:0 16px}.sidebar{position:static;max-height:none;padding:20px 0 0}.sidebar nav,.sidebar-note{display:none}.main{padding:20px 0 60px}.figure-pair{grid-template-columns:1fr}.receipt-wrap{flex-direction:column}.receipt-wrap figure{flex:0 0 auto;width:100%;max-width:320px}.fixlist div{grid-template-columns:1fr;gap:4px}.top-actions .action-primary{display:none}}
+    @media print{.topbar,.sidebar{display:none}.layout{display:block;width:100%;padding:0}.hero{background:#fff;color:var(--ink);border:1px solid var(--line)}.hero h1{font-size:30px}.hero-eyebrow,.hero-description,.hero-note{color:var(--muted)}.hero::after{display:none}.change,.batch,.stat,.closing{break-inside:avoid}.closing{background:#fff;color:var(--ink);border:1px solid var(--line)}.closing p{color:var(--muted)}}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="音昱 Wellness">
+      <span class="brand-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4C10 4.8 5 9 5 16c5 .8 11-1 15-12Z"/><path d="M5 21c2-6 6-9 12-13"/></svg></span>
+      <span class="brand-copy"><strong>音昱 Wellness</strong><small>更新说明 · CHANGELOG</small></span>
+    </a>
+    <div class="top-actions">
+      <button class="action" type="button" onclick="window.print()">打印 / 保存 PDF</button>
+      <a class="action" href="/help.html">操作指南</a>
+      <a class="action action-primary" href="/login">进入员工后台</a>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <p class="toc-title">CONTENTS</p>
+      <nav>
+        <ul class="toc-list">
+          <li><a href="#overview">本次更新概览</a></li>
+          <li><a href="#batch-1117">2026-11-17 · 1117 需求落地</a></li>
+          <li><a href="#a-finance">A9 流水与营收分离</a></li>
+          <li><a href="#batch-1118">2026-11-18 · 后台导航与权限</a></li>
+          <li><a href="#matrix">角色能力矩阵</a></li>
+          <li><a href="#fixes">本次修复与加固</a></li>
+          <li><a href="#api">接口与文档变化</a></li>
+          <li><a href="#member-site">会员端</a></li>
+        </ul>
+      </nav>
+      <p class="sidebar-note">本文所有界面截图均取自实际运行版本（2026-11-18），按“需求 → 实现 → 画面”逐条对照，便于业务方核对。</p>
+    </aside>
+
+    <main>
+      <section class="hero">
+        <p class="hero-eyebrow">CHANGELOG · 2026-11-17 → 2026-11-18</p>
+        <h1>财务口径落地，<br>权限体系重构</h1>
+        <p class="hero-description">本次更新分两批推进：11 月 17 日按《MODIFY1117》需求完成财务与运营侧改造，把“流水”和“营收”彻底分开，并补齐导出与小票；11 月 18 日重构后台导航，把课程库提升为独立页面，并建立角色能力矩阵——菜单可见性、页面可达性与操作权限统一由服务端下发的能力清单决定。</p>
+        <p class="hero-note">共 14 项 1117 需求全部落地 · 19 项角色能力 · 后台接口总数 125 个</p>
+      </section>
+
+      <section id="overview">
+        <div class="stats">
+          <div class="stat"><small>REQUIREMENTS</small><strong>14 / 14</strong><span>《MODIFY1117》全部 14 条需求已落地并逐条对照</span></div>
+          <div class="stat"><small>CAPABILITIES</small><strong>19</strong><span>角色能力项，覆盖 5 种员工角色</span></div>
+          <div class="stat"><small>ENDPOINTS</small><strong>125</strong><span>后台接口总数，本批新增与调整 6 个</span></div>
+          <div class="stat"><small>FIXES</small><strong>6</strong><span>数据一致性、并发与权限校验缺陷修复</span></div>
+        </div>
+        <div class="batch">
+          <small>BATCH 01 · 2026-11-17</small>
+          <h2>1117 需求：财务、报表与运营效率</h2>
+          <p>核心是把“现金实收”和“确认营收”拆成两件事：私教按消课确认营收、年卡按天均摊、团课购卡即确认；购卡与手动入账都提供“入流水 / 入营收 / 营收每日均摊”三个可选项。同时补齐教室总览次日导出、财务与课程报表导出、品牌账单小票（14.5cm × 7.5cm），并统一课程与卡课产品的中文类目。</p>
+        </div>
+        <div class="batch">
+          <small>BATCH 02 · 2026-11-18</small>
+          <h2>后台导航、课程库与角色能力矩阵</h2>
+          <p>左侧菜单重新分组并按角色显示；课程库从排课弹窗提升为“资源与商品 → 课程库”独立页面；新建能力矩阵（单一事实来源在后端），菜单、路由守卫与操作按钮共用同一套判断；教练档案可关联员工账号，员工可在左下角自助修改资料与密码。</p>
+        </div>
+      </section>
+
+      <section id="batch-1117" class="section">
+        <span class="section-kicker">BATCH 01</span>
+        <h2>2026-11-17 · 1117 需求逐条落地</h2>
+        <p class="section-intro">以下按《MODIFY1117》原文顺序逐条对照：先列需求原话，再说明系统现在的做法，并附上对应界面截图与图注。</p>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">A1</span><h3>教室总览：时间轴从 07:00 起，表头与房间名分离</h3><span class="change-tag">已完成</span></div>
+          <blockquote>“红框区域需要往下移一点，不要和房间名字齐平。界面上显示的时间是否能从 7 点开始。”</blockquote>
+          <ul>
+            <li>左侧时间轴独立成列，顶部有自己的“时间”表头行，不再与右侧房间名称齐平挤在同一行。</li>
+            <li>时间刻度从 <span class="code">07:00</span> 起算，共 16 小时（07:00–22:00），覆盖早课到晚课。</li>
+            <li>教室使用统计的口径同步改为“每日 07:00–20:00”，与界面显示一致。</li>
+          </ul>
+          <figure>
+            <img src="changelog-2026-11-18/20-rooms-overview.png" alt="教室总览页面" loading="lazy">
+            <figcaption><b>图 1 · 教室总览。</b>左侧为独立的时间轴列，表头“时间”单独一行；刻度自 07:00 起排列。右上角“导出安排 PDF”可导出当天全部课程与占用安排。</figcaption>
+          </figure>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">A2</span><h3>颜色选择：先选常用色，再进调色盘</h3><span class="change-tag">已完成</span></div>
+          <blockquote>“系统内颜色选择的功能都是在大调色盘中选取……能否列几个常用色，比如 Word 或 Excel 文档中选择颜色时有一些常用色，直接点击即可，如果需要更多颜色再进调色盘。”</blockquote>
+          <ul>
+            <li>课程颜色等所有取色处改为“先常用色、后调色盘”两段式：顶部一排常用色直接点击即选中。</li>
+            <li>下方保留“更多颜色”入口与十六进制输入，可继续自定义色值。</li>
+            <li>常用色选中后即时回显色块，选中项带对勾标识，不需要再手动拖动调色盘。</li>
+          </ul>
+          <figure>
+            <img src="changelog-2026-11-18/07-course-create.png" alt="新建课程弹窗" loading="lazy">
+            <figcaption><b>图 2 · 新建课程弹窗。</b>“课程颜色”区先列一排常用色（当前选中项带对勾），下方“更多颜色”可展开完整调色盘或手动输入色值。</figcaption>
+          </figure>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">A3</span><h3>创建课程：改为本地上传图片</h3><span class="change-tag">已完成</span></div>
+          <blockquote>“图片复制不进这个‘创建课程’的图片格子里，要不单独设置一个‘图片上传’的按钮，可在电脑上本地选择图片。”</blockquote>
+          <ul>
+            <li>课程图片改为独立的“图片上传”按钮，可直接从电脑选择 PNG / JPG / WebP（不超过 6MB），也支持粘贴图片。</li>
+            <li>删除原先只能填地址的“图片网址”输入框，避免两处填写互相冲突。</li>
+            <li>已上传课程图片可一键“移除图片”，同时清理服务器上的旧文件；课程卡片与会员端同步显示图片。</li>
+          </ul>
+          <figure>
+            <img src="changelog-2026-11-18/05-courses-cards.png" alt="课程库卡片视图" loading="lazy">
+            <figcaption><b>图 3 · 课程库独立页面。</b>课程卡片直接显示上传的课程图片；下方为课程名称、类别、时长与单节价格，支持卡片 / 列表视图切换。</figcaption>
+          </figure>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">A4</span><h3>新建排课：课程可搜索，与教练字段视觉分隔</h3><span class="change-tag">已完成</span></div>
+          <blockquote>“我们的团课品种有上百种，是否可以有搜索功能，比如打第一个字，符合的团课就跳出来……课程下拉的菜单和下方老师的名字的格子感觉连在了一起，能否有个区分。”</blockquote>
+          <ul>
+            <li>“课程 / 服务”改为可输入的搜索选择器：输入首字或关键词即时筛选，命中课程在展开列表中高亮显示。</li>
+            <li>课程选择区加了独立边框与背景，与下方“授课老师”输入框明确分开，不再粘连。</li>
+            <li>该选择器在排课与私教预约中统一复用。</li>
+          </ul>
+          <figure>
+            <img src="changelog-2026-11-18/19-course-search.png" alt="新建排课弹窗" loading="lazy">
+            <figcaption><b>图 4 · 新建排课弹窗。</b>“课程 / 服务”为可搜索选择器，与下方“授课老师”字段之间有独立边框分隔。</figcaption>
+          </figure>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">A5</span><h3>会员档案：补齐字段名，整体字号放大</h3><span class="change-tag">已完成</span></div>
+          <blockquote>“会员档案这页面能否加上‘手机号’‘性别’‘出生日期’这三个词……内容也帮忙分开点，字体大一点……最好是整个员工后台系统里的字体都大 1-2 号。”</blockquote>
+          <ul>
+            <li>档案抬头补上“手机号 / 性别 / 出生日期”字段名，内容分列排布，一行看清。</li>
+            <li>“获客来源 / 会籍归属 / 微信号 / 紧急联系”等字段字号同步放大并统一对齐。</li>
+            <li>会员卡行的字号、有效期与状态回到同一水平线，去掉多余的破折号造成的错位。</li>
+            <li>本次连带把整个员工后台的正文字号放大 1–2 号，并优化了操作按钮的尺寸与间距（不依赖浏览器缩放，390px 手机端同样可用）。</li>
+          </ul>
+          <figure>
+            <img src="changelog-2026-11-18/18-member-profile.png" alt="会员档案抽屉" loading="lazy">
+            <figcaption><b>图 5 · 会员档案。</b>抬头区字段名与内容分列、字号加大；下方标签行把“体测 / Assessment”“合同与资料”与预约、消费记录并排成一行。</figcaption>
+          </figure>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">A6</span><h3>附件直接点开查看，资料区改为并排标签</h3><span class="change-tag">已完成</span></div>
+          <blockquote>“能否直接可以点开，或者把‘下载’改成‘查看’，感受上会好一点……把‘体测/Assessment’和‘合同与资料’改到在下方的并排项。”</blockquote>
+          <ul>
+            <li>合同、体测等附件的“下载”按钮改为“查看”，浏览器内直接预览，不用先存到本地再打开。</li>
+            <li>“体测 / Assessment”与“合同与资料”从上下两个独立区块调整为下方标签行中的一员，与团课预约记录、私教预约记录、私教 / 跟进记录、消费记录并排。</li>
+            <li>标签行按角色显示：没有维护权限的账号看不到上传按钮。</li>
+          </ul>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">A7</span><h3>入账类别合并与重排（中文）</h3><span class="change-tag">已完成</span></div>
+          <blockquote>“年卡和组合套餐是一个东西……改成：年卡/组合套餐。评估其实属于私教一类的……合并成：私教/评估。整体从上到下的顺序就是：团课，私教/评估，年卡/组合套餐，工作坊，培训课，企业课，杂项。”</blockquote>
+          <ul>
+            <li>入账类别固定为 7 项并按指定顺序排列：团课 → 私教/评估 → 年卡/组合套餐 → 工作坊 → 培训课 → 企业课 → 杂项。</li>
+            <li>历史流水中的 <span class="code">assessment</span>、<span class="code">package</span> 在展示与统计时统一归并到“私教/评估”“年卡/组合套餐”，报表不会重复计列。</li>
+            <li>手动入账、报表与卡片上的类目文案全部为中文。</li>
+          </ul>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">A8</span><h3>卡课产品：类别回中文化</h3><span class="change-tag">已完成</span></div>
+          <blockquote>“卡课产品界面里的类别突然变成英文了，能否也改成中文的：团课，私教/评估，年卡/组合套餐，工作坊，培训课。”</blockquote>
+          <ul>
+            <li>产品类别筛选与列表“类别”列改回中文，固定 5 项：团课、私教/评估、年卡/组合套餐、工作坊、培训课。</li>
+            <li>卡片视图与列表视图的类别标签同样使用中文名，不再出现 group / private / annual 等英文值。</li>
+          </ul>
+          <figure>
+            <img src="changelog-2026-11-18/21-products.jpg" alt="卡课产品页面" loading="lazy">
+            <figcaption><b>图 6 · 卡课产品。</b>“产品类别”筛选下拉与列表的“类别”列均为中文，与财务入账的类目口径一致。</figcaption>
+          </figure>
+        </article>
+
+        <article class="change" id="a-finance">
+          <div class="change-head"><span class="change-id">A9</span><h3>财务：把“流水”与“营收”彻底分开</h3><span class="change-tag">已完成 · 本批次重点</span></div>
+          <blockquote>“在‘确认购卡并入账’和‘确认入账’上面一点点，加三个选项：‘入流水’（可选项），‘入营收’（可选项），‘营收每日均摊’（可选项）……私教必须用掉一节课才能算营收。”</blockquote>
+          <ul>
+            <li>购卡购课与手动入账都新增三个可勾选项：<b>入流水</b>（计入现金实收）、<b>入营收</b>（一次性全额确认营收）、<b>营收每日均摊</b>（按开始日期与天数分摊）。三者可自由组合。</li>
+            <li>默认口径随类别自动带出：私教/评估默认“只入流水”（用掉一节课才确认营收）、年卡/组合套餐与 365 天卡默认“入流水 + 每日均摊”、团课卡默认“入流水 + 入营收”。</li>
+            <li>私教/评估消课新增“营收入账”入口：签到消课后可单独确认这一节课的营收，可选“健身会员”等结账方式，重复入账会被拦截，取消签到时自动冲销。</li>
+            <li>流水列表新增“入账类型”列，用标签区分<b>流水 / 营收 / 流水+营收 / 流水+营收（每日均摊）</b>，一眼看清每笔钱走的是哪个口径。</li>
+            <li>报表同步区分“现金实收”与“确认营收”两套数字，并单列年卡均摊营收与私教消课营收。</li>
+          </ul>
+          <div class="figure-pair">
+            <figure>
+              <img src="changelog-2026-11-18/15-finance-manual-entry.png" alt="手动入账弹窗" loading="lazy">
+              <figcaption><b>图 7 · 手动入账。</b>确认按钮上方即“入流水 / 入营收 / 营收每日均摊”三选项，默认按类别带出。</figcaption>
+            </figure>
+            <figure>
+              <img src="changelog-2026-11-18/16-private-revenue.png" alt="私教消课营收入账" loading="lazy">
+              <figcaption><b>图 8 · 私教/评估消课营收入账。</b>签到后单独确认本节课营收，金额默认按购卡金额÷总次数计算，结账方式含“健身会员”。</figcaption>
+            </figure>
+          </div>
+          <figure>
+            <img src="changelog-2026-11-18/09-finance-ledger.png" alt="财务流水页面" loading="lazy">
+            <figcaption><b>图 9 · 财务入账。</b>每条流水的“入账类型”标签标明该笔是流水、营收还是流水+营收；顶部汇总区分现金实收与即时营收。</figcaption>
+          </figure>
+          <figure>
+            <img src="changelog-2026-11-18/22-reports.jpg" alt="报表分析页面" loading="lazy">
+            <figcaption><b>图 10 · 报表分析。</b>“流水与营收分类汇总”把现金实收与确认营收分列，并给出年卡均摊营收、私教消课营收与课程/教练/教室经营数据。</figcaption>
+          </figure>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">A10</span><h3>结账方式新增“健身会员”</h3><span class="change-tag">已完成</span></div>
+          <blockquote>“麻烦还需要再帮忙加个‘健身会员’的结账方式，就是用在私教课上了一节课后入营收时，财务同事需要我们选择这个结账方式。”</blockquote>
+          <ul>
+            <li>结账方式新增 <b>健身会员</b>，用于私教/评估消课后的营收确认，私教营收弹窗默认选中该方式。</li>
+            <li>该方式同时进入账单小票与导出的结账方式列，财务对账口径一致。</li>
+          </ul>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">A11</span><h3>新增账单小票（14.5cm × 7.5cm）</h3><span class="change-tag">已完成</span></div>
+          <blockquote>“最上方是 Octave logo，健康管理 Wellness。中段是：日期、时间。接下来是入账项目……显示‘流水’、‘流水+营收’或‘营收’这三种情况……再接着下面是：去税金额和增值税金额。最下方是签字栏，以及页尾是音昱听堂的地址和电话。”</blockquote>
+          <ul>
+            <li>每条已入账 / 已退款的流水都可导出品牌账单小票（PDF），尺寸与 NCR 小票机一致：长 14.5cm、宽 7.5cm。</li>
+            <li>小票内容按要求排布：Octave logo 与“健康管理 Wellness”抬头 → 账单编号、日期与时间 → 入账项目与金额 → 入账类型（流水 / 流水+营收 / 营收）→ 客户姓名、结账方式、备注 → 入账人 → 合计、去税金额、增值税额 → 签字栏 → 页尾地址与电话。</li>
+            <li>电子小票可直接发给财务，客户需要时也可按原尺寸打印。</li>
+          </ul>
+          <div class="receipt-wrap">
+            <figure>
+              <img src="changelog-2026-11-18/17-receipt.png" alt="账单小票" loading="lazy">
+              <figcaption><b>图 11 · 账单小票。</b>电子小票实样，可直接上传财务或按 14.5×7.5cm 打印。</figcaption>
+            </figure>
+            <ul>
+              <li><b>抬头：</b>Octave logo + “健康管理 Wellness”，下方为账单编号与日期、时间。</li>
+              <li><b>中段：</b>入账项目名称与金额（会籍 / 卡类、课包等），并标注该笔属于“流水 / 流水+营收 / 营收”。</li>
+              <li><b>客户信息：</b>客户姓名、结账方式（含新增的“健身会员”）、经办人与备注。</li>
+              <li><b>金额区：</b>合计金额、去税金额与增值税额（税率 6%）。</li>
+              <li><b>底部：</b>签字栏（客户签字 / 经办人），页尾为音昱听堂地址与电话。</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">A12</span><h3>教室总览：导出次日排课安排</h3><span class="change-tag">已完成</span></div>
+          <blockquote>“我们每天晚上需要把后面一天的教室安排（也就是房间总览）的表格发到 TLR 的大群里。团课，私教课，工作坊，内部使用，企业活动等都需要列出来，课程名字/活动名字、时间、教练、教室、预约人数、备注。”</blockquote>
+          <ul>
+            <li>教室总览右上角新增“导出安排 PDF”，导出指定日期的全部安排，便于每晚发群。</li>
+            <li>导出列与需求一致：<b>课程 / 活动名称、类型、时间、教练、教室、预约人数、备注</b>。</li>
+            <li>团课、私教、工作坊、内部使用与企业活动全部列入，页面顶部还给出课程数、教室数与首项开始时间。</li>
+          </ul>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">A13</span><h3>排课中心移除“私教排课”</h3><span class="change-tag">已完成</span></div>
+          <blockquote>“‘排课中心’里不需要‘私教排课’的功能了，因为在预约和签到中直接可以‘私教预约’了。下面这个‘私教排课’的子目录不用了。”</blockquote>
+          <ul>
+            <li>左侧导航中“私教排课”子目录已移除，私教统一在“预约与签到 → 私教预约”中一步完成排课与预约。</li>
+            <li>旧地址 <span class="code">/admin/schedule/private</span> 自动跳转到私教预约页，不会出现“页面不存在”。</li>
+          </ul>
+          <figure>
+            <img src="changelog-2026-11-18/01-nav-admin.png" alt="后台导航" loading="lazy">
+            <figcaption><b>图 12 · 后台左侧导航（管理员视角）。</b>“排课与场地”下只有团课排课、工作坊排课与教室总览，没有“私教排课”。</figcaption>
+          </figure>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">A14</span><h3>报表分析：财务类与课程数据类可导出</h3><span class="change-tag">已完成</span></div>
+          <blockquote>“以下显示的财务类和课程数据类的报表分析能否导出，以清晰的表格形式可发给同事们看。”</blockquote>
+          <ul>
+            <li>财务流水明细导出为 PDF：编号/时间、会员、类别、业务、入账类型、结账方式、金额、状态、备注，并汇总现金实收与即时营收。</li>
+            <li>经营分析报表导出为 PDF：流水与营收分类汇总、课程经营数据（排课数/取消数/取消率/预约人次）、教练课时统计、教室使用统计、到课时段分布。</li>
+            <li>导出为带品牌抬头的 PDF，页眉页脚统一，可直接转发给同事或财务。</li>
+          </ul>
+        </article>
+      </section>
+
+      <section id="batch-1118" class="section">
+        <span class="section-kicker">BATCH 02</span>
+        <h2>2026-11-18 · 后台导航、课程库与角色权限</h2>
+        <p class="section-intro">这一批以“能不能做”而不是“藏不隐藏菜单”为核心：能力矩阵在后端定义一次，菜单、路由守卫、接口鉴权与操作按钮共用同一份判断，避免出现菜单看不见却仍能改数据的漏洞。</p>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">N1</span><h3>左侧菜单按角色显示，并重新分组排序</h3><span class="change-tag">已完成</span></div>
+          <ul>
+            <li>菜单重排为“经营概览 → 预约与签到 → 排课与场地 → 会员管理 → 资源与商品 → 财务与报表 → 系统设置”，按日常使用频率从高到低排列。</li>
+            <li>每项菜单绑定一项能力：无权看到的菜单不渲染，直接输入网址同样会被路由守卫拦下并跳回概览页。</li>
+            <li>同一页面里当前角色不适用的按钮会直接隐藏，不再出现“点了才提示无权操作”。</li>
+            <li>侧边栏底部的“English / 操作指南 / 会员预约端”收起为横向排列的三个精简图标按钮，底部不再堆叠长文字。</li>
+          </ul>
+          <div class="figure-pair">
+            <figure>
+              <img src="changelog-2026-11-18/02-nav-teacher.png" alt="教练视角导航" loading="lazy">
+              <figcaption><b>图 13 · 教练账号。</b>只有概览、预约与签到、排课与场地、会员管理、课程库；没有财务与报表、系统设置。</figcaption>
+            </figure>
+            <figure>
+              <img src="changelog-2026-11-18/04-nav-frontdesk.png" alt="前台账号导航" loading="lazy">
+              <figcaption><b>图 14 · 前台账号。</b>可以排课与维护会员，但没有“系统设置”；底部三个图标按钮为语言、操作指南与会员预约端。</figcaption>
+            </figure>
+          </div>
+          <figure>
+            <img src="changelog-2026-11-18/03-nav-viewer.png" alt="只读账号导航" loading="lazy">
+            <figcaption><b>图 15 · 只读账号。</b>保留查看类入口（财务流水、报表可看），但没有任何可写的资源入口。</figcaption>
+          </figure>
+          <figure>
+            <img src="changelog-2026-11-18/25-sidebar-quick.png" alt="侧边栏底部快捷按钮" loading="lazy">
+            <figcaption><b>图 16 · 侧边栏底部快捷操作。</b>原来的“English / 操作指南 / 会员预约端”三项收起为横向排列的三个精简图标按钮（语言、操作指南、会员预约端），手机端同样适用，底部不再堆叠长文字。</figcaption>
+          </figure>
+          <figure>
+            <img src="changelog-2026-11-18/26-nav-finance.png" alt="财务账号导航" loading="lazy">
+            <figcaption><b>图 17 · 财务账号。</b>可以进入财务入账、报表分析与卡课产品维护，但没有“排课与场地”“会员管理”和“系统设置”。</figcaption>
+          </figure>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">N2</span><h3>课程库独立成页，增删改查齐全</h3><span class="change-tag">已完成</span></div>
+          <ul>
+            <li>课程库从排课页的弹窗提升为“资源与商品 → 课程库”独立页面，位置与其他资源一致，排课页保留跳转入口。</li>
+            <li>支持按课程类别、启停状态与名称搜索筛选，搜索输入 250ms 防抖，卡片与列表两种视图可切换。</li>
+            <li>新建、编辑、启用停用、上传与移除图片、移入回收站全部具备，与会员、教室、教练等资源页面保持一致。</li>
+            <li>课程类别按 1117 统一的中文类目显示。</li>
+          </ul>
+          <figure>
+            <img src="changelog-2026-11-18/06-courses-list.png" alt="课程库列表视图" loading="lazy">
+            <figcaption><b>图 18 · 课程库列表视图。</b>支持类别、状态与名称筛选，行内可直接编辑、删除（移入回收站）。</figcaption>
+          </figure>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">N3</span><h3>角色能力矩阵：菜单、路由与接口共用一套判断</h3><span class="change-tag">已完成</span></div>
+          <ul>
+            <li>新增 19 项能力、5 种角色的能力矩阵，后端为唯一事实来源，接口随登录信息一并下发，前端优先采用服务端结果。</li>
+            <li>后台“系统设置 → 账号权限”页可直接查看矩阵，无需对照文档。</li>
+            <li>教练可书写私教与跟进记录，但不能修改会员资料、卡权益与财务数据；财务可维护卡课产品、收款核销与报表，但不能改排课和会员档案。</li>
+            <li>前台保留电子码核销，但不再显示完整收支流水；组合型入口采用“具备其中任一能力即可进入”。</li>
+            <li>CSV 导出改为按数据类型判定权限：会员与预约名单按各自读取能力，财务流水只有财务角色可导出。</li>
+          </ul>
+          <figure>
+            <img src="changelog-2026-11-18/08-permission-matrix.jpg" alt="账号权限矩阵" loading="lazy">
+            <figcaption><b>图 19 · 账号权限矩阵。</b>19 项能力 × 5 种角色，✓ 即为允许；页面上方同时列出员工账号并可直接调整。</figcaption>
+          </figure>
+          <figure>
+            <img src="changelog-2026-11-18/10-finance-redemption.png" alt="前台视角的财务页" loading="lazy">
+            <figcaption><b>图 20 · 前台看到的“收款与核销”。</b>不显示收支流水，只保留电子码核销，完整账目交由财务与管理员查看。</figcaption>
+          </figure>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">N4</span><h3>教练档案关联员工账号</h3><span class="change-tag">已完成</span></div>
+          <ul>
+            <li>教练编辑页新增“关联员工账号”，可把一位教练与角色为“教练”的员工账号绑定，教练即可用自己的账号登录后台。</li>
+            <li>一个员工账号只能关联一位教练，避免两个教练共用账号导致考勤与业绩算不清。</li>
+            <li>教练移入回收站时关联账号自动停用，恢复或彻底删除后账号状态随之还原。</li>
+            <li>教练照片改为直接上传，去掉多余的“图片网址”输入框，并支持一键移除照片。</li>
+          </ul>
+          <figure>
+            <img src="changelog-2026-11-18/11-teacher-edit.png" alt="编辑教练弹窗" loading="lazy">
+            <figcaption><b>图 21 · 编辑教练。</b>新增“关联员工账号”下拉（图中已关联“程天澜”账号），照片区只有上传与移除，没有图片网址输入框。</figcaption>
+          </figure>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">N5</span><h3>员工自助个人中心</h3><span class="change-tag">已完成</span></div>
+          <ul>
+            <li>后台左下角头像点开即为“我的账号”，任何角色的员工都可以修改自己的姓名与绑定手机号，不用再找管理员代劳。</li>
+            <li>同一面板可自助修改登录密码：需校验原密码，且新密码不能与原密码相同。</li>
+            <li>登录名、角色与账号启停仍由管理员统一管理，避免越权；停用账号前增加二次确认。</li>
+          </ul>
+          <figure>
+            <img src="changelog-2026-11-18/12-profile-panel.png" alt="个人中心面板" loading="lazy">
+            <figcaption><b>图 22 · 个人中心。</b>可改姓名与手机号（登录名与角色为只读），下方为修改密码区。</figcaption>
+          </figure>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">N6</span><h3>只读角色的界面收敛</h3><span class="change-tag">已完成</span></div>
+          <ul>
+            <li>只读账号进入排课、会员等页面时，编辑类按钮不渲染，操作列仅保留查看入口。</li>
+            <li>回收站的查看、恢复与彻底删除仍只有管理员可以操作；回收站按数据种类校验删除权限。</li>
+          </ul>
+          <figure>
+            <img src="changelog-2026-11-18/13-schedule-viewer.png" alt="只读账号的排课页" loading="lazy">
+            <figcaption><b>图 23 · 只读账号的排课页。</b>没有新建排课与编辑按钮，页面仅供查看。</figcaption>
+          </figure>
+          <figure>
+            <img src="changelog-2026-11-18/14-recycle-bin.png" alt="回收站" loading="lazy">
+            <figcaption><b>图 24 · 回收站。</b>按资源类型分组展示已删除数据，可恢复或彻底删除（保留 180 天）。</figcaption>
+          </figure>
+        </article>
+      </section>
+
+      <section id="matrix" class="section">
+        <span class="section-kicker">PERMISSION MATRIX</span>
+        <h2>角色能力矩阵</h2>
+        <p class="section-intro">下表与后台“账号权限”页、以及服务端接口鉴权完全一致。✓ 表示该角色具备该能力，— 表示不具备。</p>
+        <table>
+          <thead><tr><th>能力</th><th>说明</th><th>IT / 管理员</th><th>财务</th><th>前台</th><th>教练</th><th>只读</th></tr></thead>
+          <tbody>
+            <tr><td>经营概览</td><td>今日课程、预约与本月营收概览</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><td>预约查看</td><td>团课、私教与工作坊预约名单</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><td>预约与排课</td><td>新建排课、代客预约、签到、取消与爽约</td><td class="yes">✓</td><td class="no">—</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td></tr>
+            <tr><td>会员查看</td><td>会员档案、卡权益与跟进记录</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><td>会员维护</td><td>新建与修改会员资料、附件与爽约限制</td><td class="yes">✓</td><td class="no">—</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td></tr>
+            <tr><td>跟进记录</td><td>书写私教与跟进记录</td><td class="yes">✓</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td></tr>
+            <tr><td>会员卡权益</td><td>延期、冻结、转卡、共享与体验券管理</td><td class="yes">✓</td><td class="no">—</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td></tr>
+            <tr><td>收款与核销</td><td>购卡、升额、电子码核销与消课营收确认</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td></tr>
+            <tr><td>资源查看</td><td>课程、教练与教室目录</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><td>资源维护</td><td>维护课程、教练与教室资料</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+            <tr><td>产品查看</td><td>卡课产品与价格</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td><td class="yes">✓</td></tr>
+            <tr><td>产品维护</td><td>新建与修改卡课产品</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+            <tr><td>财务查看</td><td>收支流水与对账单</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+            <tr><td>财务记账</td><td>手工入账、修改与退款</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+            <tr><td>报表分析</td><td>经营报表与营收构成</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td><td class="yes">✓</td></tr>
+            <tr><td>回收站删除</td><td>将数据移入回收站</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td></tr>
+            <tr><td>回收站管理</td><td>查看与恢复回收站数据</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+            <tr><td>系统设置查看</td><td>账号、短信、密钥与日志</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+            <tr><td>系统设置维护</td><td>账号、短信、品牌与系统设置</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+          </tbody>
+        </table>
+        <div class="callout warn"><strong>权限收紧后的日常影响：</strong>前台仍可核销会员线上提交的购卡电子码，但不再显示全部收支流水与账单小票；完整流水与导出由财务或管理员查看。教练与只读账号可以导出会员名单与预约名单，但不能导出财务流水。</div>
+      </section>
+
+      <section id="fixes" class="section">
+        <span class="section-kicker">FIXES</span>
+        <h2>本次修复与加固</h2>
+        <div class="fixlist">
+          <div><span>座位重复扣减</span><div>修复后台取消预约时课程剩余席位被重复扣减的问题（此前可能显示还有余位，实际已约满）。</div></div>
+          <div><span>批量导入</span><div>修复同一份会员导入文件内出现重复手机号导致整批导入失败的问题，导入过程中单独维护本次文件的手机号索引。</div></div>
+          <div><span>并发覆盖</span><div>修复会员卡被并发修改时互相覆盖的问题，改为版本校验，冲突时提示刷新后重试；后台修改会员卡会带上版本号。</div></div>
+          <div><span>权益返还</span><div>撤销签到、取消预约统一走权益返还通道，卡次数与体验券次数同步回补，并冲销已入账的营收。</div></div>
+          <div><span>输入校验</span><div>价格、次数、有效天数等数字字段增加范围校验，填错时给出明确提示；会籍归属与所属教练会校验编号是否存在。</div></div>
+          <div><span>接口鉴权</span><div>修复使用系统对接凭证时无法修改会员记录的问题；CSV 导出改为按数据类型判定角色能力。</div></div>
+        </div>
+      </section>
+
+      <section id="api" class="section">
+        <span class="section-kicker">API &amp; DOCS</span>
+        <h2>接口与文档变化</h2>
+        <p class="section-intro">后台接口总数由 123 个增加到 125 个，接口文档与可视化页面已同步重新生成。</p>
+        <table>
+          <thead><tr><th>接口</th><th>说明</th><th>批次</th></tr></thead>
+          <tbody>
+            <tr><td class="code">GET /api/admin/courses</td><td>课程库列表，支持按类别、状态与名称筛选</td><td>2026-11-18</td></tr>
+            <tr><td class="code">GET /api/admin/role-permissions</td><td>角色能力矩阵，供后台权限页展示</td><td>2026-11-18</td></tr>
+            <tr><td class="code">PATCH /api/auth/me</td><td>员工自助修改姓名与手机号</td><td>2026-11-18</td></tr>
+            <tr><td class="code">POST /api/auth/change-password</td><td>员工自助修改登录密码</td><td>2026-11-18</td></tr>
+            <tr><td class="code">POST /api/admin/bookings/{id}/revenue</td><td>私教 / 评估消课营收确认（仅入营收，可选健身会员结账）</td><td>2026-11-17</td></tr>
+            <tr><td class="code">GET /api/admin/transactions/{id}/receipt.pdf</td><td>品牌账单小票（14.5cm × 7.5cm）</td><td>2026-11-17</td></tr>
+            <tr><td class="code">GET /api/admin/rooms/overview.pdf</td><td>教室安排总览导出（次日排课表）</td><td>2026-11-17</td></tr>
+            <tr><td class="code">GET /api/admin/transactions.pdf / reports.pdf</td><td>财务流水明细与经营分析报表导出</td><td>2026-11-17</td></tr>
+          </tbody>
+        </table>
+        <div class="callout">同步更新的文档：<span class="code">docs/API.md</span>（接口唯一来源）、<span class="code">public/api-docs.html</span>（可视化接口文档）、<span class="code">docs/CHANGELOG_CLIENT.md</span>、<span class="code">docs/CHANGELOG_DEVELOPER.md</span>、<span class="code">public/help.html</span>（员工操作指南）。</div>
+      </section>
+
+      <section id="member-site" class="section">
+        <span class="section-kicker">MEMBER SITE</span>
+        <h2>会员端同步</h2>
+        <p class="section-intro">会员预约端保持原有的预约、购卡与扫码签到流程，本次随批次调整了课程类目与字号，移动端布局同步复核。</p>
+        <div class="figure-pair">
+          <figure>
+            <img src="changelog-2026-11-18/23-public-home.jpg" alt="会员预约端首页" loading="lazy">
+            <figcaption><b>图 25 · 会员预约端首页。</b>课程类别按新的中文类目显示。</figcaption>
+          </figure>
+          <figure>
+            <img src="changelog-2026-11-18/24-public-mobile.png" alt="会员端手机视图" loading="lazy">
+            <figcaption><b>图 26 · 会员端手机视图（390×844）。</b>课程卡片与课表在窄屏下仍可完整操作。</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="closing">
+        <h2>本次更新的业务闭环</h2>
+        <p>课程与资源维护 → 会员购卡与入账（流水 / 营收可选） → 课程预约 → 双向扫码签到 → 自动消课 → 私教消课单独确认营收 → 财务流水与营收分列报表 → 账单小票与次日排课导出 → 数据备份与恢复。</p>
+      </section>
+
+      <footer class="footer">
+        <span>音昱 Wellness · 系统更新说明 · 2026-11-17 ~ 2026-11-18</span>
+        <span>截图取自实际运行版本 · 共 26 张界面示例</span>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

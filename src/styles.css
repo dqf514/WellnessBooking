@@ -829,3 +829,10 @@ input[type="number"] { -moz-appearance: textfield; }
 
 /* 产品原价（划线价） */
 .product-admin-original-price { margin-left: 8px; color: var(--muted); font-size: 12px; font-weight: 400; }
+
+/* 侧边栏底部快捷操作：横向三个精简图标按钮 */
+.sidebar-quick { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; padding: 0 2px; }
+.sidebar-quick-btn { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid rgba(255,255,255,.12); border-radius: 6px; background: rgba(255,255,255,.04); color: #aebfb6; text-decoration: none; transition: background .2s, color .2s, border-color .2s; }
+.sidebar-quick-btn:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.24); color: #fff; }
+.sidebar-quick-btn svg { transform: none; }
+@media (max-width: 760px) { .sidebar-quick { justify-content: flex-start; } .sidebar-quick-btn { width: 44px; height: 44px; } }

@@ -337,3 +337,22 @@
 
 **最新提交：** `2d110f883117886079c4cc64af9269661d218d8f`
 **GitHub：** `https://github.com/dqf514/WellnessBooking`
+
+---
+
+## 九、更新说明页面与侧边栏底部快捷操作（2026-11-18）
+
+### 1. 图文更新说明页面
+
+- 新增 `public/changelog-2026-11-18.html`：独立静态页面（无构建依赖，直接由 `SPAStaticFiles` 伺服），按“需求 → 实现 → 画面”逐条对照 2026-11-17 的 14 条需求与 2026-11-18 的 6 组改动，并附 26 张界面截图与图注。
+- 截图资源置于 `public/changelog-2026-11-18/`，统一压缩到宽 1500px 以内，四张大图转 JPEG 控制体积（合计约 5MB）。
+- 页面复用 `public/help.html` 的 pine/sage 设计变量，含目录锚点、打印样式（可直接“打印 / 保存 PDF”）、响应式布局与移动端适配。
+- 权限矩阵表直接取自 `backend/app/permissions.py` 的 `CAPABILITY_GROUPS` 与 `ROLE_CAPABILITIES`（19 项能力 × 5 种角色）。
+
+### 2. 侧边栏底部快捷操作
+
+- `AdminLayout.tsx`：侧边栏底部原“English / 操作指南 / 会员预约端”三项，收起为 `.sidebar-quick` 横向排列的三个图标按钮（语言用新增的 `globe` 图标，操作指南用 `book`，会员预约端用 `home`），保留 `aria-label` 与 `title` 说明。
+- `UI.tsx`：`IconName` 新增 `globe`，并补充对应路径。
+- `styles.css`：新增 `.sidebar-quick` / `.sidebar-quick-btn` 样式（深色底 40×40 方钮、悬停高亮、移动端 44×44）。
+
+**验证：** `npm run build`（`tsc -b` + `vite build`）通过；桌面端与 432px 手机端均已截图核对。
