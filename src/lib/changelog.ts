@@ -56,6 +56,14 @@ export const changelogReleases: ChangelogRelease[] = [
         { zh: "会员备注直接显示在头部下方，打开档案即可看到", en: "Member notes now appear directly under the header" },
         { zh: "整体压缩上下留白，把会员卡与记录表的可用高度让出来", en: "Vertical padding is trimmed so the cards and record tables below get more room" },
       ] },
+      { title: { zh: "教室总览大屏视图", en: "Room overview big screen" }, points: [
+        { zh: "日期栏右侧新增全屏按钮，一键打开整屏排课表，适合放在公共区域的大屏幕", en: "A new button at the right of the date bar opens the full-screen schedule for a public display" },
+        { zh: "全屏铺开所有教室，教室多时自动压缩列宽、屏幕放不下时自动压缩行高，无需上下左右滚动", en: "All rooms are laid out at once; column width and row height shrink automatically so nothing needs scrolling" },
+        { zh: "标题栏只留名称与日期，把高度全部留给排课内容", en: "The header keeps only the title and date, giving all height to the schedule" },
+        { zh: "左右方向键切换日期，Esc 退出，Ctrl+P 直接打印当前画面", en: "Arrow keys change the date, Esc exits, and Ctrl+P prints the current view" },
+        { zh: "打印按 A3 横向排版，一天的完整安排正好一页纸", en: "Printing uses A3 landscape, fitting a whole day on a single page" },
+        { zh: "排课块统一压到两行，只显示时间段与主题，一屏能看到更多节课", en: "Blocks are compressed to two lines showing only the time range and title, so more classes fit on screen" },
+      ] },
     ],
   },
   {

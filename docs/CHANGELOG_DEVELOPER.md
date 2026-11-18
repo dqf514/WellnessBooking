@@ -454,3 +454,30 @@
 - `npm run build`（`tsc -b` + `vite build`）通过。
 - 截图核对：后台抽屉宽屏（1600px）与窄屏（390px）下姓名行、信息行、备注行均按预期排布；会员端“个人信息”面板（`.member-profile-panel`）显示未被影响。
 
+---
+
+## 十四、教室总览全屏大屏视图与两行排课块（2026-11-18）
+
+### 1. 全屏排课表
+
+- 新增 `src/components/RoomScheduleBoard.tsx`：通过 `createPortal` 挂到 `document.body`，全屏铺满视口（`.room-board`），标题栏只保留标题、日期、操作提示与关闭按钮。
+- 布局按可用空间自适应：`.room-board-body` 为 `grid-template-columns: 52px minmax(0, 1fr)`，列宽 `roomWidth = floor((bodyWidth - 52) / 教室数)`，行高 `hourHeight = floor((bodyHeight - 30) / 小时数)`，分别写入 CSS 变量 `--board-room-width` 与内联高度，保证所有教室与 07:00–22:00 全部落在视口内，无需横向或纵向滚动。
+- 键盘：`document` 上的 `keydown` 监听 `ArrowLeft` / `ArrowRight` 切换日期（复用 `addDays`）、`Escape` 关闭；打开时给 `body` 加 `room-board-open` 类以锁定页面滚动，卸载时移除。
+- 打印：`@media print` 中隐藏 `#root`、把 `.room-board` 改为静态定位、列宽改为 `minmax(0, 1fr)` 均分，并声明 `@page { size: A3 landscape; margin: 8mm }`，实测 `Page.printToPDF` 输出单页 A3 横向（1191×842pt）。
+- 入口：`RoomsPage` 日期导航行右侧新增 `.room-board-trigger`（`Icon name="expand"`，图标在 `src/components/UI.tsx` 补充），`≤700px` 时隐藏（移动端为分页卡片视图，不提供大屏）。
+- `RoomsPage` 新增 `shiftDate(delta)`，全屏下的前后翻日不与移动端的“翻页”逻辑冲突。
+
+### 2. 两行排课块
+
+- `RoomsPage.blockStyle()` 由按时长计算高度改为固定 34px（两行文字），`top` 仍按开始时间定位。
+- 课程块与教室占用块各删掉第三行 `<small>`（教练/预约人数、占用类别），只保留时间段与主题；完整信息移到 `title` 属性，悬停可见。
+- 样式侧：`.room-block` 去掉 `min-height`、内边距收到 2px 6px，`strong` 取消 `-webkit-line-clamp` 改为单行省略号，`.room-block > span` 同样单行省略。
+
+### 3. 验证
+
+- `npm run build`（`tsc -b` + `vite build`）通过。
+- CDP 脚本核对：全屏打开后 `ArrowRight` 日期由 2026-11-18 变为 2026-11-19、`ArrowLeft` 还原、`Escape` 关闭且 `body` 类名复位。
+- 截图核对：1600px 下 17 间教室全部可见且无滚动条；打印媒体模拟与 `printToPDF` 均只输出排课表本身（无后台侧边栏与工具栏）。
+- 验证用临时教室、当日课程与占用记录已在核对完成后从 `backend/data/wellness.db` 删除，数据库恢复原状。
+
+
