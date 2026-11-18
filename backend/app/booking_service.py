@@ -2,7 +2,7 @@ import json
 from datetime import datetime, timedelta
 
 from fastapi import HTTPException
-from sqlalchemy import case, func
+from sqlalchemy import case, func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -107,8 +107,8 @@ def _consume(db: Session, card: MemberCard, course_type: str) -> None:
             if remaining_sessions <= 0:
                 raise HTTPException(400, "会员卡剩余次数不足")
             remaining_sessions -= 1
-    expected_version = card.version
-    updated = db.query(MemberCard).filter(MemberCard.id == card.id, MemberCard.version == expected_version).update({"remaining_sessions": remaining_sessions, "benefits_json": json.dumps(benefits, ensure_ascii=False), "version": expected_version + 1}, synchronize_session=False)
+    expected_version = card.version or 0
+    updated = db.query(MemberCard).filter(MemberCard.id == card.id, or_(MemberCard.version == expected_version, MemberCard.version.is_(None))).update({"remaining_sessions": remaining_sessions, "benefits_json": json.dumps(benefits, ensure_ascii=False), "version": expected_version + 1}, synchronize_session=False)
     if updated != 1:
         raise HTTPException(409, "会员卡权益刚刚发生变更，请刷新后重试")
     card.remaining_sessions = remaining_sessions
@@ -128,8 +128,8 @@ def _restore(db: Session, card: MemberCard, course_type: str) -> None:
             break
     if not changed and remaining_sessions is not None:
         remaining_sessions = min(card.total_sessions, remaining_sessions + 1) if card.total_sessions is not None else remaining_sessions + 1
-    expected_version = card.version
-    updated = db.query(MemberCard).filter(MemberCard.id == card.id, MemberCard.version == expected_version).update({"remaining_sessions": remaining_sessions, "benefits_json": json.dumps(benefits, ensure_ascii=False), "version": expected_version + 1}, synchronize_session=False)
+    expected_version = card.version or 0
+    updated = db.query(MemberCard).filter(MemberCard.id == card.id, or_(MemberCard.version == expected_version, MemberCard.version.is_(None))).update({"remaining_sessions": remaining_sessions, "benefits_json": json.dumps(benefits, ensure_ascii=False), "version": expected_version + 1}, synchronize_session=False)
     if updated != 1:
         raise HTTPException(409, "会员卡权益刚刚发生变更，请刷新后重试")
     card.remaining_sessions = remaining_sessions
@@ -138,19 +138,21 @@ def _restore(db: Session, card: MemberCard, course_type: str) -> None:
 
 
 def _consume_voucher(db: Session, voucher: ExperienceVoucher) -> None:
-    updated = db.query(ExperienceVoucher).filter(ExperienceVoucher.id == voucher.id, ExperienceVoucher.version == voucher.version, ExperienceVoucher.remaining_sessions > 0).update({"remaining_sessions": ExperienceVoucher.remaining_sessions - 1, "version": ExperienceVoucher.version + 1}, synchronize_session=False)
+    voucher_version = voucher.version or 0
+    updated = db.query(ExperienceVoucher).filter(ExperienceVoucher.id == voucher.id, or_(ExperienceVoucher.version == voucher_version, ExperienceVoucher.version.is_(None)), ExperienceVoucher.remaining_sessions > 0).update({"remaining_sessions": ExperienceVoucher.remaining_sessions - 1, "version": voucher_version + 1}, synchronize_session=False)
     if updated != 1:
         raise HTTPException(409, "体验券刚刚发生变更，请刷新后重试")
     voucher.remaining_sessions -= 1
-    voucher.version += 1
+    voucher.version = voucher_version + 1
 
 
 def _restore_voucher(db: Session, voucher: ExperienceVoucher) -> None:
-    updated = db.query(ExperienceVoucher).filter(ExperienceVoucher.id == voucher.id, ExperienceVoucher.version == voucher.version).update({"remaining_sessions": func.min(ExperienceVoucher.total_sessions, ExperienceVoucher.remaining_sessions + 1), "version": ExperienceVoucher.version + 1}, synchronize_session=False)
+    voucher_version = voucher.version or 0
+    updated = db.query(ExperienceVoucher).filter(ExperienceVoucher.id == voucher.id, or_(ExperienceVoucher.version == voucher_version, ExperienceVoucher.version.is_(None))).update({"remaining_sessions": func.min(ExperienceVoucher.total_sessions, ExperienceVoucher.remaining_sessions + 1), "version": voucher_version + 1}, synchronize_session=False)
     if updated != 1:
         raise HTTPException(409, "体验券刚刚发生变更，请刷新后重试")
     voucher.remaining_sessions = min(voucher.total_sessions, voucher.remaining_sessions + 1)
-    voucher.version += 1
+    voucher.version = voucher_version + 1
 
 
 def consume_booking(db: Session, booking: Booking) -> None:
@@ -190,7 +192,8 @@ def restore_consumption(db: Session, booking: Booking) -> None:
 
 def _release_session_slot(db: Session, booking: Booking) -> None:
     db.query(ClassSession).filter(ClassSession.id == booking.session_id).update({ClassSession.reserved_count: case((ClassSession.reserved_count > 0, ClassSession.reserved_count - 1), else_=0)}, synchronize_session=False)
-    booking.session.reserved_count = max(0, booking.session.reserved_count - 1)
+    # 重新读取以同步 ORM 实例；此处不能再自行减一，否则会与上面的 UPDATE 重复扣减导致超卖。
+    db.refresh(booking.session)
 
 
 def transition_booking(db: Session, booking: Booking, action: str, actor_name: str) -> Booking:

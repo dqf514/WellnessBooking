@@ -67,11 +67,11 @@ X-API-Key: <完整 API Key>
 | scope | 权限范围 |
 | --- | --- |
 | `read` | 后台业务数据、报表与普通操作/短信日志读取 |
-| `members:write` | 会员、会员卡、会员记录、爽约限制与合同文件写入 |
+| `members:write` | 会员、会员卡、会员记录（含 `PATCH /api/admin/records/{id}`）、爽约限制与合同文件写入 |
 | `bookings:write` | 后台添加预约、签到、取消签到、完成、取消和爽约 |
 | `schedule:write` | 排课、复制周课表与教室占用写入 |
 | `catalog:write` | 课程、教室和教练基础资料写入 |
-| `finance:write` | 产品、手工入账、退款与电子码核销 |
+| `finance:write` | 产品、手工入账、退款、电子码核销、会员卡升额与私教消课营收入账 |
 | `settings:write` | 场馆、品牌、员工账号与短信设置写入 |
 | `maintenance:write` | 数据导入导出、备份和恢复 |
 
@@ -157,6 +157,8 @@ FastAPI 参数校验错误格式：
 
 **Teacher**：`id`、`user_id`、`name`、`name_en`、`phone`、`gender`、`specialties`、`specialties_en`、`bio`、`bio_en`、`image_url`、`visible`、`active`。
 
+`user_id` 为关联的员工账号（角色为 `teacher`），用于让教练用自己的账号登录系统；未关联时为 `null`。同一员工账号只能关联一位教练。
+
 **Room**：`id`、`name`、`name_en`、`capacity`、`floor`、`sort_order`、`color`、`active`。
 
 课程类型现有值为 `group`（团课）、`private`（私教）、`assessment`（评估）、`workshop`（工作坊）、`training`（培训）。`visible=false` 的教练不在会员端教练列表出现；`active=false` 的基础资料不可用于新排课。
@@ -179,6 +181,7 @@ FastAPI 参数校验错误格式：
 | `status` | string | `active` / `cancelled` / `upgraded`；响应可将过期活动卡显示为 `expired` |
 | `frozen_until` | string | 冻结截止日，未冻结为空字符串 |
 | `note` | string | 操作备注 |
+| `version` | integer | 乐观锁版本号，每次成功更新后加一 |
 | `shared_with` | object[] | 共享会员的 `id`、`name`、`phone` |
 
 `benefits[]` 的典型结构为 `{ "course_type": "group", "quantity": 10, "remaining": 8 }`；`course_type="all"` 表示全类型适用。存在匹配权益时优先扣减权益，否则使用产品 `category` 和卡的总剩余次数。`quantity` 是返还上限。
@@ -227,7 +230,7 @@ FastAPI 参数校验错误格式：
 
 线上申请初始为 `pending`，核销后原单改为 `paid`，不会再新增一条购买流水。待核销申请可取消为 `cancelled`，电子码保留用于审计但立即失效；取消不开卡、不计实收。退款会新增负数 `refund` 流水，原正数单改为 `refunded`。私教/评估消课营收使用 `consumption`，取消签到或取消已消课预约会自动新增对应 `consumption_reversal`，不删除历史。
 
-## 3. 健康检查与员工认证（6）
+## 3. 健康检查与员工认证（7）
 
 ### 3.1 服务健康检查
 
@@ -275,7 +278,15 @@ curl -X POST "$API/api/auth/login" \
 - **权限**：员工；**请求**：无 Body。
 - **响应**：User 对象，不含 `access_token` 和密码。
 
-### 3.6 修改自己的密码
+### 3.6 修改自己的资料
+
+#### PATCH /api/auth/me
+
+- **权限**：员工登录会话（API Key 不支持）；**Body**：`full_name`、`phone` 任意子集。
+- `full_name` 不能为空；`phone` 需为 11 位手机号，且不能与其他员工账号重复。
+- **响应**：更新后的 User 对象。任何角色都可以修改自己的姓名与绑定手机号；登录名、角色与密码需走专门接口。
+
+### 3.7 修改自己的密码
 
 #### POST /api/auth/change-password
 
@@ -465,6 +476,7 @@ curl -X POST "$API/api/auth/login" \
 
 - **权限**：前台；**响应**：更新后的 MemberCard。
 - **Body 通用**：`action`，不同动作使用不同字段。
+- 可选 `version`：传当前 `version` 时做乐观锁校验，若该卡已被其他操作修改则返回 `409`，避免并发签到扣次被本次修改覆盖。
 
 | `action` | 附加字段 | 行为 |
 | --- | --- | --- |
@@ -511,7 +523,7 @@ curl -X POST "$API/api/auth/login" \
 
 #### POST /api/admin/cards/{card_id}/upgrade
 
-- **权限**：前台。将正常卡升级为另一产品，原卡状态变为 `upgraded`，新卡继承新产品的有效期和权益，同时生成 `kind=upgrade` 的补差流水。
+- **权限**：前台或财务。将正常卡升级为另一产品，原卡状态变为 `upgraded`，新卡继承新产品的有效期和权益，同时生成 `kind=upgrade` 的补差流水。
 
 ```json
 {
@@ -650,7 +662,7 @@ curl -X POST "$API/api/auth/login" \
 - **权限**：只读；**响应**：原始文件流，`Content-Disposition: inline`。
 - 用于浏览器直接预览 PDF 和图片；Office、CSV 等格式是否可直接显示由浏览器决定。鉴权方式与下载接口相同。
 
-## 8. 排课、预约、教室与目录（26）
+## 8. 排课、预约、教室与目录（28）
 
 ### 8.1 查询后台排课
 
@@ -776,6 +788,7 @@ curl -X POST "$API/api/auth/login" \
 #### POST /api/admin/teachers
 
 - **权限**：管理员；**Body**：`user_id`、`name`、`name_en`、`phone`、`gender`、`specialties`、`specialties_en`、`bio`、`bio_en`、`image_url`、`visible`、`active`。
+- `user_id` 可为空表示不关联；传入时必须是存在、已启用且角色为 `teacher` 的员工账号，且未被其他教练占用，否则返回 `400` / `409`。
 - **响应**：Teacher。
 
 ### 8.16 修改教练
@@ -783,6 +796,7 @@ curl -X POST "$API/api/auth/login" \
 #### PATCH /api/admin/teachers/{teacher_id}
 
 - **权限**：管理员；**Body**：与新建相同，部分更新；**响应**：Teacher。
+- 传入与当前一致的 `user_id` 不会重复校验，便于在不改变关联关系时修改其他资料。
 
 ### 8.17 一步完成私教排课与预约
 
@@ -879,7 +893,7 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 
 #### POST /api/admin/bookings/{booking_id}/revenue
 
-- **权限**：前台；**Body**：`amount`（大于 0，必填）、`payment_method`（默认 `fitness_member`）、`note` 可选。
+- **权限**：前台或财务；**Body**：`amount`（大于 0，必填）、`payment_method`（默认 `fitness_member`）、`note` 可选。
 - **响应**：`kind=consumption`、`cash_basis=false`、`revenue_mode=immediate` 的 Transaction。
 - 仅已签到消课的私教/评估预约可用。金额可参考 Booking 的 `consumption_amount`，也允许按财务口径修改；本接口只入营收，不重复计入现金流水。
 - 同一预约当前存在未冲销营收时返回 `409`，不得重复入账。`booking_id + revenue_sequence + kind` 唯一索引防止并发重复；取消签到后自动冲销，再次签到可开启新的营收周期。
@@ -891,6 +905,20 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 - **权限**：管理员；**multipart**：字段 `file`。
 - 支持 PNG、JPG、WebP，最大 6 MiB，校验文件签名；**响应**：更新后的 Course，`image_url` 指向 `/uploads/courses/`。
 - 新建课程时先保存课程取得 `course_id`，再调用本接口；也可在课程表单中仅填写已有图片 URL。
+
+### 8.27 移除教练照片
+
+#### DELETE /api/admin/teachers/{teacher_id}/photo
+
+- **权限**：管理员；**Body**：无。
+- 清空教练的 `image_url` 并删除服务器上的旧文件；**响应**：更新后的 Teacher。
+
+### 8.28 移除课程图片
+
+#### DELETE /api/admin/courses/{course_id}/image
+
+- **权限**：管理员；**Body**：无。
+- 清空课程的 `image_url` 并删除服务器上的旧文件；**响应**：更新后的 Course。
 
 ## 9. 产品、财务与报表（10）
 
@@ -946,7 +974,7 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 
 #### POST /api/admin/orders/redeem
 
-- **权限**：前台；**Body**：`redemption_code`，自动去空格并转大写。
+- **权限**：前台或财务；**Body**：`redemption_code`，自动去空格并转大写。
 - **响应**：`{ ok, card_id, order }`。
 - 通过条件更新抢占 `pending` 原单，避免并发重复核销；随后开卡、原单改为 `paid`、关联 `member_card_id` 并记录核销时间和入账人，不重复入账。年卡/套餐均摊从实际开卡日期开始。
 

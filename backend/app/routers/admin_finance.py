@@ -8,13 +8,13 @@ from sqlalchemy.orm import Session
 
 from ..card_service import issue_card
 from ..database import get_db
-from ..deps import require_finance, require_read, require_staff
+from ..deps import require_finance, require_read, require_revenue
 from ..finance_service import create_consumption_revenue, normalized_category, recognized_revenue, resolve_entry_options, resolve_revenue_details
 from ..log_util import audit
 from ..models import Booking, CardProduct, ClassSession, Member, Room, RoomReservation, Transaction, User
 from ..recycle_service import move_to_recycle
 from ..serializers import product_dict, transaction_dict
-from ..utils import clean_payload, minutes, today, valid_date
+from ..utils import as_float, as_int, clean_payload, minutes, today, valid_benefits, valid_date
 
 router = APIRouter(prefix="/api/admin", tags=["admin-finance"])
 PRODUCT_FIELDS = {"name", "name_en", "category", "price", "original_price", "validity_days", "total_sessions", "description", "description_en", "online_sale", "active"}
@@ -49,10 +49,14 @@ def create_product(payload: dict = Body(...), db: Session = Depends(get_db), use
     data = clean_payload(payload, PRODUCT_FIELDS)
     if not str(data.get("name", "")).strip():
         raise HTTPException(400, "产品名称不能为空")
-    if float(data.get("price", 0)) < 0 or int(data.get("validity_days", 0)) < 1:
+    if as_float(data.get("price", 0), "价格") < 0 or as_int(data.get("validity_days", 0), "有效天数") < 1:
         raise HTTPException(400, "价格或有效期不合法")
+    if "original_price" in data and as_float(data["original_price"], "原价") < 0:
+        raise HTTPException(400, "原价不能为负数")
+    if data.get("total_sessions") is not None and as_int(data["total_sessions"], "总次数") < 0:
+        raise HTTPException(400, "总次数不能为负数")
     data["category"] = normalized_category(str(data.get("category", "group")))
-    row = CardProduct(**data, benefits_json=json.dumps(payload.get("benefits", []), ensure_ascii=False))
+    row = CardProduct(**data, benefits_json=json.dumps(valid_benefits(payload.get("benefits", [])), ensure_ascii=False))
     db.add(row)
     db.flush()
     audit(db, user, "product", "create", "card_product", row.id, payload)
@@ -68,10 +72,20 @@ def update_product(product_id: int, payload: dict = Body(...), db: Session = Dep
     changes = clean_payload(payload, PRODUCT_FIELDS)
     if "category" in changes:
         changes["category"] = normalized_category(str(changes["category"]))
+    if "name" in changes and not str(changes["name"]).strip():
+        raise HTTPException(400, "产品名称不能为空")
+    if "price" in changes and as_float(changes["price"], "价格") < 0:
+        raise HTTPException(400, "价格不能为负数")
+    if "original_price" in changes and changes["original_price"] is not None and as_float(changes["original_price"], "原价") < 0:
+        raise HTTPException(400, "原价不能为负数")
+    if "validity_days" in changes and as_int(changes["validity_days"], "有效天数") < 1:
+        raise HTTPException(400, "有效天数至少为 1 天")
+    if "total_sessions" in changes and changes["total_sessions"] is not None and as_int(changes["total_sessions"], "总次数") < 0:
+        raise HTTPException(400, "总次数不能为负数")
     for key, value in changes.items():
         setattr(row, key, value)
     if "benefits" in payload:
-        row.benefits_json = json.dumps(payload["benefits"], ensure_ascii=False)
+        row.benefits_json = json.dumps(valid_benefits(payload["benefits"]), ensure_ascii=False)
     audit(db, user, "product", "update", "card_product", product_id, payload)
     db.commit()
     return product_dict(row)
@@ -85,7 +99,7 @@ def list_transactions(date_from: str = Query(""), date_to: str = Query(""), cate
 
 @router.post("/transactions/manual")
 def manual_transaction(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_finance)):
-    amount = round(float(payload.get("amount", 0)), 2)
+    amount = round(as_float(payload.get("amount", 0), "入账金额"), 2)
     if amount == 0:
         raise HTTPException(400, "入账金额不能为 0")
     member_id = payload.get("member_id") or None
@@ -111,7 +125,7 @@ def update_manual_transaction(transaction_id: int, payload: dict = Body(...), db
         raise HTTPException(404, "手工入账不存在或已不可编辑")
     changes = clean_payload(payload, MANUAL_FIELDS)
     if "amount" in changes:
-        changes["amount"] = round(float(changes["amount"]), 2)
+        changes["amount"] = round(as_float(changes["amount"], "入账金额"), 2)
         if changes["amount"] == 0:
             raise HTTPException(400, "入账金额不能为 0")
     member_id = changes.get("member_id", row.member_id) or None
@@ -146,7 +160,7 @@ def refund_transaction(transaction_id: int, payload: dict = Body(...), db: Sessi
     original = db.get(Transaction, transaction_id)
     if not original or original.status != "paid" or original.amount <= 0 or original.kind not in {"purchase", "upgrade", "manual"} or original.deleted_at is not None:
         raise HTTPException(400, "该流水不可退款")
-    amount = float(payload.get("amount", original.amount))
+    amount = as_float(payload.get("amount", original.amount), "退款金额")
     if amount <= 0 or amount > original.amount:
         raise HTTPException(400, "退款金额不合法")
     original.status = "refunded"
@@ -164,7 +178,7 @@ def refund_transaction(transaction_id: int, payload: dict = Body(...), db: Sessi
 
 
 @router.post("/orders/redeem")
-def redeem_order(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+def redeem_order(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_revenue)):
     code = str(payload.get("redemption_code", "")).strip().upper()
     order = db.query(Transaction).filter(Transaction.redemption_code == code, Transaction.deleted_at.is_(None)).first()
     if not order or order.status != "pending" or not order.product_id or not order.member_id:
@@ -191,11 +205,11 @@ def redeem_order(payload: dict = Body(...), db: Session = Depends(get_db), user:
 
 
 @router.post("/bookings/{booking_id}/revenue")
-def post_booking_revenue(booking_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+def post_booking_revenue(booking_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_revenue)):
     booking = db.get(Booking, booking_id)
     if not booking:
         raise HTTPException(404, "预约不存在")
-    row = create_consumption_revenue(db, booking=booking, amount=float(payload.get("amount", 0)), payment_method=str(payload.get("payment_method", "fitness_member")), note=str(payload.get("note", "")), user=user)
+    row = create_consumption_revenue(db, booking=booking, amount=as_float(payload.get("amount", 0), "入账金额"), payment_method=str(payload.get("payment_method", "fitness_member")), note=str(payload.get("note", "")), user=user)
     try:
         db.flush()
         audit(db, user, "finance", "consumption_revenue", "transaction", row.id, {"booking_id": booking_id, "amount": row.amount, "payment_method": row.payment_method})

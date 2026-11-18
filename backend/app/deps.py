@@ -59,9 +59,12 @@ def required_api_key_scope(request: Request) -> str | None:
     if request.method in {"GET", "HEAD", "OPTIONS"}:
         return "read"
     path = request.url.path
+    # 记收入账与会员卡升额属于财务动作，优先于通用的 bookings / members 前缀判断。
+    if re.fullmatch(r"/api/admin/bookings/\d+/revenue", path) or re.fullmatch(r"/api/admin/cards/\d+/upgrade", path):
+        return "finance:write"
     if "/bookings/" in path or path in {"/api/admin/private-bookings", "/api/admin/check-in/scan"} or re.fullmatch(r"/api/admin/sessions/\d+/bookings", path):
         return "bookings:write"
-    if path.startswith(("/api/admin/members", "/api/admin/cards", "/api/admin/no-shows", "/api/admin/documents", "/api/admin/reminders", "/api/admin/vouchers")):
+    if path.startswith(("/api/admin/members", "/api/admin/cards", "/api/admin/no-shows", "/api/admin/documents", "/api/admin/reminders", "/api/admin/vouchers", "/api/admin/records")):
         return "members:write"
     if path.startswith(("/api/admin/sessions", "/api/admin/room-reservations")):
         return "schedule:write"
@@ -99,4 +102,6 @@ def require_interactive_admin(request: Request, user: User = Depends(get_current
 require_admin = require_roles("admin")
 require_staff = require_roles("admin", "frontdesk")
 require_finance = require_roles("admin", "finance")
+# 涉及收款 / 计费的写操作：管理员、财务与前台均可执行，避免角色之间互相锁死。
+require_revenue = require_roles("admin", "finance", "frontdesk")
 require_read = require_roles("admin", "frontdesk", "finance", "teacher", "viewer")

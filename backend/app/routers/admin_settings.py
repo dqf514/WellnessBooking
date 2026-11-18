@@ -17,7 +17,7 @@ from ..security import hash_password
 from ..serializers import user_dict
 from ..sms_gateway import query_balance, send_sms_batch
 from ..sms_service import DEFAULT_BOOKING, DEFAULT_CANCEL, DEFAULT_REMINDER, get_settings, password_md5, sp_id
-from ..utils import dt, valid_phone
+from ..utils import as_bool, as_int, dt, valid_phone
 
 router = APIRouter(prefix="/api/admin", tags=["admin-settings"])
 
@@ -38,8 +38,15 @@ def put_app_settings(payload: dict = Body(...), db: Session = Depends(get_db), u
     for key, value in payload.items():
         if key in allowed:
             setattr(row, key, value)
-    if not 0 <= int(row.booking_cutoff_minutes) <= 10080 or not 0 <= int(row.no_show_block_days) <= 365 or not 1 <= int(row.reminder_hours) <= 168:
+    # 先做类型与范围校验，避免把非法数值写进数据库后触发 500。
+    cutoff = as_int(row.booking_cutoff_minutes, "自助预约截止（分钟）")
+    block_days = as_int(row.no_show_block_days, "爽约禁止预约天数")
+    reminder = as_int(row.reminder_hours, "课前短信提醒（小时）")
+    if not 0 <= cutoff <= 10080 or not 0 <= block_days <= 365 or not 1 <= reminder <= 168:
         raise HTTPException(400, "预约或提醒参数超出允许范围")
+    row.booking_cutoff_minutes = cutoff
+    row.no_show_block_days = block_days
+    row.reminder_hours = reminder
     audit(db, user, "settings", "update", "app_settings", 1, payload)
     db.commit()
     return _settings_dict(row)
@@ -100,6 +107,8 @@ def create_user(payload: dict = Body(...), db: Session = Depends(get_db), user: 
     phone = str(payload.get("phone", "")).strip()
     if phone:
         valid_phone(phone)
+        if db.query(User).filter(User.phone == phone, User.deleted_at.is_(None)).first():
+            raise HTTPException(400, "该手机号已被其他员工账号使用")
     row = User(username=username, password_hash=hash_password(password), full_name=str(payload.get("full_name", "")).strip(), phone=phone or None, role=role, active=True)
     db.add(row)
     db.flush()
@@ -113,21 +122,30 @@ def update_user(user_id: int, payload: dict = Body(...), db: Session = Depends(g
     row = db.get(User, user_id)
     if not row or row.deleted_at is not None:
         raise HTTPException(404, "账号不存在")
+    next_role = str(payload["role"]) if "role" in payload else row.role
+    if "role" in payload and next_role not in {"admin", "finance", "frontdesk", "teacher", "viewer"}:
+        raise HTTPException(400, "角色不合法")
+    next_active = as_bool(payload["active"], "启用状态") if "active" in payload else row.active
+    if row.id == actor.id and not next_active:
+        raise HTTPException(400, "不能停用当前登录账号")
+    loses_admin = row.role == "admin" and row.active and (next_role != "admin" or not next_active)
+    if loses_admin:
+        others = db.query(User).filter(User.id != row.id, User.role == "admin", User.active.is_(True), User.deleted_at.is_(None)).count()
+        if not others:
+            raise HTTPException(400, "至少需要保留一个启用状态的管理员账号")
     if "role" in payload:
-        if payload["role"] not in {"admin", "finance", "frontdesk", "teacher", "viewer"}:
-            raise HTTPException(400, "角色不合法")
-        row.role = payload["role"]
+        row.role = next_role
     if "full_name" in payload:
         row.full_name = str(payload["full_name"]).strip()
     if "phone" in payload:
         phone = str(payload["phone"]).strip()
         if phone:
             valid_phone(phone)
+            if db.query(User).filter(User.phone == phone, User.id != row.id, User.deleted_at.is_(None)).first():
+                raise HTTPException(400, "该手机号已被其他员工账号使用")
         row.phone = phone or None
     if "active" in payload:
-        if row.id == actor.id and not payload["active"]:
-            raise HTTPException(400, "不能停用当前登录账号")
-        row.active = bool(payload["active"])
+        row.active = next_active
     if str(payload.get("password", "")):
         if len(str(payload["password"])) < 8:
             raise HTTPException(400, "密码至少 8 位")

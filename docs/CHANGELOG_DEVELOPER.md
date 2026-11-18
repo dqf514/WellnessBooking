@@ -1,6 +1,6 @@
 # 音昱 Wellness OS 更新日志（开发者版）
 
-**更新周期：** 2026-11-09 至 2026-11-11
+**更新周期：** 2026-11-09 至 2026-11-18
 **交付范围：** 会员端、员工及管理后台、后端服务、开放 API、短信与数据运维、帮助文档
 **提交规模：** 14 次 Git 提交
 **最终版本：** `2d110f8`
@@ -201,7 +201,7 @@
   - 覆盖会员、前台、排课、会员卡、财务、报表、短信、权限、备份、回收站及故障排查。
   - 增加每日、每周和每月运营检查清单。
 - 新增并持续同步完整 API 文档：
-  - 当前共 **113 个接口**。
+  - 当前共 **123 个接口**。
   - 包含鉴权、角色、API Key、数据结构、错误码、分页、并发规则及典型业务调用顺序。
   - 提供 `docs/API.md` 和可视化 `public/api-docs.html`。
 - 二维码签到、购卡取消、回收站和教室冲突查询等最新能力均已同步到帮助与 API 文档。
@@ -224,6 +224,69 @@
 **最终业务闭环：**
 
 > 课程与资源维护 → 会员购卡与入账 → 课程预约 → 双向扫码签到 → 自动消课 → 撤销与异常处理 → 财务及经营报表 → 短信通知与审计 → 数据备份与恢复
+
+---
+
+## 七、教练账号关联与业务逻辑加固（2026-11-18）
+
+### 1. 教练与员工账号关联
+
+- `teachers.user_id` 用于把教练绑定到角色为 `teacher` 的员工账号；未关联时为 `null`，一名教练最多关联一个账号，一个账号最多被一名教练占用。
+- `POST/PATCH /api/admin/teachers` 增加关联校验：账号必须存在、未删除、角色为 `teacher`，且未被其他教练占用，否则返回 `400` / `409`；传入与当前一致的 `user_id` 时跳过重复校验。
+- `database.ensure_constraints()` 启动时清理历史重复关联后建立部分唯一索引 `ux_teachers_user_id`；建索引失败只记录日志，不阻断服务启动。
+- 回收站链路对称化：教练移入回收站时停用关联账号，恢复或彻底删除后还原账号启用状态，并写入 `restore_linked_account` 审计。
+
+### 2. 照片与图片管理
+
+- 新增 `DELETE /api/admin/teachers/{teacher_id}/photo` 与 `DELETE /api/admin/courses/{course_id}/image`：清空 `image_url` 并删除服务器上的旧文件。
+- 前端教练与课程表单移除冗余的图片 URL 输入框，只保留上传控件。
+
+### 3. 员工自助资料与密码
+
+- 新增 `PATCH /api/auth/me` 与 `POST /api/auth/me/password`：任意角色的登录员工均可修改自己的姓名、绑定手机号与密码。
+- 手机号唯一性与格式校验；改密需校验原密码，新旧密码相同直接拒绝；API Key 不具备修改登录密码的能力。
+- 前端新增 `PersonalProfilePanel`，挂在后台侧边栏左下角头像上，取代原先仅管理员可见的账号编辑入口。
+
+### 4. 座位计数缺陷修复（超卖风险）
+
+- `booking_service._release_session_slot()` 原先在条件 UPDATE 之后又对 ORM 实例做了一次自减，导致后台取消预约时名额被扣两次。
+- 修复后只保留原子 UPDATE，并通过 `db.refresh()` 同步实例状态；10 个名额的课程不会再被约到 12 人。
+
+### 5. 输入校验与错误码治理
+
+- `utils.py` 新增 `as_int` / `as_float` / `as_bool` / `valid_benefits`，非法数值统一返回 `400` 而不是 `500`。
+- 应用范围：会员与会员卡、产品与手工入账、升额、提醒与体验券、排课与课程 / 教室 / 教练、系统设置、公开端购卡申请。
+- 外键校验：`Member.advisor_id`、`MemberRecord.teacher_id` 写入前校验目标存在，非法编号返回 `400`。
+- 排课接口统一归一化日期、时间、容量、状态与外键，并拒绝结束时间早于开始时间。
+- `card_service` 与 `public` 生成卡号 / 电子码时增加去重重试，随机撞码不再直接 500。
+
+### 6. 并发与一致性
+
+- `PATCH /api/admin/cards/{id}` 改为基于 `member_cards.version` 的乐观锁更新，版本不符返回 `409`，避免与并发签到扣次互相覆盖。
+- `card_dict` 暴露 `version`，前端 `MemberProfileDrawer` 在卡权益操作时携带版本号；遇到 `409` 自动关闭编辑框并刷新数据。
+- 版本比较统一对历史 `NULL` 版本号做兼容（`version IS NULL` 视同 `0`），避免老数据上的并发校验永远失败。
+- 会员卡剩余次数调整后按 `total_sessions` 截断；套餐分项权益在写入前做结构校验。
+- CSV 会员导入在 `autoflush=False` 下无法感知同文件内新建会员，改为维护本次导入的手机号索引，避免唯一约束冲突导致整批回滚。
+
+### 7. 权限模型调整
+
+- 新增 `require_revenue = require_roles("admin", "finance", "frontdesk")`，用于购卡、升额、电子码核销与私教消课营收入账。
+- 保留 `require_finance` 给纯财务操作，避免前台与财务互相锁死。
+- `deps.required_api_key_scope()` 修正 `PATCH /api/admin/records/{id}` 无规则可匹配的问题（此前任何凭证都是 403），并把收入账与升额划入 `finance:write`。
+
+### 8. 前端体验
+
+- 后台侧边栏头像与角色标签按新角色体系补全；只读账号在排课与教室页面禁用编辑按钮并给出说明。
+- 员工停用增加二次确认弹窗；回收站显示总条数。
+- `adminMessages.ts` 补充约 90 条后端提示的中英映射，并新增“必须是数字 / 有限数字 / 布尔值 / 不能为空”四种通用句式翻译。
+- `apiFetch` 在英文界面下自动翻译后端 `detail`，错误对象附带 HTTP 状态码，便于前端区分冲突（`409`）等情形。
+
+### 9. 文档
+
+- `docs/API.md` 同步教练账号关联规则、`PATCH /api/auth/me`、两张图片删除接口、权限措辞与 API Key 范围说明，共 **123 个接口**。
+- `public/api-docs.html` 由 `python docs/build_api_docs.py` 重新生成。
+
+**验证：** `npx tsc -b` 无错误；`npm run build` 通过；`python -m compileall -q backend/app` 通过。
 
 **最新提交：** `2d110f883117886079c4cc64af9269661d218d8f`
 **GitHub：** `https://github.com/dqf514/WellnessBooking`

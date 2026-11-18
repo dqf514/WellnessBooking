@@ -1,4 +1,5 @@
 import random
+import uuid
 from datetime import datetime
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Response
@@ -13,9 +14,18 @@ from ..models import AppSettings, Booking, CardProduct, ClassSession, Course, Ex
 from ..security import create_access_token
 from ..serializers import booking_dict, card_dict, course_dict, member_dict, product_dict, session_dict, teacher_dict, transaction_dict
 from ..sms_service import notify_booking, send_otp, verify_otp
-from ..utils import add_days, session_datetime, today, valid_date, valid_phone
+from ..utils import add_days, as_int, session_datetime, today, valid_date, valid_phone
 
 router = APIRouter(prefix="/api/public", tags=["public"])
+
+
+def _unique_redemption_code(db: Session) -> str:
+    """电子码是唯一列，随机数撞码会直接导致 500，这里先做一次去重。"""
+    for _ in range(20):
+        code = f"YY{datetime.now().strftime('%y%m%d')}{random.randint(100000, 999999)}"
+        if not db.query(Transaction.id).filter(Transaction.redemption_code == code).first():
+            return code
+    return f"YY{datetime.now().strftime('%y%m%d')}{uuid.uuid4().hex[:10].upper()}"
 
 
 @router.get("/bootstrap")
@@ -78,7 +88,7 @@ def member_me(db: Session = Depends(get_db), member: Member = Depends(get_curren
 
 @router.post("/bookings")
 def member_create_booking(payload: dict = Body(...), db: Session = Depends(get_db), member: Member = Depends(get_current_member)):
-    session = db.get(ClassSession, int(payload.get("session_id", 0)))
+    session = db.get(ClassSession, as_int(payload.get("session_id", 0), "课程"))
     if not session:
         raise HTTPException(404, "课程不存在")
     booking = create_booking(db, session=session, member=member, source="public", public=True)
@@ -118,12 +128,12 @@ def booking_calendar(booking_id: int, db: Session = Depends(get_db), member: Mem
 
 @router.post("/orders")
 def create_order(payload: dict = Body(...), db: Session = Depends(get_db), member: Member = Depends(get_current_member)):
-    product = db.get(CardProduct, int(payload.get("product_id", 0)))
+    product = db.get(CardProduct, as_int(payload.get("product_id", 0), "卡课产品"))
     if not product or not product.active:
         raise HTTPException(404, "卡课产品不存在")
     if not product.online_sale or product.price > 5000:
         raise HTTPException(400, "该产品请联前台购买")
-    code = f"YY{datetime.now().strftime('%y%m%d')}{random.randint(100000, 999999)}"
+    code = _unique_redemption_code(db)
     from ..finance_service import default_revenue_mode
 
     mode = default_revenue_mode(product)

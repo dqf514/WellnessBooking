@@ -29,3 +29,20 @@ export function money(value: number) {
 export function formatDateTime(value?: string | null) {
   return value ? value.slice(0, 16).replace("T", " ") : "—";
 }
+
+/**
+ * 按课程时长推算结束时间。跨过午夜时返回空字符串——排课只支持当天时间，
+ * 静默折回 01:00 会被服务端判为“结束时间早于开始时间”，不如留空让用户调整。
+ */
+export function endTimeFor(start: string, durationMinutes: number) {
+  const [hour, minute] = start.split(":").map(Number);
+  const total = hour * 60 + minute + durationMinutes;
+  if (!Number.isFinite(total) || total >= 24 * 60) return "";
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+}
+
+/** 时间转分钟数，用于比较先后顺序。 */
+export function timeToMinutes(value: string) {
+  const [hour, minute] = value.split(":").map(Number);
+  return hour * 60 + minute;
+}

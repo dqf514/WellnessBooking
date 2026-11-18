@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
@@ -6,16 +7,34 @@ from sqlalchemy.orm import Session, joinedload
 
 from ..card_service import issue_card
 from ..database import get_db
-from ..deps import require_read, require_staff
+from ..deps import require_read, require_revenue, require_staff
 from ..finance_service import recognized_revenue
 from ..log_util import audit
 from ..membership_service import due_reminders, reminder_dict, voucher_dict
 from ..models import Booking, CardProduct, ClassSession, Course, ExperienceVoucher, Member, MemberCard, MemberCardShare, MemberRecord, MemberReminder, Room, Teacher, Transaction, User
 from ..serializers import booking_dict, card_dict, course_dict, member_dict, product_dict, room_dict, session_dict, teacher_dict, transaction_dict, user_dict
-from ..utils import add_days, clean_payload, today, valid_date, valid_phone
+from ..utils import add_days, as_bool, as_float, as_int, clean_payload, today, valid_benefits, valid_date, valid_phone
 
 router = APIRouter(prefix="/api/admin", tags=["admin-core"])
 MEMBER_FIELDS = {"name", "name_en", "phone", "gender", "id_number", "birth_date", "source", "advisor_id", "emergency_phone", "wechat", "notes", "active"}
+
+
+def _validated_advisor_id(db: Session, value) -> int:
+    """会籍归属必须是真实存在的员工账号，避免写入非法外键导致 500。"""
+    advisor_id = as_int(value, "会籍归属")
+    advisor = db.get(User, advisor_id)
+    if not advisor or advisor.deleted_at is not None:
+        raise HTTPException(400, "员工账号不存在")
+    return advisor.id
+
+
+def _validated_teacher_id(db: Session, value) -> int:
+    """记录所属教练必须存在，避免写入非法外键导致 500。"""
+    teacher_id = as_int(value, "教练")
+    teacher = db.get(Teacher, teacher_id)
+    if not teacher or teacher.deleted_at is not None:
+        raise HTTPException(400, "教练不存在")
+    return teacher.id
 
 
 @router.get("/dashboard")
@@ -73,6 +92,8 @@ def create_member(payload: dict = Body(...), db: Session = Depends(get_db), user
     if db.query(Member).filter(Member.phone == phone).first():
         raise HTTPException(400, "该手机号已存在会员档案")
     data.update({"name": name, "phone": phone})
+    if data.get("advisor_id"):
+        data["advisor_id"] = _validated_advisor_id(db, data["advisor_id"])
     row = Member(**data)
     db.add(row)
     db.flush()
@@ -107,6 +128,8 @@ def update_member(member_id: int, payload: dict = Body(...), db: Session = Depen
         existed = db.query(Member).filter(Member.phone == data["phone"], Member.id != member_id).first()
         if existed:
             raise HTTPException(400, "该手机号已被其他会员使用")
+    if "advisor_id" in data:
+        data["advisor_id"] = _validated_advisor_id(db, data["advisor_id"]) if data["advisor_id"] else None
     for key, value in data.items():
         setattr(row, key, value)
     audit(db, user, "member", "update", "member", member_id, data)
@@ -115,14 +138,14 @@ def update_member(member_id: int, payload: dict = Body(...), db: Session = Depen
 
 
 @router.post("/members/{member_id}/cards")
-def purchase_card(member_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+def purchase_card(member_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_revenue)):
     from ..finance_service import resolve_entry_options, resolve_revenue_details
 
     member = db.get(Member, member_id)
     product = db.get(CardProduct, int(payload.get("product_id", 0)))
     if not member or member.deleted_at is not None or not product or product.deleted_at is not None:
         raise HTTPException(404, "会员或卡课产品不存在")
-    price = float(payload.get("price", product.price))
+    price = as_float(payload.get("price", product.price), "购买价格")
     if price < 0:
         raise HTTPException(400, "购买价格不能为负数")
     starts_on = valid_date(str(payload.get("starts_on") or today()), "开卡日期")
@@ -144,32 +167,41 @@ def update_card(card_id: int, payload: dict = Body(...), db: Session = Depends(g
     card = db.get(MemberCard, card_id)
     if not card or card.deleted_at is not None:
         raise HTTPException(404, "会员卡不存在")
+    if payload.get("version") is not None and as_int(payload["version"], "会员卡版本") != (card.version or 0):
+        raise HTTPException(409, "会员卡刚刚发生变更，请刷新后重试")
     action = str(payload.get("action", ""))
+    updates: dict = {}
     if action == "extend":
-        days = int(payload.get("days", 0))
+        days = as_int(payload.get("days", 0), "延期天数")
         if days == 0 or abs(days) > 3650:
             raise HTTPException(400, "延期天数需在 -3650 至 3650 之间且不能为 0")
-        card.expires_on = add_days(card.expires_on, days)
-        card.note = str(payload.get("note", card.note))
+        updates["expires_on"] = add_days(card.expires_on, days)
+        updates["note"] = str(payload.get("note", card.note))
     elif action == "freeze":
-        frozen_until = valid_date(str(payload.get("frozen_until", "")), "冻结截止日期")
-        card.frozen_until = frozen_until
-        card.status = "active"
+        updates["frozen_until"] = valid_date(str(payload.get("frozen_until", "")), "冻结截止日期")
+        updates["status"] = "active"
     elif action in {"unfreeze", "activate"}:
-        card.frozen_until = ""
-        card.status = "active"
+        updates["frozen_until"] = ""
+        updates["status"] = "active"
     elif action == "cancel":
-        card.status = "cancelled"
+        updates["status"] = "cancelled"
     elif action == "adjust":
         if "remaining_sessions" in payload:
-            card.remaining_sessions = max(0, int(payload["remaining_sessions"]))
+            remaining = max(0, as_int(payload["remaining_sessions"], "剩余次数"))
+            if card.total_sessions is not None:
+                remaining = min(remaining, card.total_sessions)
+            updates["remaining_sessions"] = remaining
         if "benefits" in payload:
-            import json
-            card.benefits_json = json.dumps(payload["benefits"], ensure_ascii=False)
-        card.note = str(payload.get("note", card.note))
+            updates["benefits_json"] = json.dumps(valid_benefits(payload["benefits"]), ensure_ascii=False)
+        updates["note"] = str(payload.get("note", card.note))
     else:
         raise HTTPException(400, "不支持的卡操作")
-    card.version += 1
+    # 使用版本号做乐观锁，避免与并发签到扣次互相覆盖。
+    current_version = card.version or 0
+    updated = db.query(MemberCard).filter(MemberCard.id == card_id, or_(MemberCard.version == current_version, MemberCard.version.is_(None))).update({**updates, "version": current_version + 1}, synchronize_session=False)
+    if updated != 1:
+        raise HTTPException(409, "会员卡刚刚发生变更，请刷新后重试")
+    db.refresh(card)
     audit(db, user, "member_card", action, "member_card", card_id, payload)
     db.commit()
     return card_dict(card)
@@ -177,13 +209,13 @@ def update_card(card_id: int, payload: dict = Body(...), db: Session = Depends(g
 
 @router.post("/cards/batch-extend")
 def batch_extend_cards(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
-    days = int(payload.get("days", 0))
+    days = as_int(payload.get("days", 0), "批量延期天数")
     if days <= 0 or days > 365:
         raise HTTPException(400, "批量延期天数需在 1 至 365 之间")
     rows = db.query(MemberCard).filter(MemberCard.status == "active", MemberCard.expires_on >= today(), MemberCard.deleted_at.is_(None)).all()
     for card in rows:
         card.expires_on = add_days(card.expires_on, days)
-        card.version += 1
+        card.version = (card.version or 0) + 1
     audit(db, user, "member_card", "batch_extend", "member_card", detail={"days": days, "count": len(rows), "note": payload.get("note", "")})
     db.commit()
     return {"ok": True, "updated": len(rows)}
@@ -198,7 +230,7 @@ def add_member_record(member_id: int, payload: dict = Body(...), db: Session = D
     member = db.get(Member, member_id)
     if not member or member.deleted_at is not None:
         raise HTTPException(404, "会员不存在")
-    row = MemberRecord(member_id=member_id, teacher_id=payload.get("teacher_id"), record_type=str(payload.get("record_type", "note")), title=str(payload.get("title", "")).strip(), content=str(payload.get("content", "")), record_date=valid_date(str(payload.get("record_date") or today()), "记录日期"))
+    row = MemberRecord(member_id=member_id, teacher_id=_validated_teacher_id(db, payload["teacher_id"]) if payload.get("teacher_id") else None, record_type=str(payload.get("record_type", "note")), title=str(payload.get("title", "")).strip(), content=str(payload.get("content", "")), record_date=valid_date(str(payload.get("record_date") or today()), "记录日期"))
     if not row.title:
         raise HTTPException(400, "记录标题不能为空")
     db.add(row)
@@ -226,6 +258,10 @@ def update_member_record(record_id: int, payload: dict = Body(...), db: Session 
         raise HTTPException(400, "记录标题不能为空")
     if "record_date" in changes:
         changes["record_date"] = valid_date(str(changes["record_date"]), "记录日期")
+    if changes.get("teacher_id"):
+        changes["teacher_id"] = _validated_teacher_id(db, changes["teacher_id"])
+    elif "teacher_id" in changes:
+        changes["teacher_id"] = None
     for key, value in changes.items():
         setattr(row, key, value)
     audit(db, user, "member_record", "update", "member_record", record_id, changes)

@@ -3,13 +3,13 @@ from sqlalchemy.orm import Session
 
 from ..card_service import issue_card
 from ..database import get_db
-from ..deps import require_staff
+from ..deps import require_revenue, require_staff
 from ..log_util import audit
 from ..membership_service import reminder_dict, voucher_dict
 from ..models import Booking, CardProduct, ExperienceVoucher, Member, MemberCard, MemberCardShare, MemberReminder, Transaction, User
 from ..recycle_service import move_to_recycle
 from ..serializers import card_dict
-from ..utils import add_days, today, valid_date
+from ..utils import add_days, as_bool, as_float, as_int, today, valid_date
 
 router = APIRouter(prefix="/api/admin", tags=["member-benefits"])
 
@@ -22,18 +22,18 @@ def _active_card(db: Session, card_id: int) -> MemberCard:
 
 
 @router.post("/cards/{card_id}/upgrade")
-def upgrade_card(card_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
+def upgrade_card(card_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_revenue)):
     from ..finance_service import default_revenue_mode, normalized_category
 
     card = _active_card(db, card_id)
-    product = db.get(CardProduct, int(payload.get("product_id", 0)))
+    product = db.get(CardProduct, as_int(payload.get("product_id", 0), "升级产品"))
     if not product or not product.active:
         raise HTTPException(404, "升级产品不存在或已停用")
     if product.id == card.product_id:
         raise HTTPException(400, "请选择不同的升级产品")
     if normalized_category(product.category) != normalized_category(card.product.category):
         raise HTTPException(400, "仅支持同类别卡课升级")
-    difference = float(payload.get("price", max(0, product.price - card.purchase_price)))
+    difference = as_float(payload.get("price", max(0, product.price - card.purchase_price)), "补差金额")
     if difference < 0:
         raise HTTPException(400, "补差金额不能为负数")
     old_no = card.card_no
@@ -41,7 +41,7 @@ def upgrade_card(card_id: int, payload: dict = Body(...), db: Session = Depends(
     card.note = f"已升级为 {product.name}；{payload.get('note', '')}".strip("；")
     card.version += 1
 
-    starts_on = str(payload.get("starts_on") or today())
+    starts_on = valid_date(str(payload.get("starts_on") or today()), "开卡日期")
     mode = default_revenue_mode(product)
     new_card = issue_card(db, member=card.member, product=product, price=product.price, payment_method=str(payload.get("payment_method", "wechat")), starts_on=starts_on, note=f"由原卡 {old_no} 补差升级", record_transaction=False)
     db.add(Transaction(member_id=card.member_id, member_card_id=new_card.id, product_id=product.id, category=product.category, kind="upgrade", amount=difference, payment_method=str(payload.get("payment_method", "wechat")), status="paid", revenue_mode=mode, revenue_start_on=starts_on if mode == "amortized" else "", revenue_days=product.validity_days if mode == "amortized" else 0, created_by=user.full_name or user.username, note=f"原卡 {old_no} 升级为 {product.name}"))
@@ -53,7 +53,7 @@ def upgrade_card(card_id: int, payload: dict = Body(...), db: Session = Depends(
 @router.post("/cards/{card_id}/transfer")
 def transfer_card(card_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
     card = _active_card(db, card_id)
-    target = db.get(Member, int(payload.get("target_member_id", 0)))
+    target = db.get(Member, as_int(payload.get("target_member_id", 0), "接收会员"))
     if not target or not target.active or target.deleted_at is not None or target.id == card.member_id:
         raise HTTPException(400, "请选择有效的接收会员")
     pending = db.query(Booking).filter(Booking.member_card_id == card.id, Booking.consumed.is_(False), Booking.status.in_(["booked", "checked_in"]), Booking.deleted_at.is_(None)).count()
@@ -71,7 +71,7 @@ def transfer_card(card_id: int, payload: dict = Body(...), db: Session = Depends
 @router.post("/cards/{card_id}/share")
 def share_card(card_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
     card = _active_card(db, card_id)
-    target = db.get(Member, int(payload.get("target_member_id", 0)))
+    target = db.get(Member, as_int(payload.get("target_member_id", 0), "共享会员"))
     if not target or not target.active or target.deleted_at is not None or target.id == card.member_id:
         raise HTTPException(400, "请选择有效的共享会员")
     if db.query(MemberCardShare).filter(MemberCardShare.card_id == card.id, MemberCardShare.member_id == target.id, MemberCardShare.deleted_at.is_(None)).first():
@@ -117,7 +117,7 @@ def update_reminder(reminder_id: int, payload: dict = Body(...), db: Session = D
     if not row or row.deleted_at is not None:
         raise HTTPException(404, "提醒不存在")
     if "active" in payload:
-        row.active = bool(payload["active"])
+        row.active = as_bool(payload["active"], "启用状态")
     if "content" in payload and str(payload["content"]).strip():
         row.content = str(payload["content"]).strip()
     audit(db, user, "member", "update_reminder", "member_reminder", reminder_id, payload)
@@ -132,7 +132,7 @@ def create_voucher(member_id: int, payload: dict = Body(...), db: Session = Depe
     course_type = str(payload.get("course_type", "group"))
     if course_type not in {"all", "group", "private", "assessment", "workshop", "training"}:
         raise HTTPException(400, "体验券课程类别不合法")
-    quantity = int(payload.get("quantity", 1))
+    quantity = as_int(payload.get("quantity", 1), "体验次数")
     if not 1 <= quantity <= 100:
         raise HTTPException(400, "体验次数需在 1-100 之间")
     expires_on = valid_date(str(payload.get("expires_on") or add_days(today(), 30)), "有效期")

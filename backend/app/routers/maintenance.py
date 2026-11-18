@@ -208,6 +208,7 @@ def import_members(duplicate_strategy: str = Query("skip", pattern="^(skip|updat
         raise HTTPException(400, "CSV 编码需为 UTF-8") from None
     reader = csv.DictReader(io.StringIO(text))
     created, updated, skipped, errors = 0, 0, 0, []
+    pending: dict[str, Member] = {}
     allowed = {"name", "name_en", "phone", "gender", "birth_date", "source", "wechat", "emergency_phone", "notes"}
     for line, values in enumerate(reader, start=2):
         data = {key: str(values.get(key, "") or "").strip() for key in allowed}
@@ -221,7 +222,9 @@ def import_members(duplicate_strategy: str = Query("skip", pattern="^(skip|updat
         except ValueError as exc:
             errors.append(f"第 {line} 行：{exc}")
             continue
-        row = db.query(Member).filter(Member.phone == data["phone"]).first()
+        # 会话关闭了 autoflush，尚未落库的新会员在数据库查询里看不到，
+        # 因此这里额外维护一份本次导入内的手机号索引，避免同一文件内重复手机号触发唯一约束报错。
+        row = pending.get(data["phone"]) or db.query(Member).filter(Member.phone == data["phone"]).first()
         if row and duplicate_strategy == "skip":
             skipped += 1
             continue
@@ -233,7 +236,9 @@ def import_members(duplicate_strategy: str = Query("skip", pattern="^(skip|updat
                 setattr(row, key, value)
             updated += 1
         else:
-            db.add(Member(**data))
+            member = Member(**data)
+            db.add(member)
+            pending[data["phone"]] = member
             created += 1
     audit(db, user, "maintenance", "import_members", "member", detail={"created": created, "updated": updated, "skipped": skipped, "errors": errors})
     db.commit()
