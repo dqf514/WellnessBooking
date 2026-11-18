@@ -401,3 +401,29 @@
 - `src/lib/changelog.ts`：`API_ENDPOINT_COUNT` 同步为 128，并在 2026-11-18 批次新增“会员自助资料与获客来源”分组。
 
 **验证：** `npm run build`（`tsc -b` + `vite build`）通过；`curl` 覆盖 11 项接口行为（含未来生日、空姓名、验证码用途错误、换号后旧号失效、新号被占用等异常分支）；会员端桌面/移动端与后台会员编辑弹窗均已截图核对。
+
+---
+
+## 十二、教室总览横向导航与列宽优化（2026-11-18）
+
+### 1. 顶部滚动按键与教室色块
+
+- `src/pages/admin/RoomsPage.tsx` 新增 `scrollRef`（表格横向滚动容器）、`stripRef`（色块条容器）与 `scroll` 状态（`scrollLeft` / `scrollWidth` / `clientWidth`）。
+- 滚动监听：容器 `scroll` 与 `window` `resize` 时同步状态，并把色块条 `scrollLeft` 按比例对齐到表格位置（色块条相当于缩略滚动条）。
+- `columnWidth` 由 `scrollWidth / 可见教室数` 推导，`firstVisible` / `lastVisible` 由滚动位置换算，用于高亮当前可见教室。
+- `scrollRooms(direction)` 以 0.8 屏宽为步长平滑平移；`jumpToRoom(index)` 精确定位到某间教室并把对应色块带入可视区。
+- 左右按键的 `has-course` 样式由该方向是否存在有排课的教室决定（`rooms.slice(...)`），到两端时按键 `disabled`。
+- 顶部操作带仅在宽屏渲染（`compact` 为移动端分页模式），CSS 侧 `@media (max-width: 700px)` 隐藏 `.room-scroll-strip`。
+
+### 2. 结构与样式调整
+
+- 新增 `.room-scroll-strip` / `.room-scroll-arrow` / `.room-scroll-track` / `.room-chip`（`course` / `reserved` / `free` 三种配色）与 `.room-scroll-hint` 样式。
+- 教室列最小宽度由 150px 压缩为 104px（`.room-columns { min-width: calc(var(--room-count) * 104px) }`），同样宽度下可见教室由约 10 间增加到约 13 间。
+- 时间轴从滚动容器中独立出来：`.room-timeline` 改为 `.room-timeline-frame`（`grid-template-columns: 54px minmax(0, 1fr)`），左列为时间轴、右列为 `.room-timeline-scroll` 滚动容器，`.room-columns` 变成滚动容器内的网格；横向滚动时时间刻度保持可见。
+- 移动端媒体查询同步调整：`.room-timeline-frame` 在窄屏恢复 `display: block` 并去掉边框，时间轴继续隐藏，教室卡片竖排。
+
+### 3. 验证
+
+- `npm run build`（`tsc -b` + `vite build`）通过，无新增类型错误。
+- 以 16 间教室的临时数据做了截图核对：初始位置左键置灰、点击右键后表格平移且时间轴不动、点击色块可定位到指定教室；移动端分页卡片布局与顶部操作带隐藏均正常。
+- 验证用临时教室与当日课程已在核对完成后从 `backend/data/wellness.db` 删除，数据库恢复为 5 间教室的原状。

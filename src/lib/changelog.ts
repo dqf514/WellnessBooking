@@ -42,6 +42,13 @@ export const changelogReleases: ChangelogRelease[] = [
         { zh: "会员档案补齐字段名并放大字号，附件改为直接查看，资料区改为并排标签", en: "Member profiles gained field labels and larger type; attachments open inline and records sit in parallel tabs" },
         { zh: "课程与卡课产品的类目统一为中文口径", en: "Class and product categories now use one consistent Chinese set" },
       ] },
+      { title: { zh: "教室总览导航", en: "Room overview navigation" }, points: [
+        { zh: "教室总览顶部新增左右滚动按键，不用再拖到页面底部的滚动条", en: "Left and right buttons at the top of the room overview replace the bottom scrollbar" },
+        { zh: "顶部教室色块按当天安排着色：绿=有排课、橙=仅内部占用、灰=空闲", en: "Room chips are coloured by the day's schedule: green=classes, amber=reserved, grey=free" },
+        { zh: "点击色块即可横向定位到对应教室，色块条与表格滚动位置联动", en: "Click a chip to jump to that room; the chip strip follows the table's scroll position" },
+        { zh: "左右按键在该方向存在有排课的教室时高亮提示", en: "The scroll buttons highlight when scheduled classes lie in that direction" },
+        { zh: "教室列宽压缩到 104 像素，一屏可见更多教室，横向滚动时时间轴保持可见", en: "Room columns narrowed to 104px so more fit on screen, and the time axis stays visible while scrolling" },
+      ] },
     ],
   },
   {
