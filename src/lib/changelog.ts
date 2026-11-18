@@ -49,6 +49,13 @@ export const changelogReleases: ChangelogRelease[] = [
         { zh: "左右按键在该方向存在有排课的教室时高亮提示", en: "The scroll buttons highlight when scheduled classes lie in that direction" },
         { zh: "教室列宽压缩到 104 像素，一屏可见更多教室，横向滚动时时间轴保持可见", en: "Room columns narrowed to 104px so more fit on screen, and the time axis stays visible while scrolling" },
       ] },
+      { title: { zh: "会员档案头部重排", en: "Member profile header" }, points: [
+        { zh: "会员档案头部改为一行：头像旁是中文名（大字）与英文名（小字）", en: "The member profile header is now one row: the Chinese name in large type with the English name in small type beside it" },
+        { zh: "头像改为深底白字，与浅色背景形成反差，文字清晰可辨", en: "The avatar now uses a dark background with light text for clear contrast" },
+        { zh: "手机号、性别、出生日期、获客来源、会籍归属、微信号、紧急联系合并为一行铺满宽度", en: "Mobile, gender, birth date, source, advisor, WeChat and emergency contact now share one full-width row" },
+        { zh: "会员备注直接显示在头部下方，打开档案即可看到", en: "Member notes now appear directly under the header" },
+        { zh: "整体压缩上下留白，把会员卡与记录表的可用高度让出来", en: "Vertical padding is trimmed so the cards and record tables below get more room" },
+      ] },
     ],
   },
   {

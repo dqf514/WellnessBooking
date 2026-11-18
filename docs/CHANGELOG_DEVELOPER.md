@@ -427,3 +427,30 @@
 - `npm run build`（`tsc -b` + `vite build`）通过，无新增类型错误。
 - 以 16 间教室的临时数据做了截图核对：初始位置左键置灰、点击右键后表格平移且时间轴不动、点击色块可定位到指定教室；移动端分页卡片布局与顶部操作带隐藏均正常。
 - 验证用临时教室与当日课程已在核对完成后从 `backend/data/wellness.db` 删除，数据库恢复为 5 间教室的原状。
+
+---
+
+## 十三、会员档案头部重排（2026-11-18）
+
+### 1. 问题定位
+
+上一批新增的会员端 `MemberProfilePanel` 复用了通用类名 `.profile-summary`，其样式写在 `src/styles.css` 靠后位置（`.member-profile-panel .profile-summary` 之前是裸 `.profile-summary`），特异性与出现顺序都压过后台抽屉的同名规则，导致：
+
+- `.profile-summary span { background: var(--paper) }` 把后台抽屉的头像 `.profile-avatar` 也染成浅灰，出现“文字与背景没反差、看不清”的问题。
+- `.profile-summary { grid-template-columns: repeat(3, minmax(0, 1fr)) }` 把后台抽屉的资料区压成三列堆在中间，纵向占位变高。
+
+### 2. 实现
+
+- `src/styles.css`：会员端规则收窄作用域为 `.member-profile-panel .profile-summary`（含 `span` / `small` / `strong` 与 640px 媒体查询），后台抽屉的 `.profile-summary` / `.profile-avatar` 样式恢复正常。
+- `src/components/MemberProfileDrawer.tsx`：头部结构由“头像 + h2 + `.profile-contact-grid` + `.profile-meta` + 备注”改为三段式：
+  - `.profile-head`：头像 + 中文名（大字）与英文名（小字）同一行；
+  - `.profile-facts`：手机号 / 性别 / 出生日期 / 获客来源 / 会籍归属 / 微信号 / 紧急联系合并为一行，`repeat(auto-fit, minmax(130px, 1fr))` 自适应铺满宽度；
+  - `.profile-note`：备注单独一行，图标由 `bell` 改为 `book`，颜色沿用 `--amber-soft`。
+- 样式新增 `.profile-head` / `.profile-facts` 系列规则，`.profile-avatar` 由 84×100 圆角块改为 54×54 方块；删除已无引用的 `.profile-contact-grid`、`.profile-meta` 及其在各档媒体查询中的覆盖规则。
+- 移动端（≤700px）头部压缩为 46px 头像与 20px 姓名，`.profile-facts` 最小列宽降到 112px；≤480px 时 `.profile-facts` 固定两列。
+
+### 3. 验证
+
+- `npm run build`（`tsc -b` + `vite build`）通过。
+- 截图核对：后台抽屉宽屏（1600px）与窄屏（390px）下姓名行、信息行、备注行均按预期排布；会员端“个人信息”面板（`.member-profile-panel`）显示未被影响。
+
