@@ -4,11 +4,14 @@ from starlette.requests import Request
 
 from ..database import get_db
 from ..deps import get_current_user
+from ..log_util import audit
 from ..models import User
 from ..security import create_access_token, hash_password, verify_password
 from ..serializers import user_dict
 from ..sms_service import send_otp, verify_otp
-from ..utils import valid_phone
+from ..utils import clean_payload, valid_phone
+
+PROFILE_FIELDS = {"full_name", "phone"}
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -48,6 +51,29 @@ def me(request: Request, user: User = Depends(get_current_user)):
     return user_dict(user)
 
 
+@router.patch("/me")
+def update_me(request: Request, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    if getattr(request.state, "auth_kind", "jwt") != "jwt":
+        raise HTTPException(403, "个人资料仅支持登录会话修改")
+    data = clean_payload(payload, PROFILE_FIELDS)
+    if "full_name" in data:
+        full_name = str(data["full_name"]).strip()
+        if not full_name:
+            raise HTTPException(400, "姓名不能为空")
+        user.full_name = full_name
+    if "phone" in data:
+        phone = str(data["phone"]).strip()
+        if phone:
+            valid_phone(phone)
+            duplicate = db.query(User).filter(User.phone == phone, User.id != user.id, User.deleted_at.is_(None)).first()
+            if duplicate:
+                raise HTTPException(400, "该手机号已被其他员工账号使用")
+        user.phone = phone or None
+    audit(db, user, "account", "update_profile", "user", user.id, {key: value for key, value in data.items()})
+    db.commit()
+    return user_dict(user)
+
+
 @router.post("/change-password")
 def change_password(request: Request, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     if getattr(request.state, "auth_kind", "jwt") != "jwt":
@@ -57,6 +83,9 @@ def change_password(request: Request, payload: dict = Body(...), db: Session = D
     new_password = str(payload.get("new_password", ""))
     if len(new_password) < 8:
         raise HTTPException(400, "新密码至少 8 位")
+    if verify_password(new_password, user.password_hash):
+        raise HTTPException(400, "新密码不能与原密码相同")
     user.password_hash = hash_password(new_password)
+    audit(db, user, "account", "change_password", "user", user.id)
     db.commit()
     return {"ok": True}

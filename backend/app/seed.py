@@ -126,6 +126,8 @@ def run_seed() -> None:
                         booking = Booking(session_id=session.id, member_id=member.id, source="admin")
                         db.add(booking)
                         db.flush()
+                        # 已开始的课程无法走 create_booking，这里手动占用名额以保持座位计数一致。
+                        session.reserved_count += 1
                     else:
                         booking = create_booking(db, session=session, member=member, source="admin")
                     if index == 0 and member_index == 0:

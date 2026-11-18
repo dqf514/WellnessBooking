@@ -1,9 +1,12 @@
+import logging
 import uuid
 from pathlib import Path
 
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
+
+logger = logging.getLogger(__name__)
 
 from ..booking_service import create_booking, transition_booking
 from ..config import UPLOAD_DIR
@@ -15,35 +18,43 @@ from ..models import Booking, ClassSession, Course, Member, Room, RoomReservatio
 from ..recycle_service import move_to_recycle
 from ..serializers import booking_dict, course_dict, room_dict, session_dict, teacher_dict
 from ..sms_service import notify_booking
-from ..utils import add_days, clean_payload, minutes, overlaps, today, valid_date, valid_time
+from ..utils import add_days, as_bool, as_float, as_int, clean_payload, minutes, overlaps, today, valid_date, valid_time
 
 router = APIRouter(prefix="/api/admin", tags=["admin-schedule"])
 SESSION_FIELDS = {"course_id", "teacher_id", "room_id", "session_date", "start_time", "end_time", "capacity", "status", "notes"}
 ROOM_FIELDS = {"name", "name_en", "capacity", "floor", "sort_order", "color", "active"}
+COURSE_TYPES = {"group", "private", "assessment", "workshop", "training", "enterprise", "all"}
 
 
 def _session_query(db: Session):
     return db.query(ClassSession).options(joinedload(ClassSession.course), joinedload(ClassSession.teacher), joinedload(ClassSession.room), joinedload(ClassSession.bookings).joinedload(Booking.member)).filter(ClassSession.deleted_at.is_(None))
 
 
-def _validate_session(db: Session, data: dict, exclude_id: int | None = None) -> None:
-    valid_date(str(data.get("session_date", "")), "上课日期")
-    valid_time(str(data.get("start_time", "")), "开始时间")
-    valid_time(str(data.get("end_time", "")), "结束时间")
+def _validate_session(db: Session, data: dict, exclude_id: int | None = None) -> dict:
+    """校验并就地归一化排课数据；返回的 data 可直接写库。"""
+    data["session_date"] = valid_date(str(data.get("session_date", "")), "上课日期")
+    data["start_time"] = valid_time(str(data.get("start_time", "")), "开始时间")
+    data["end_time"] = valid_time(str(data.get("end_time", "")), "结束时间")
     if minutes(data["end_time"]) <= minutes(data["start_time"]):
         raise HTTPException(400, "结束时间必须晚于开始时间")
-    if int(data.get("capacity", 0)) < 1:
+    data["capacity"] = as_int(data.get("capacity", 0), "可约人数")
+    if data["capacity"] < 1:
         raise HTTPException(400, "可约人数至少为 1")
-    course = db.get(Course, int(data.get("course_id", 0)))
-    teacher = db.get(Teacher, int(data.get("teacher_id", 0)))
-    room = db.get(Room, int(data.get("room_id", 0)))
+    if data.get("status") and data["status"] not in {"scheduled", "cancelled"}:
+        raise HTTPException(400, "课程状态不合法")
+    data["course_id"] = as_int(data.get("course_id", 0), "课程")
+    data["teacher_id"] = as_int(data.get("teacher_id", 0), "教练")
+    data["room_id"] = as_int(data.get("room_id", 0), "教室")
+    course = db.get(Course, data["course_id"])
+    teacher = db.get(Teacher, data["teacher_id"])
+    room = db.get(Room, data["room_id"])
     if not course or not teacher or not room:
         raise HTTPException(400, "课程、教练或教室不存在")
     if not course.active or not teacher.active or not room.active or course.deleted_at or teacher.deleted_at or room.deleted_at:
         raise HTTPException(400, "课程、教练或教室已停用")
     if exclude_id:
         current = db.get(ClassSession, exclude_id)
-        if current and int(data["capacity"]) < current.reserved_count:
+        if current and data["capacity"] < current.reserved_count:
             raise HTTPException(400, f"容量不能低于已预约人数 {current.reserved_count}")
     conflicts = db.query(ClassSession).filter(ClassSession.session_date == data["session_date"], ClassSession.status == "scheduled", ClassSession.deleted_at.is_(None), or_(ClassSession.room_id == data["room_id"], ClassSession.teacher_id == data["teacher_id"]))
     if exclude_id:
@@ -56,6 +67,7 @@ def _validate_session(db: Session, data: dict, exclude_id: int | None = None) ->
     for row in room_bookings:
         if overlaps(data["start_time"], data["end_time"], row.start_time, row.end_time):
             raise HTTPException(409, f"教室已被“{row.title}”占用")
+    return data
 
 
 def _validate_room_reservation(db: Session, room: Room, day: str, start: str, end: str, exclude_id: int | None = None) -> None:
@@ -96,8 +108,8 @@ def create_session(payload: dict = Body(...), db: Session = Depends(get_db), use
 
 @router.post("/private-bookings")
 def create_private_booking(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
-    member = db.get(Member, int(payload.get("member_id", 0)))
-    course = db.get(Course, int(payload.get("course_id", 0)))
+    member = db.get(Member, as_int(payload.get("member_id", 0), "会员"))
+    course = db.get(Course, as_int(payload.get("course_id", 0), "课程"))
     if not member or not course or course.course_type not in {"private", "assessment"}:
         raise HTTPException(400, "请选择有效的会员和私教服务")
     data = clean_payload(payload, SESSION_FIELDS)
@@ -123,8 +135,8 @@ def update_session(session_id: int, payload: dict = Body(...), db: Session = Dep
     current = {key: getattr(row, key) for key in SESSION_FIELDS}
     current.update(clean_payload(payload, SESSION_FIELDS))
     _validate_session(db, current, exclude_id=session_id)
-    for key, value in clean_payload(payload, SESSION_FIELDS).items():
-        setattr(row, key, value)
+    for key in clean_payload(payload, SESSION_FIELDS):
+        setattr(row, key, current[key])
     audit(db, user, "schedule", "update", "class_session", session_id, payload)
     db.commit()
     return session_dict(row, detailed=True)
@@ -187,7 +199,7 @@ def copy_week(payload: dict = Body(...), db: Session = Depends(get_db), user: Us
 @router.post("/sessions/{session_id}/bookings")
 def admin_create_booking(session_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
     session = db.get(ClassSession, session_id)
-    member = db.get(Member, int(payload.get("member_id", 0)))
+    member = db.get(Member, as_int(payload.get("member_id", 0), "会员"))
     if not session or session.deleted_at is not None or not member or member.deleted_at is not None:
         raise HTTPException(404, "课程或会员不存在")
     booking = create_booking(db, session=session, member=member, source="admin")
@@ -249,7 +261,7 @@ def room_overview(date: str = Query(""), floor: str = Query(""), db: Session = D
 
 @router.post("/room-reservations")
 def reserve_room(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_staff)):
-    room = db.get(Room, int(payload.get("room_id", 0)))
+    room = db.get(Room, as_int(payload.get("room_id", 0), "教室"))
     if not room or room.deleted_at is not None:
         raise HTTPException(404, "教室不存在")
     day = valid_date(str(payload.get("reservation_date", "")), "预约日期")
@@ -257,7 +269,7 @@ def reserve_room(payload: dict = Body(...), db: Session = Depends(get_db), user:
     end = valid_time(str(payload.get("end_time", "")), "结束时间")
     if minutes(end) <= minutes(start):
         raise HTTPException(400, "结束时间必须晚于开始时间")
-    repeat = max(1, min(52, int(payload.get("repeat_weeks", 1))))
+    repeat = max(1, min(52, as_int(payload.get("repeat_weeks", 1), "重复周数")))
     title = str(payload.get("title", "")).strip()
     if not title:
         raise HTTPException(400, "预约用途不能为空")
@@ -281,7 +293,7 @@ def update_room_reservation(reservation_id: int, payload: dict = Body(...), db: 
     row = db.get(RoomReservation, reservation_id)
     if not row or row.deleted_at is not None:
         raise HTTPException(404, "教室预约不存在")
-    room = db.get(Room, int(payload.get("room_id", row.room_id)))
+    room = db.get(Room, as_int(payload.get("room_id", row.room_id), "教室"))
     if not room or room.deleted_at is not None:
         raise HTTPException(404, "教室不存在")
     day = valid_date(str(payload.get("reservation_date", row.reservation_date)), "预约日期")
@@ -319,7 +331,20 @@ def cancel_room_reservation(reservation_id: int, db: Session = Depends(get_db), 
 @router.post("/courses")
 def create_course(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_admin)):
     allowed = {"course_type", "name", "name_en", "description", "description_en", "duration_minutes", "price", "color", "image_url", "active"}
-    row = Course(**clean_payload(payload, allowed))
+    data = clean_payload(payload, allowed)
+    data["name"] = str(data.get("name", "")).strip()
+    if not data["name"]:
+        raise HTTPException(400, "课程名称不能为空")
+    data["course_type"] = str(data.get("course_type", "")).strip()
+    if data["course_type"] not in COURSE_TYPES:
+        raise HTTPException(400, "课程类别不合法")
+    if "duration_minutes" in data:
+        data["duration_minutes"] = as_int(data["duration_minutes"], "课程时长")
+    if "price" in data:
+        data["price"] = as_float(data["price"], "单节价格")
+        if data["price"] < 0:
+            raise HTTPException(400, "单节价格不能为负数")
+    row = Course(**data)
     db.add(row)
     db.flush()
     audit(db, user, "catalog", "create", "course", row.id)
@@ -333,7 +358,22 @@ def update_course(course_id: int, payload: dict = Body(...), db: Session = Depen
     if not row or row.deleted_at is not None:
         raise HTTPException(404, "课程不存在")
     allowed = {"course_type", "name", "name_en", "description", "description_en", "duration_minutes", "price", "color", "image_url", "active"}
-    for key, value in clean_payload(payload, allowed).items():
+    changes = clean_payload(payload, allowed)
+    if "name" in changes:
+        changes["name"] = str(changes["name"]).strip()
+        if not changes["name"]:
+            raise HTTPException(400, "课程名称不能为空")
+    if "course_type" in changes:
+        changes["course_type"] = str(changes["course_type"]).strip()
+        if changes["course_type"] not in COURSE_TYPES:
+            raise HTTPException(400, "课程类别不合法")
+    if "duration_minutes" in changes:
+        changes["duration_minutes"] = as_int(changes["duration_minutes"], "课程时长")
+    if "price" in changes:
+        changes["price"] = as_float(changes["price"], "单节价格")
+        if changes["price"] < 0:
+            raise HTTPException(400, "单节价格不能为负数")
+    for key, value in changes.items():
         setattr(row, key, value)
     audit(db, user, "catalog", "update", "course", course_id, payload)
     db.commit()
@@ -356,16 +396,37 @@ def upload_course_image(course_id: int, file: UploadFile = File(...), db: Sessio
     directory.mkdir(parents=True, exist_ok=True)
     stored_name = f"course-{course_id}-{uuid.uuid4().hex}{extension}"
     (directory / stored_name).write_bytes(raw)
+    previous = row.image_url
     row.image_url = f"/uploads/courses/{stored_name}"
     audit(db, user, "catalog", "upload_image", "course", course_id, {"size_bytes": len(raw)})
     db.commit()
+    _remove_upload(previous, "courses")
+    return course_dict(row)
+
+
+@router.delete("/courses/{course_id}/image")
+def delete_course_image(course_id: int, db: Session = Depends(get_db), user: User = Depends(require_admin)):
+    row = db.get(Course, course_id)
+    if not row or row.deleted_at is not None:
+        raise HTTPException(404, "课程不存在")
+    previous = row.image_url
+    row.image_url = ""
+    audit(db, user, "catalog", "delete_image", "course", course_id)
+    db.commit()
+    _remove_upload(previous, "courses")
     return course_dict(row)
 
 
 @router.post("/rooms")
 def create_room(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_admin)):
     data = clean_payload(payload, ROOM_FIELDS)
-    data["sort_order"] = int(data.get("sort_order", db.query(Room).filter(Room.deleted_at.is_(None)).count()))
+    data["name"] = str(data.get("name", "")).strip()
+    if not data["name"]:
+        raise HTTPException(400, "教室名称不能为空")
+    data["capacity"] = as_int(data.get("capacity", 10), "容纳人数")
+    if data["capacity"] < 1:
+        raise HTTPException(400, "容纳人数至少为 1")
+    data["sort_order"] = as_int(data.get("sort_order", db.query(Room).filter(Room.deleted_at.is_(None)).count()), "排序")
     row = Room(**data)
     db.add(row)
     db.flush()
@@ -379,7 +440,18 @@ def update_room(room_id: int, payload: dict = Body(...), db: Session = Depends(g
     row = db.get(Room, room_id)
     if not row or row.deleted_at is not None:
         raise HTTPException(404, "教室不存在")
-    for key, value in clean_payload(payload, ROOM_FIELDS).items():
+    changes = clean_payload(payload, ROOM_FIELDS)
+    if "name" in changes:
+        changes["name"] = str(changes["name"]).strip()
+        if not changes["name"]:
+            raise HTTPException(400, "教室名称不能为空")
+    if "capacity" in changes:
+        changes["capacity"] = as_int(changes["capacity"], "容纳人数")
+        if changes["capacity"] < 1:
+            raise HTTPException(400, "容纳人数至少为 1")
+    if "sort_order" in changes:
+        changes["sort_order"] = as_int(changes["sort_order"], "排序")
+    for key, value in changes.items():
         setattr(row, key, value)
     audit(db, user, "catalog", "update", "room", room_id, payload)
     db.commit()
@@ -388,7 +460,7 @@ def update_room(room_id: int, payload: dict = Body(...), db: Session = Depends(g
 
 @router.post("/rooms/reorder")
 def reorder_rooms(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_admin)):
-    ids = [int(value) for value in payload.get("room_ids", [])]
+    ids = [as_int(value, "教室编号") for value in payload.get("room_ids", [])]
     rooms = db.query(Room).filter(Room.id.in_(ids), Room.deleted_at.is_(None)).all() if ids else []
     if len(rooms) != len(set(ids)) or len(ids) != db.query(Room).filter(Room.deleted_at.is_(None)).count():
         raise HTTPException(400, "请提交完整的教室排序")
@@ -400,13 +472,56 @@ def reorder_rooms(payload: dict = Body(...), db: Session = Depends(get_db), user
     return {"ok": True}
 
 
+def _remove_upload(url: str, folder: str) -> None:
+    """删除上传目录中已被替换或清空的旧文件，仅处理本系统自己上传的文件。"""
+    if not url or not url.startswith(f"/uploads/{folder}/"):
+        return
+    path = UPLOAD_DIR / folder / Path(url).name
+    try:
+        path.unlink(missing_ok=True)
+    except OSError:
+        logger.warning("旧图片文件删除失败：%s", path)
+
+
+def _validate_teacher_account(db: Session, user_id, exclude_teacher_id: int | None = None) -> User | None:
+    """校验教练要关联的员工账号，返回账号对象；user_id 为空表示解除关联。"""
+    if user_id in (None, "", 0, "0"):
+        return None
+    try:
+        account_id = int(user_id)
+    except (TypeError, ValueError):
+        raise HTTPException(400, "关联的员工账号不合法") from None
+    account = db.get(User, account_id)
+    if not account or account.deleted_at is not None:
+        raise HTTPException(400, "关联的员工账号不存在")
+    if not account.active:
+        raise HTTPException(400, "关联的员工账号已停用")
+    if account.role != "teacher":
+        raise HTTPException(400, "只能关联角色为“教练”的员工账号")
+    query = db.query(Teacher).filter(Teacher.user_id == account_id, Teacher.deleted_at.is_(None))
+    if exclude_teacher_id:
+        query = query.filter(Teacher.id != exclude_teacher_id)
+    if query.first():
+        raise HTTPException(409, "该员工账号已关联其他教练")
+    return account
+
+
 @router.post("/teachers")
 def create_teacher(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_admin)):
     allowed = {"user_id", "name", "name_en", "phone", "gender", "specialties", "specialties_en", "bio", "bio_en", "image_url", "visible", "active"}
-    row = Teacher(**clean_payload(payload, allowed))
+    data = clean_payload(payload, allowed)
+    linked_user = _validate_teacher_account(db, data.pop("user_id", None))
+    if linked_user and not str(data.get("phone", "")).strip():
+        data["phone"] = linked_user.phone or ""
+    data["name"] = str(data.get("name", "")).strip()
+    if not data["name"]:
+        raise HTTPException(400, "教练姓名不能为空")
+    row = Teacher(**data)
+    if linked_user:
+        row.user_id = linked_user.id
     db.add(row)
     db.flush()
-    audit(db, user, "catalog", "create", "teacher", row.id)
+    audit(db, user, "catalog", "create", "teacher", row.id, {"user_id": row.user_id})
     db.commit()
     return teacher_dict(row)
 
@@ -417,9 +532,21 @@ def update_teacher(teacher_id: int, payload: dict = Body(...), db: Session = Dep
     if not row or row.deleted_at is not None:
         raise HTTPException(404, "教练不存在")
     allowed = {"user_id", "name", "name_en", "phone", "gender", "specialties", "specialties_en", "bio", "bio_en", "image_url", "visible", "active"}
-    for key, value in clean_payload(payload, allowed).items():
+    data = clean_payload(payload, allowed)
+    if "user_id" in data:
+        raw_account = data.pop("user_id")
+        if raw_account in (None, "", 0, "0"):
+            row.user_id = None
+        elif str(raw_account) != str(row.user_id or ""):
+            linked_user = _validate_teacher_account(db, raw_account, exclude_teacher_id=teacher_id)
+            row.user_id = linked_user.id if linked_user else None
+    if "name" in data:
+        data["name"] = str(data["name"]).strip()
+        if not data["name"]:
+            raise HTTPException(400, "教练姓名不能为空")
+    for key, value in data.items():
         setattr(row, key, value)
-    audit(db, user, "catalog", "update", "teacher", teacher_id, payload)
+    audit(db, user, "catalog", "update", "teacher", teacher_id, {"user_id": row.user_id})
     db.commit()
     return teacher_dict(row)
 
@@ -440,7 +567,22 @@ def upload_teacher_photo(teacher_id: int, file: UploadFile = File(...), db: Sess
     directory.mkdir(parents=True, exist_ok=True)
     stored_name = f"teacher-{teacher_id}-{uuid.uuid4().hex}{extension}"
     (directory / stored_name).write_bytes(raw)
+    previous = row.image_url
     row.image_url = f"/uploads/teachers/{stored_name}"
     audit(db, user, "catalog", "upload_photo", "teacher", teacher_id, {"size_bytes": len(raw)})
     db.commit()
+    _remove_upload(previous, "teachers")
+    return teacher_dict(row)
+
+
+@router.delete("/teachers/{teacher_id}/photo")
+def delete_teacher_photo(teacher_id: int, db: Session = Depends(get_db), user: User = Depends(require_admin)):
+    row = db.get(Teacher, teacher_id)
+    if not row or row.deleted_at is not None:
+        raise HTTPException(404, "教练不存在")
+    previous = row.image_url
+    row.image_url = ""
+    audit(db, user, "catalog", "delete_photo", "teacher", teacher_id)
+    db.commit()
+    _remove_upload(previous, "teachers")
     return teacher_dict(row)

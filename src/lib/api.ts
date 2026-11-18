@@ -1,7 +1,22 @@
+import { translateAdminMessage } from "./adminMessages";
+
 export type TokenKind = "staff" | "member";
+
+/** 后端提示统一是中文；英文界面下按映射表翻译，未收录的保持原文。 */
+function localizeDetail(detail: string): string {
+  return localStorage.getItem("wellness_language") === "en" ? translateAdminMessage(detail) : detail;
+}
+
+export const UNAUTHORIZED_EVENT = "wellness:unauthorized";
 
 export function getToken(kind: TokenKind = "staff") {
   return localStorage.getItem(kind === "staff" ? "wellness_staff_token" : "wellness_member_token");
+}
+
+/** 登录态失效时统一清理本地令牌并通知上层，避免后台停留在“已登录”但所有请求都 401 的状态。 */
+export function handleUnauthorized(kind: TokenKind) {
+  localStorage.removeItem(kind === "staff" ? "wellness_staff_token" : "wellness_member_token");
+  window.dispatchEvent(new CustomEvent(UNAUTHORIZED_EVENT, { detail: kind }));
 }
 
 export async function apiFetch<T>(path: string, options: { method?: string; json?: unknown; body?: FormData; tokenKind?: TokenKind } = {}): Promise<T> {
@@ -15,7 +30,10 @@ export async function apiFetch<T>(path: string, options: { method?: string; json
   try { data = text ? JSON.parse(text) : null; } catch { data = text; }
   if (!response.ok) {
     const detail = typeof data === "object" && data && "detail" in data ? String(data.detail) : text || `请求失败 (${response.status})`;
-    throw new Error(detail);
+    if (response.status === 401 && token && !path.includes("/auth/login") && !path.includes("/auth/sms")) handleUnauthorized(options.tokenKind ?? "staff");
+    const error = new Error(localizeDetail(detail)) as Error & { status?: number };
+    error.status = response.status;
+    throw error;
   }
   return data as T;
 }

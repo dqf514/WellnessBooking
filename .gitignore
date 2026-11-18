@@ -19,3 +19,10 @@ backend/uploads/
 .dev/
 .tmp-requirements/
 .DS_Store
+
+# 需求原始材料与本地素材，不入库
+/20261110/
+/MODIFY*.docx
+/MODIFY*.pdf
+/logos/
+/docs/CHANGELOG_CLIENT.pdf

@@ -55,7 +55,8 @@ export function Modal({ title, children, onClose, wide = false, drawer = false, 
     if (openModalCount === 0) originalBodyOverflow = document.body.style.overflow;
     openModalCount += 1;
     document.body.style.overflow = "hidden";
-    modalRef.current?.querySelector<HTMLElement>(focusableSelector)?.focus();
+    const autofocus = modalRef.current?.querySelector<HTMLElement>("[data-autofocus], [autofocus]");
+    (autofocus ?? modalRef.current?.querySelector<HTMLElement>(focusableSelector))?.focus();
     return () => {
       document.removeEventListener("keydown", handler);
       openModalCount = Math.max(0, openModalCount - 1);

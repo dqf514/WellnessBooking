@@ -1,8 +1,12 @@
+import logging
+
 from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from .config import DATABASE_URL
+
+logger = logging.getLogger(__name__)
 
 
 class Base(DeclarativeBase):
@@ -72,9 +76,22 @@ def ensure_schema():
                     connection.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {definition}"))
 
 
-def ensure_booking_constraints():
+def ensure_constraints():
     if not DATABASE_URL.startswith("sqlite"):
         return
     with engine.begin() as connection:
         connection.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ux_bookings_active_member_session ON bookings(session_id, member_id) WHERE status IN ('booked', 'checked_in', 'completed', 'no_show')"))
         connection.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ux_transactions_booking_revenue_sequence ON transactions(booking_id, revenue_sequence, kind) WHERE booking_id IS NOT NULL AND kind IN ('consumption', 'consumption_reversal')"))
+        # 教练与员工账号的关联必须唯一；历史数据可能存在重复，先清理再建索引，
+        # 并且建索引失败不能阻断服务启动。
+        linked = connection.execute(text("SELECT id, user_id FROM teachers WHERE user_id IS NOT NULL AND deleted_at IS NULL ORDER BY id")).fetchall()
+        kept: set[int] = set()
+        for teacher_id, user_id in linked:
+            if user_id in kept:
+                connection.execute(text("UPDATE teachers SET user_id = NULL WHERE id = :id"), {"id": teacher_id})
+            else:
+                kept.add(user_id)
+        try:
+            connection.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ux_teachers_user_id ON teachers(user_id) WHERE user_id IS NOT NULL AND deleted_at IS NULL"))
+        except Exception:  # noqa: BLE001 - 索引失败不应让整个服务无法启动
+            logger.warning("教练账号唯一索引创建失败，请检查 teachers.user_id 是否存在重复数据")

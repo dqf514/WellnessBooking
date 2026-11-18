@@ -32,6 +32,7 @@ from .utils import dt, json_loads, overlaps, today
 
 logger = logging.getLogger(__name__)
 RETENTION_DAYS = 180
+RESERVED_STATE_KEYS = {"__linked_user_active"}
 FRONTDESK_RESOURCES = {"members", "cards", "bookings", "sessions", "room-reservations", "records", "documents", "reminders", "vouchers", "shares"}
 FINANCE_RESOURCES = {"products", "transactions"}
 ADMIN_RESOURCES = {"users", "teachers", "rooms", "courses", "api-keys"}
@@ -243,6 +244,11 @@ def move_to_recycle(db: Session, resource: str, entity_id: int, user: User):
     _validate_delete(db, resource, row, user)
     title = _title(resource, row)
     state = {key: getattr(row, key) for key in ("active", "status", "visible") if hasattr(row, key)}
+    if resource == "teachers" and row.user_id:
+        linked = db.get(User, row.user_id)
+        if linked and linked.deleted_at is None:
+            state["__linked_user_active"] = linked.active
+            linked.active = False
     row.deleted_state_json = json.dumps(state, ensure_ascii=False)
     row.deleted_at = datetime.now()
     row.deleted_by = user.username
@@ -263,7 +269,13 @@ def restore_from_recycle(db: Session, resource: str, entity_id: int, user: User)
     state = json_loads(row.deleted_state_json, {})
     _validate_restore(db, resource, row, state)
     for key, value in state.items():
+        if key in RESERVED_STATE_KEYS:
+            continue
         setattr(row, key, value)
+    if resource == "teachers" and row.user_id and "__linked_user_active" in state:
+        linked = db.get(User, row.user_id)
+        if linked and linked.deleted_at is None:
+            linked.active = bool(state["__linked_user_active"])
     row.deleted_at = None
     row.deleted_by = ""
     row.deleted_state_json = "{}"
@@ -282,6 +294,13 @@ def permanently_delete(db: Session, resource: str, entity_id: int, user: User):
         raise HTTPException(400, f"删除满 {RETENTION_DAYS} 天后才可彻底删除，可删除时间：{dt(earliest)}")
     title = _title(resource, row)
     stored_name = row.stored_name if resource == "documents" else ""
+    # 教练被彻底删除时，必须把此前因回收站而停用的员工账号恢复，否则账号会一直处于停用状态。
+    state = json_loads(row.deleted_state_json, {})
+    if resource == "teachers" and row.user_id and "__linked_user_active" in state:
+        linked = db.get(User, row.user_id)
+        if linked and linked.deleted_at is None:
+            linked.active = bool(state["__linked_user_active"])
+            audit(db, user, "recycle_bin", "restore_linked_account", "user", linked.id, {"teacher_id": entity_id, "active": linked.active})
     try:
         audit(db, user, "recycle_bin", "permanent_delete", resource, entity_id, {"title": title, "deleted_at": dt(row.deleted_at)})
         db.delete(row)

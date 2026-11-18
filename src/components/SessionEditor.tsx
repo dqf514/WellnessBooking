@@ -4,7 +4,7 @@ import { SearchableCourseSelect } from "@/components/SearchableCourseSelect";
 import { Modal } from "@/components/UI";
 import { useLanguage } from "@/context/LanguageContext";
 import { apiFetch } from "@/lib/api";
-import { today } from "@/lib/date";
+import { endTimeFor, timeToMinutes, today } from "@/lib/date";
 import type { Meta, Room, Session } from "@/types";
 
 interface SessionForm { course_id: string; teacher_id: string; room_id: string; session_date: string; start_time: string; end_time: string; capacity: string; notes: string }
@@ -14,9 +14,7 @@ interface RoomAvailability extends Room { available: boolean; conflicts: RoomCon
 export interface SessionEditorInitial { course_id?: string; teacher_id?: string; room_id?: string; session_date?: string; start_time?: string; end_time?: string; capacity?: string; notes?: string }
 
 function endFor(start: string, duration: number) {
-  const [hour, minute] = start.split(":").map(Number);
-  const total = hour * 60 + minute + duration;
-  return `${String(Math.floor(total / 60) % 24).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+  return endTimeFor(start, duration);
 }
 
 export function SessionEditor({ meta, session, initial = {}, courseType = "", onClose, onSaved }: { meta: Meta; session?: Session | null; initial?: SessionEditorInitial; courseType?: string; onClose: () => void; onSaved: () => void | Promise<void> }) {
@@ -58,6 +56,8 @@ export function SessionEditor({ meta, session, initial = {}, courseType = "", on
   }, [form.session_date, form.start_time, form.end_time, session?.id]);
 
   const selectedConflicts = availability[Number(form.room_id)]?.conflicts ?? [];
+  const selectedCourse = meta.courses.find((item) => item.id === Number(form.course_id));
+  const isPrivateService = selectedCourse ? ["private", "assessment"].includes(selectedCourse.course_type) : courseType === "private";
   function conflictText(conflict: RoomConflict) {
     return `${conflict.start_time}–${conflict.end_time} ${local(conflict.title, conflict.title_en)}${conflict.teacher_name ? ` · ${local(conflict.teacher_name, conflict.teacher_name_en)}` : ""}`;
   }
@@ -80,6 +80,7 @@ export function SessionEditor({ meta, session, initial = {}, courseType = "", on
   async function save(event: FormEvent) {
     event.preventDefault();
     if (selectedConflicts.length) { setError(local(`当前教室与 ${conflictText(selectedConflicts[0])} 冲突，请选择其他教室`, `The selected room conflicts with ${conflictText(selectedConflicts[0])}. Choose another room.`)); return; }
+    if (!form.end_time || timeToMinutes(form.end_time) <= timeToMinutes(form.start_time)) { setError(local("结束时间必须晚于开始时间；课程不能跨天，请调整开始时间或缩短时长。", "End time must be later than start time. Classes cannot run past midnight — adjust the start time or shorten the class.")); return; }
     setBusy(true); setError("");
     const payload = { ...form, course_id: Number(form.course_id), teacher_id: Number(form.teacher_id), room_id: Number(form.room_id), capacity: Number(form.capacity) };
     try {
@@ -109,7 +110,7 @@ export function SessionEditor({ meta, session, initial = {}, courseType = "", on
         <Field label={local("结束时间", "End time")} hint={local("按课程时长自动带出，可手动调整", "Based on class duration; editable")}><input required type="time" step={900} value={form.end_time} onChange={(event) => update("end_time", event.target.value)}/></Field>
         <Field label={local("教练", "Instructor")}><select required value={form.teacher_id} onChange={(event) => update("teacher_id", event.target.value)}>{meta.teachers.filter((item) => item.active).map((teacher) => <option key={teacher.id} value={teacher.id}>{local(teacher.name, teacher.name_en)}</option>)}</select></Field>
         <Field label={local("教室", "Room")} hint={roomHint}><select required value={form.room_id} onChange={(event) => update("room_id", event.target.value)}>{meta.rooms.filter((item) => item.active).map((room) => { const conflicts = availability[room.id]?.conflicts ?? []; return <option key={room.id} value={room.id} disabled={conflicts.length > 0}>{local(room.name, room.name_en)} · {room.floor}{conflicts.length ? ` · ${local("冲突", "Conflict")}: ${conflicts.map(conflictText).join(local("；", "; "))}` : ""}</option>; })}</select></Field>
-        <Field label={local("最大人数", "Capacity")}><input required min={1} type="number" value={form.capacity} readOnly={courseType === "private"} onChange={(event) => update("capacity", event.target.value)}/></Field>
+        <Field label={local("最大人数", "Capacity")} hint={isPrivateService ? local("私教 / 评估为 1 对 1，人数固定为 1", "Private training and assessments are one-on-one, so capacity is fixed at 1") : undefined}><input required min={1} type="number" value={form.capacity} readOnly={isPrivateService} onChange={(event) => update("capacity", event.target.value)}/></Field>
         <Field label={local("备注", "Notes")}><input value={form.notes} onChange={(event) => update("notes", event.target.value)}/></Field>
         <div className="form-footer span-two">
           {session && <><button className="button button-danger-ghost" type="button" disabled={busy} onClick={() => setConfirm("cancel")}>{local("取消课程", "Cancel class")}</button><button className="text-button danger" type="button" disabled={busy} onClick={() => setConfirm("delete")}>{local("删除排课", "Delete schedule")}</button></>}
