@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#173f35">
-  <meta name="description" content="音昱 Wellness 完整 API 对接文档，覆盖 134 个接口、权限、字段、业务规则与示例。">
+  <meta name="description" content="音昱 Wellness 完整 API 对接文档，覆盖 137 个接口、权限、字段、业务规则与示例。">
   <meta name="generator" content="docs/build_api_docs.py">
   <link id="api-favicon" rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Crect width='36' height='36' rx='18' fill='%23173f35'/%3E%3Cpath d='M28 6C15 7 8 13 8 23c7 1 15-2 20-17ZM8 29c3-8 8-12 16-17' fill='none' stroke='%23e9efe7' stroke-width='1.5'/%3E%3C/svg%3E">
   <title>API 对接文档 · 音昱 Wellness</title>
@@ -33,7 +33,7 @@
     <aside class="sidebar" aria-label="API 文档目录">
       <label class="search-label"><span>搜索接口、字段或业务规则</span><input class="search-input" id="api-search" type="search" placeholder="例如：签到、退款、bookings" autocomplete="off"><span class="search-hint">按 / 快速搜索，Esc 清空</span></label>
       <p class="search-results" id="search-results" aria-live="polite"></p>
-      <p class="toc-title">API REFERENCE · 134 ENDPOINTS</p>
+      <p class="toc-title">API REFERENCE · 137 ENDPOINTS</p>
       <nav><ul class="toc-list"><li><a href="#1-接入基础">1. 接入基础</a></li>
 <li><a href="#2-通用数据结构">2. 通用数据结构</a></li>
 <li><a href="#3-健康检查与员工认证-7">3. 健康检查与员工认证（7）</a></li>
@@ -42,7 +42,7 @@
 <li><a href="#6-会员档案-会员卡-权益与爽约-22">6. 会员档案、会员卡、权益与爽约（22）</a></li>
 <li><a href="#7-会员合同与评估文件-7">7. 会员合同与评估文件（7）</a></li>
 <li><a href="#8-排课-预约-教室与目录-29">8. 排课、预约、教室与目录（29）</a></li>
-<li><a href="#9-产品-财务与报表-11">9. 产品、财务与报表（11）</a></li>
+<li><a href="#9-产品-财务与报表-15">9. 产品、财务与报表（15）</a></li>
 <li><a href="#10-场馆-品牌与账号-9">10. 场馆、品牌与账号（9）</a></li>
 <li><a href="#11-短信与审计日志-5">11. 短信与审计日志（5）</a></li>
 <li><a href="#12-api-key-管理与调用日志-6">12. API Key 管理与调用日志（6）</a></li>
@@ -50,7 +50,7 @@
 <li><a href="#14-典型业务调用顺序">14. 典型业务调用顺序</a></li>
 <li><a href="#15-对接检查清单">15. 对接检查清单</a></li>
 <li><a href="#16-回收站与-180-天保留-4">16. 回收站与 180 天保留（4）</a></li>
-<li><a href="#17-品牌-pdf-导出与账单-4">17. 品牌 PDF 导出与账单（4）</a></li></ul></nav>
+<li><a href="#17-品牌-pdf-导出与账单-3">17. 品牌 PDF 导出与账单（3）</a></li></ul></nav>
       <div class="sidebar-bottom"><a href="/openapi.json" target="_blank" rel="noreferrer">下载 OpenAPI JSON ↗</a><a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md" target="_blank" rel="noreferrer">GitHub Markdown 源文档 ↗</a><a href="/help.html">← 返回系统操作指南</a></div>
     </aside>
     <main class="docs-main" id="api-content">
@@ -62,7 +62,7 @@
 <option value="6-会员档案-会员卡-权益与爽约-22">6. 会员档案、会员卡、权益与爽约（22）</option>
 <option value="7-会员合同与评估文件-7">7. 会员合同与评估文件（7）</option>
 <option value="8-排课-预约-教室与目录-29">8. 排课、预约、教室与目录（29）</option>
-<option value="9-产品-财务与报表-11">9. 产品、财务与报表（11）</option>
+<option value="9-产品-财务与报表-15">9. 产品、财务与报表（15）</option>
 <option value="10-场馆-品牌与账号-9">10. 场馆、品牌与账号（9）</option>
 <option value="11-短信与审计日志-5">11. 短信与审计日志（5）</option>
 <option value="12-api-key-管理与调用日志-6">12. API Key 管理与调用日志（6）</option>
@@ -70,10 +70,10 @@
 <option value="14-典型业务调用顺序">14. 典型业务调用顺序</option>
 <option value="15-对接检查清单">15. 对接检查清单</option>
 <option value="16-回收站与-180-天保留-4">16. 回收站与 180 天保留（4）</option>
-<option value="17-品牌-pdf-导出与账单-4">17. 品牌 PDF 导出与账单（4）</option></select></label>
+<option value="17-品牌-pdf-导出与账单-3">17. 品牌 PDF 导出与账单（3）</option></select></label>
       <div class="search-empty" id="search-empty" hidden>没有匹配的接口。可尝试“预约”“卡”“settings”或清空搜索。</div>
       <h1 id="音昱-wellness-api-对接文档">音昱 Wellness API 对接文档<a class="anchor" href="#音昱-wellness-api-对接文档" aria-label="链接到此节">#</a></h1>
-<aside class="callout">版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 <strong>134 个 HTTP 接口</strong>。 文档更新：2026-11-22 · 功能基线：预约排课、动态二维码签到、购卡申请取消、会员权益与营收业务闭环、角色能力矩阵与课程库独立接口。 在线交互文档：<code>/docs</code>（Swagger UI）、<code>/redoc</code>（ReDoc）；原始 OpenAPI 3 定义：<code>/openapi.json</code>。接口路径、方法、参数和实时响应结构以同版本 <code>/openapi.json</code> 为最终依据。</aside>
+<aside class="callout">版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 <strong>137 个 HTTP 接口</strong>。 文档更新：2026-11-22 · 功能基线：预约排课、动态二维码签到、购卡申请取消、会员权益与营收业务闭环、角色能力矩阵与课程库独立接口。 在线交互文档：<code>/docs</code>（Swagger UI）、<code>/redoc</code>（ReDoc）；原始 OpenAPI 3 定义：<code>/openapi.json</code>。接口路径、方法、参数和实时响应结构以同版本 <code>/openapi.json</code> 为最终依据。</aside>
 <h2 id="1-接入基础">1. 接入基础<a class="anchor" href="#1-接入基础" aria-label="链接到此节">#</a></h2>
 <h3 id="1-1-服务地址">1.1 服务地址<a class="anchor" href="#1-1-服务地址" aria-label="链接到此节">#</a></h3>
 <div class="table-wrap"><table>
@@ -762,7 +762,7 @@
 <h4 id="delete-api-admin-courses-course-id-image"><span class="method method-delete">DELETE</span><a href="#delete-api-admin-courses-course-id-image" class="route">/api/admin/courses/{course_id}/image</a></h4>
 <ul><li><strong>权限</strong>：管理员；<strong>Body</strong>：无。</li><li>清空课程的 <code>image_url</code> 并删除服务器上的旧文件；<strong>响应</strong>：更新后的 Course。</li></ul>
 </section>
-<h2 id="9-产品-财务与报表-11">9. 产品、财务与报表（11）<a class="anchor" href="#9-产品-财务与报表-11" aria-label="链接到此节">#</a></h2>
+<h2 id="9-产品-财务与报表-15">9. 产品、财务与报表（15）<a class="anchor" href="#9-产品-财务与报表-15" aria-label="链接到此节">#</a></h2>
 <h3 id="9-1-产品列表">9.1 产品列表<a class="anchor" href="#9-1-产品列表" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/products">
 <h4 id="get-api-admin-products"><span class="method method-get">GET</span><a href="#get-api-admin-products" class="route">/api/admin/products</a></h4>
@@ -817,6 +817,26 @@
 <section class="endpoint" data-search="get /api/admin/revenue-policy">
 <h4 id="get-api-admin-revenue-policy"><span class="method method-get">GET</span><a href="#get-api-admin-revenue-policy" class="route">/api/admin/revenue-policy</a></h4>
 <ul><li><strong>权限</strong>：收款与核销（前台 / 财务）；<strong>查询参数</strong>：<code>product_id</code> 可选。</li><li><strong>响应</strong>：<code>{ system, effective, validity_days }</code>。</li><li><code>system</code> 是系统设置里设定的口径：<code>auto</code>（按卡种自动）/ <code>immediate</code>（购卡即全额确认）/ <code>amortized</code>（按有效期每日均摊）。</li><li><code>effective</code> 是当前产品实际生效的营收方式：私教与评估始终为 <code>none</code>（消课后确认营收），其余按 <code>system</code> 与卡种判定。</li><li>前端购卡弹窗用这个接口展示当前口径，不再逐单勾选；后端以系统设置为准，不接受前端传入的 <code>revenue_mode</code> 覆盖。</li></ul>
+</section>
+<h3 id="9-12-报表中心可选项">9.12 报表中心可选项<a class="anchor" href="#9-12-报表中心可选项" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="get /api/admin/reports/options">
+<h4 id="get-api-admin-reports-options"><span class="method method-get">GET</span><a href="#get-api-admin-reports-options" class="route">/api/admin/reports/options</a></h4>
+<ul><li><strong>权限</strong>：报表（<code>reports.view</code>：<code>admin</code>、<code>finance</code>、<code>frontdesk</code>、<code>viewer</code>）。</li><li><strong>响应</strong>：<code>{ datasets, presets, filters }</code>。</li><li><code>datasets</code> 列出全部可用数据源（<code>transactions</code> 财务流水、<code>sessions</code> 课程排课、<code>bookings</code> 预约消课、<code>members</code> 会员经营），每个数据源带 <code>dimensions</code>（可分组维度）与 <code>metrics</code>（可统计指标，含 <code>agg</code> 汇总方式与 <code>format</code> 展示格式）。</li><li><code>presets</code> 为预设报表类型（销售业绩、财务、教学管理、总经理经营、会员经营），带默认数据源、维度与指标组合；前端可在预设基础上自由调整。</li><li>维度值与指标名均为中文，便于前端直接展示。</li></ul>
+</section>
+<h3 id="9-13-按维度生成报表">9.13 按维度生成报表<a class="anchor" href="#9-13-按维度生成报表" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="get /api/admin/reports/table">
+<h4 id="get-api-admin-reports-table"><span class="method method-get">GET</span><a href="#get-api-admin-reports-table" class="route">/api/admin/reports/table</a></h4>
+<ul><li><strong>权限</strong>：报表（<code>reports.view</code>）；<strong>Query</strong>：<code>dataset</code>（默认 <code>transactions</code>）、<code>dimensions</code>（逗号分隔的维度 key）、<code>metrics</code>（逗号分隔的指标 key）、<code>date_from</code>、<code>date_to</code>，以及可选筛选 <code>category</code>、<code>advisor</code>、<code>teacher</code>、<code>course_type</code>、<code>member_id</code>、<code>keyword</code>。</li><li><strong>响应</strong>：<code>{ dataset, dataset_name, columns, rows, totals, row_count }</code>。</li><li><code>columns</code> 中 <code>kind=&quot;dimension&quot;</code> 的列是分组维度，<code>kind=&quot;metric&quot;</code> 的列是统计指标；<code>rows</code> 每行是一个维度组合，<code>totals</code> 是全量合计。</li><li>指标汇总方式：<code>sum</code> 求和、<code>count</code> 计数、<code>avg</code> 平均（按非零样本）、<code>rate</code> 比率（<code>num</code>/<code>den</code>，返回百分数）。</li><li>财务流水数据源中，流水类指标（合同金额、现金实收、退款金额、流水金额、笔数）按流水发生日期归属期间，确认营收按确认日期归属期间（每日均摊取摊销起始日），因此与 <code>/api/admin/reports</code> 的确认营收、现金实收口径一致。</li></ul>
+</section>
+<h3 id="9-14-导出自定义报表-excel">9.14 导出自定义报表 Excel<a class="anchor" href="#9-14-导出自定义报表-excel" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="get /api/admin/reports/table.xlsx">
+<h4 id="get-api-admin-reports-table-xlsx"><span class="method method-get">GET</span><a href="#get-api-admin-reports-table-xlsx" class="route">/api/admin/reports/table.xlsx</a></h4>
+<ul><li><strong>权限</strong>：报表（<code>reports.view</code>）；<strong>Query</strong>：与 <code>/api/admin/reports/table</code> 完全一致。</li><li><strong>响应</strong>：<code>application/vnd.openxmlformats-officedocument.spreadsheetml.sheet</code> 文件流，表头为中文，末行为合计。</li><li>文件名形如 <code>wellness-report-transactions-2026-11-01-2026-11-22.xlsx</code>。</li></ul>
+</section>
+<h3 id="9-15-导出经营总览-excel">9.15 导出经营总览 Excel<a class="anchor" href="#9-15-导出经营总览-excel" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="get /api/admin/reports.xlsx">
+<h4 id="get-api-admin-reports-xlsx"><span class="method method-get">GET</span><a href="#get-api-admin-reports-xlsx" class="route">/api/admin/reports.xlsx</a></h4>
+<ul><li><strong>权限</strong>：报表（<code>reports.view</code>）；<strong>Query</strong>：<code>date_from</code>（默认本月 1 日）、<code>date_to</code>（默认今日），开始日期不能晚于结束日期。</li><li><strong>响应</strong>：多页签 Excel，包含「经营总览」「分类汇总」「课程统计」「教练统计」「教室使用率」五个页签，取代原经营分析 PDF。</li></ul>
 </section>
 <h2 id="10-场馆-品牌与账号-9">10. 场馆、品牌与账号（9）<a class="anchor" href="#10-场馆-品牌与账号-9" aria-label="链接到此节">#</a></h2>
 <h3 id="10-1-读取系统设置">10.1 读取系统设置<a class="anchor" href="#10-1-读取系统设置" aria-label="链接到此节">#</a></h3>
@@ -1089,7 +1109,7 @@ const dashboard = await api(&quot;/api/admin/dashboard&quot;, {
 <h4 id="delete-api-admin-recycle-resource-entity-id-permanent"><span class="method method-delete">DELETE</span><a href="#delete-api-admin-recycle-resource-entity-id-permanent" class="route">/api/admin/recycle/{resource}/{entity_id}/permanent</a></h4>
 <ul><li><strong>权限</strong>：管理员登录会话；<strong>Body</strong>：无；<strong>响应</strong>：<code>{ ok, message }</code>。</li><li>只有服务器确认删除时间已满 180 天才执行，提前返回 <code>400</code> 和可删除时间。外键关联未清理时返回 <code>409</code>。</li><li>合同/评估附件会同时删除磁盘文件；其他业务记录删除后不可恢复，操作写入审计日志。</li></ul>
 </section>
-<h2 id="17-品牌-pdf-导出与账单-4">17. 品牌 PDF 导出与账单（4）<a class="anchor" href="#17-品牌-pdf-导出与账单-4" aria-label="链接到此节">#</a></h2>
+<h2 id="17-品牌-pdf-导出与账单-3">17. 品牌 PDF 导出与账单（3）<a class="anchor" href="#17-品牌-pdf-导出与账单-3" aria-label="链接到此节">#</a></h2>
 <p>以下接口均返回 <code>application/pdf</code> 文件流和 <code>Cache-Control: no-store</code>；可使用员工 Bearer Token，API Key 还需具备 <code>read</code> 范围。各接口的读取能力见下。PDF 使用场馆名称、地址、电话和已上传 Logo；未上传时使用系统默认品牌标识。表格采用 A4 横向、重复表头、交替行底色、筛选条件和页码，适合直接发送或打印。</p>
 <h3 id="17-1-导出某日教室安排">17.1 导出某日教室安排<a class="anchor" href="#17-1-导出某日教室安排" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/rooms/overview.pdf">
@@ -1101,17 +1121,12 @@ const dashboard = await api(&quot;/api/admin/dashboard&quot;, {
 <h4 id="get-api-admin-transactions-pdf"><span class="method method-get">GET</span><a href="#get-api-admin-transactions-pdf" class="route">/api/admin/transactions.pdf</a></h4>
 <ul><li><strong>权限</strong>：财务查看（<code>finance.view</code>）；<strong>Query</strong>：<code>date_from</code>、<code>date_to</code>、<code>category</code>、<code>member_id</code>，与流水列表一致。</li><li>包含编号/时间、会员、类别、业务、入账类型、结账方式、金额、状态和备注，并区分流水、流水+营收、营收、每日均摊及营收冲销。</li></ul>
 </section>
-<h3 id="17-3-导出经营分析-pdf">17.3 导出经营分析 PDF<a class="anchor" href="#17-3-导出经营分析-pdf" aria-label="链接到此节">#</a></h3>
-<section class="endpoint" data-search="get /api/admin/reports.pdf">
-<h4 id="get-api-admin-reports-pdf"><span class="method method-get">GET</span><a href="#get-api-admin-reports-pdf" class="route">/api/admin/reports.pdf</a></h4>
-<ul><li><strong>权限</strong>：报表（<code>reports.view</code>）；<strong>Query</strong>：<code>date_from</code>（默认本月 1 日）、<code>date_to</code>（默认今日），开始日期不能晚于结束日期。</li><li>包含流水与营收汇总、分类汇总、课程经营、教练课时、教室使用及到课时段表格。</li></ul>
-</section>
-<h3 id="17-4-导出账单小票-pdf">17.4 导出账单小票 PDF<a class="anchor" href="#17-4-导出账单小票-pdf" aria-label="链接到此节">#</a></h3>
+<h3 id="17-3-导出账单小票-pdf">17.3 导出账单小票 PDF<a class="anchor" href="#17-3-导出账单小票-pdf" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/transactions/{transaction_id}/receipt.pdf">
 <h4 id="get-api-admin-transactions-transaction-id-receipt-pdf"><span class="method method-get">GET</span><a href="#get-api-admin-transactions-transaction-id-receipt-pdf" class="route">/api/admin/transactions/{transaction_id}/receipt.pdf</a></h4>
 <ul><li><strong>权限</strong>：财务查看（<code>finance.view</code>）。</li><li><strong>响应</strong>：单页 <strong>75 × 145 mm</strong> 小票；待核销或已取消记录返回 <code>400</code>。</li><li>包含 Octave/自定义品牌 Logo、健康管理 Wellness、日期时间、项目、金额、入账类型、客户、结账方式、备注、入账人、6% 增值税与去税金额、签字栏及场馆地址电话。</li><li>去税金额按“含税金额 ÷ 1.06”计算，增值税为含税金额减去去税金额；退款或冲销记录以负数展示。</li></ul>
 </section>
-      <footer class="docs-footer"><span>音昱 Wellness · API v1.0.0 · 134 个业务接口</span><span><a href="/help.html">系统操作指南</a> · <a href="/openapi.json">OpenAPI 3</a> · 文档源：<a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md">docs/API.md</a></span></footer>
+      <footer class="docs-footer"><span>音昱 Wellness · API v1.0.0 · 137 个业务接口</span><span><a href="/help.html">系统操作指南</a> · <a href="/openapi.json">OpenAPI 3</a> · 文档源：<a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md">docs/API.md</a></span></footer>
     </main>
   </div>
   <script>

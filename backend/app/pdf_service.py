@@ -300,17 +300,3 @@ def transactions_pdf(rows: list[Transaction], date_from: str, date_to: str, cate
     revenue_only = round(sum(row.amount for row in rows if not row.cash_basis and row.revenue_mode == "immediate" and row.status in {"paid", "refunded"}), 2)
     subtitle = f"统计范围：{date_from or '最早'} 至 {date_to or '当前'}    类别：{CATEGORY_LABELS.get(category, category or '全部')}"
     return branded_table_pdf(title="财务流水明细", subtitle=subtitle, settings=settings, summary=[("记录数量", f"{len(rows)} 笔"), ("现金实收", _money(cash)), ("即时营收（仅营收）", _money(revenue_only))], sections=[{"title": "流水与营收入账记录", "headers": ["编号 / 时间", "会员", "类别", "业务", "入账类型", "结账方式", "金额", "状态", "备注"], "rows": data, "widths": [29, 22, 24, 20, 32, 24, 25, 20, 93]}])
-
-
-def report_pdf(data: dict, settings: AppSettings | None) -> bytes:
-    summary = data["summary"]
-    summary_items = [("确认营收", _money(summary["revenue"])), ("现金实收", _money(summary["cash_received"])), ("开课 / 取消", f"{summary['sessions']} / {summary['cancelled_sessions']}"), ("实际上课人次", str(summary["attendees"]))]
-    sections = [
-        {"title": "流水与营收分类汇总", "headers": ["类别", "现金实收", "确认营收"], "rows": [[CATEGORY_LABELS.get(key, key), _money(next((item["value"] for item in data["cash_by_category"] if item["label"] == key), 0)), _money(next((item["value"] for item in data["revenue_by_category"] if item["label"] == key), 0))] for key in dict.fromkeys([item["label"] for item in data["cash_by_category"]] + [item["label"] for item in data["revenue_by_category"]])], "widths": [89, 90, 90]},
-        {"title": "课程经营数据", "headers": ["课程", "排课数", "取消数", "取消率", "预约人次", "上课人次", "参与率"], "rows": [[row["label"], row["sessions"], row["cancelled"], f"{round(row['cancelled'] / row['sessions'] * 100) if row['sessions'] else 0}%", row["bookings"], row["attendees"], f"{round(row['attendees'] / row['bookings'] * 100) if row['bookings'] else 0}%"] for row in data["course_stats"]], "widths": [85, 28, 28, 28, 34, 34, 32], "new_page": True},
-        {"title": "教练课时统计", "headers": ["教练", "排课数", "课时", "上课人次", "取消数", "开课率"], "rows": [[row["label"], row["sessions"], f"{row['hours']} 小时", row["attendees"], row["cancelled"], f"{round((row['sessions'] - row['cancelled']) / row['sessions'] * 100) if row['sessions'] else 0}%"] for row in data["teacher_stats"]], "widths": [79, 35, 40, 40, 35, 40]},
-        {"title": "教室使用统计", "headers": ["教室", "使用小时", "内部使用小时", "使用率", "统计口径"], "rows": [[row["room_name"], row["used_hours"], row["internal_hours"], f"{row['utilization']}%", "每日 07:00–20:00"] for row in data["room_usage"]], "widths": [70, 42, 47, 35, 75]},
-        {"title": "到课时段分布", "headers": ["开始时段", "到课人次", "星期", "到课人次"], "rows": [[f"{hour['label']}:00", hour["value"], ["周一", "周二", "周三", "周四", "周五", "周六", "周日"][index], data["weekday"][index]["value"]] for index, hour in enumerate(data["hour"]) for index in [index % 7]], "widths": [70, 64, 70, 65]},
-    ]
-    subtitle = f"统计范围：{data['range']['from']} 至 {data['range']['to']}    年卡/套餐均摊营收：{_money(data['amortized_revenue'])}    私教/评估营收：{_money(data['private_recognized_revenue'])}"
-    return branded_table_pdf(title="经营分析报表", subtitle=subtitle, settings=settings, summary=summary_items, sections=sections)

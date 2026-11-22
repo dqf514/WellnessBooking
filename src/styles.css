@@ -999,3 +999,15 @@ html:fullscreen, html:fullscreen body { overflow: hidden; background: #fff; }
 .photo-editor .photo-preview-empty { display: grid; place-items: center; color: var(--muted); font-size: 11px; }
 .photo-editor div { display: grid; gap: 8px; justify-items: start; }
 .photo-editor .form-help { margin: 0; }
+
+/* 报表中心 */
+.report-builder { display: grid; gap: 12px; margin-bottom: 18px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+.report-builder > div { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.report-builder > div > span { min-width: 66px; color: var(--muted); font-size: 11px; }
+.report-builder select { width: 240px; min-height: 36px; }
+.report-builder input[type="date"] { width: 165px; min-height: 36px; }
+.report-builder > p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.7; }
+.picker-chip { min-height: 32px; padding: 5px 13px; border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--muted); font-size: 11px; cursor: pointer; }
+.picker-chip:hover { border-color: var(--sage-500); }
+.picker-chip.active { border-color: var(--pine-700); background: var(--pine-900); color: #fff; }
+.data-table tfoot td { border-top: 2px solid var(--line); background: #f7f8f5; font-weight: 600; }

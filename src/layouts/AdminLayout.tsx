@@ -33,7 +33,7 @@ function navSections(a: (zh: string, en?: string) => string, local: (zh: string,
       { to: "/admin/products", label: local("卡课产品", "Cards & products"), capability: "products.view" },
     ] },
     { to: "/admin/finance", label: a("财务入账"), icon: "money", capability: ["finance.view", "revenue.write"] },
-    { to: "/admin/reports", label: a("报表分析"), icon: "chart", capability: "reports.view" },
+    { to: "/admin/reports", label: a("报表中心"), icon: "chart", capability: "reports.view" },
     { to: "/admin/settings", label: a("系统设置"), icon: "settings", capability: "settings.view" },
   ];
 }

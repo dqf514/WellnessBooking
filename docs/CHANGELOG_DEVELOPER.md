@@ -597,6 +597,39 @@
 
 ---
 
+## 二十、报表中心：多维度报表与 Excel 导出（2026-11-22）
+
+### 1. 新增 `backend/app/report_service.py`
+
+- 统一报表引擎：`DATASETS` 定义四个数据源（`transactions` 财务流水、`sessions` 课程排课、`bookings` 预约消课、`members` 会员经营），每个数据源声明可分组维度与可统计指标。
+- 指标汇总方式支持 `sum` / `count` / `avg` / `rate`（`num`/`den` 比率），维度可多选组合，输出统一为 `{ columns, rows, totals, row_count }`。
+- `REPORT_PRESETS` 预置销售、财务、教学管理、总经理、会员经营五类报表，前端可在预设基础上自由调整维度与指标。
+- 维度值在服务端统一转为中文（类别、结账方式、入账类型、课程类型、排课/预约状态、到期状态），前端与 Excel 无需再做映射。
+
+### 2. `finance_service` 拆分到流水级
+
+- `recognized_revenue()` 拆出 `revenue_breakdown()`：返回 `ledger_rows`（按流水发生日归属期间）与 `revenue_rows`（按确认日归属期间，均摊取摊销起始日）以及原有汇总口径，`recognized_revenue()` 保持为汇总视图，报表数字与 `/api/admin/reports` 完全一致。
+- 新增 `_amortization_date()` 处理均摊营收的期间归属；私教消课隐含营收同样生成 `revenue_rows`，不再只进汇总不进明细。
+
+### 3. 新接口与导出
+
+- 新增路由 `backend/app/routers/admin_reports.py`：`GET /api/admin/reports/options`（数据集、维度、指标、预设）、`GET /api/admin/reports/table`（按维度汇总）、`GET /api/admin/reports/table.xlsx`、`GET /api/admin/reports.xlsx`（经营总览多页签）；权限统一用 `require_reports`，GET 自动走 API Key `read` scope。
+- `export_service` 新增 `build_sheets_workbook()`（多页签工作簿），`build_table_workbook()` 改为其单页包装。
+- 移除 `GET /api/admin/reports.pdf` 与 `pdf_service.report_pdf()`，报表一律导出 Excel；`transactions.pdf` 与账单小票 PDF 保持不变。
+
+### 4. 前端
+
+- `ReportsPage` 重写为报表中心：顶部标签切换经营总览与五类预设报表及自定义报表；自定义区提供数据源、分组维度、统计指标、统计区间四个选择区，改动即时重查；表格含合计行。
+- 新增样式 `.report-builder`、`.picker-chip` 与表头合计行样式；后台菜单“报表分析”更名为“报表中心”，新增后台文案翻译。
+
+### 5. 验证
+
+- `npm run build` 通过；`python docs/build_api_docs.py` 重新生成 `public/api-docs.html`（17 章、137 个接口）。
+- 接口实测：四个数据源分组统计结果与既有报表口径一致（现金实收 30064、确认营收 10064）；`table.xlsx` 与 `reports.xlsx` 用 openpyxl 复读校验，表头、页签与合计行正确。
+- 截图核对：经营总览、销售业绩、财务报表与自定义报表四个标签页。
+
+---
+
 ## 十九、会员照片、Excel 名单导出与会员卡操作重构（2026-11-22）
 
 ### 1. 会员照片

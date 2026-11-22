@@ -2,12 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..deps import require_catalog_view, require_finance_view, require_members_view, require_reports
+from ..deps import require_catalog_view, require_finance_view, require_members_view
 from ..export_service import build_member_workbook
 from ..models import AppSettings, Transaction, User
-from ..pdf_service import receipt_pdf, report_pdf, room_overview_pdf, transactions_pdf
+from ..pdf_service import receipt_pdf, room_overview_pdf, transactions_pdf
 from ..utils import today, valid_date
-from .admin_finance import build_report, query_transactions
+from .admin_finance import query_transactions
 
 router = APIRouter(prefix="/api/admin", tags=["admin-exports"])
 
@@ -42,16 +42,6 @@ def export_members_xlsx(scope: str = Query("all"), month: str = Query(""), db: S
     content = build_member_workbook(db, scope, month)
     filename = f"wellness-members-{scope}-{month or today()}.xlsx"
     return Response(content=content, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": f'attachment; filename="{filename}"', "Cache-Control": "no-store"})
-
-
-@router.get("/reports.pdf")
-def export_report(date_from: str = Query(""), date_to: str = Query(""), db: Session = Depends(get_db), _: User = Depends(require_reports)):
-    start = valid_date(date_from or today()[:8] + "01", "开始日期")
-    end = valid_date(date_to or today(), "结束日期")
-    if end < start:
-        raise HTTPException(400, "开始日期不能晚于结束日期")
-    content = report_pdf(build_report(db, start, end), db.get(AppSettings, 1))
-    return _pdf(content, f"wellness-report-{start}-{end}.pdf")
 
 
 @router.get("/transactions/{transaction_id}/receipt.pdf")

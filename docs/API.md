@@ -1,6 +1,6 @@
 # 音昱 Wellness API 对接文档
 
-> 版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 **134 个 HTTP 接口**。
+> 版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 **137 个 HTTP 接口**。
 >
 > 文档更新：2026-11-22 · 功能基线：预约排课、动态二维码签到、购卡申请取消、会员权益与营收业务闭环、角色能力矩阵与课程库独立接口。
 >
@@ -1030,7 +1030,7 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 - **权限**：管理员；**Body**：无。
 - 清空课程的 `image_url` 并删除服务器上的旧文件；**响应**：更新后的 Course。
 
-## 9. 产品、财务与报表（11）
+## 9. 产品、财务与报表（15）
 
 ### 9.1 产品列表
 
@@ -1124,6 +1124,41 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 - `system` 是系统设置里设定的口径：`auto`（按卡种自动）/ `immediate`（购卡即全额确认）/ `amortized`（按有效期每日均摊）。
 - `effective` 是当前产品实际生效的营收方式：私教与评估始终为 `none`（消课后确认营收），其余按 `system` 与卡种判定。
 - 前端购卡弹窗用这个接口展示当前口径，不再逐单勾选；后端以系统设置为准，不接受前端传入的 `revenue_mode` 覆盖。
+
+### 9.12 报表中心可选项
+
+#### GET /api/admin/reports/options
+
+- **权限**：报表（`reports.view`：`admin`、`finance`、`frontdesk`、`viewer`）。
+- **响应**：`{ datasets, presets, filters }`。
+- `datasets` 列出全部可用数据源（`transactions` 财务流水、`sessions` 课程排课、`bookings` 预约消课、`members` 会员经营），每个数据源带 `dimensions`（可分组维度）与 `metrics`（可统计指标，含 `agg` 汇总方式与 `format` 展示格式）。
+- `presets` 为预设报表类型（销售业绩、财务、教学管理、总经理经营、会员经营），带默认数据源、维度与指标组合；前端可在预设基础上自由调整。
+- 维度值与指标名均为中文，便于前端直接展示。
+
+### 9.13 按维度生成报表
+
+#### GET /api/admin/reports/table
+
+- **权限**：报表（`reports.view`）；**Query**：`dataset`（默认 `transactions`）、`dimensions`（逗号分隔的维度 key）、`metrics`（逗号分隔的指标 key）、`date_from`、`date_to`，以及可选筛选 `category`、`advisor`、`teacher`、`course_type`、`member_id`、`keyword`。
+- **响应**：`{ dataset, dataset_name, columns, rows, totals, row_count }`。
+- `columns` 中 `kind="dimension"` 的列是分组维度，`kind="metric"` 的列是统计指标；`rows` 每行是一个维度组合，`totals` 是全量合计。
+- 指标汇总方式：`sum` 求和、`count` 计数、`avg` 平均（按非零样本）、`rate` 比率（`num`/`den`，返回百分数）。
+- 财务流水数据源中，流水类指标（合同金额、现金实收、退款金额、流水金额、笔数）按流水发生日期归属期间，确认营收按确认日期归属期间（每日均摊取摊销起始日），因此与 `/api/admin/reports` 的确认营收、现金实收口径一致。
+
+### 9.14 导出自定义报表 Excel
+
+#### GET /api/admin/reports/table.xlsx
+
+- **权限**：报表（`reports.view`）；**Query**：与 `/api/admin/reports/table` 完全一致。
+- **响应**：`application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` 文件流，表头为中文，末行为合计。
+- 文件名形如 `wellness-report-transactions-2026-11-01-2026-11-22.xlsx`。
+
+### 9.15 导出经营总览 Excel
+
+#### GET /api/admin/reports.xlsx
+
+- **权限**：报表（`reports.view`）；**Query**：`date_from`（默认本月 1 日）、`date_to`（默认今日），开始日期不能晚于结束日期。
+- **响应**：多页签 Excel，包含「经营总览」「分类汇总」「课程统计」「教练统计」「教室使用率」五个页签，取代原经营分析 PDF。
 
 ## 10. 场馆、品牌与账号（9）
 
@@ -1564,7 +1599,7 @@ const dashboard = await api("/api/admin/dashboard", {
 - 合同/评估附件会同时删除磁盘文件；其他业务记录删除后不可恢复，操作写入审计日志。
 
 
-## 17. 品牌 PDF 导出与账单（4）
+## 17. 品牌 PDF 导出与账单（3）
 
 以下接口均返回 `application/pdf` 文件流和 `Cache-Control: no-store`；可使用员工 Bearer Token，API Key 还需具备 `read` 范围。各接口的读取能力见下。PDF 使用场馆名称、地址、电话和已上传 Logo；未上传时使用系统默认品牌标识。表格采用 A4 横向、重复表头、交替行底色、筛选条件和页码，适合直接发送或打印。
 
@@ -1583,14 +1618,7 @@ const dashboard = await api("/api/admin/dashboard", {
 - **权限**：财务查看（`finance.view`）；**Query**：`date_from`、`date_to`、`category`、`member_id`，与流水列表一致。
 - 包含编号/时间、会员、类别、业务、入账类型、结账方式、金额、状态和备注，并区分流水、流水+营收、营收、每日均摊及营收冲销。
 
-### 17.3 导出经营分析 PDF
-
-#### GET /api/admin/reports.pdf
-
-- **权限**：报表（`reports.view`）；**Query**：`date_from`（默认本月 1 日）、`date_to`（默认今日），开始日期不能晚于结束日期。
-- 包含流水与营收汇总、分类汇总、课程经营、教练课时、教室使用及到课时段表格。
-
-### 17.4 导出账单小票 PDF
+### 17.3 导出账单小票 PDF
 
 #### GET /api/admin/transactions/{transaction_id}/receipt.pdf
 

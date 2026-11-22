@@ -111,24 +111,38 @@ def build_member_workbook(db: Session, scope: str = "all", month: str = "") -> b
 
 def build_table_workbook(sheet_title: str, headers: list[str], rows: list[list], widths: list[int] | None = None) -> bytes:
     """生成通用报表工作簿：首行表头 + 数据行。"""
+    return build_sheets_workbook([{"title": sheet_title, "headers": headers, "rows": rows, "widths": widths}])
+
+
+def build_sheets_workbook(sheets: list[dict]) -> bytes:
+    """生成多页工作簿：每页含表头与数据行，页签名称不超过 31 字。"""
     workbook = Workbook()
-    sheet = workbook.active
-    sheet.title = sheet_title[:31]
-    for index, header in enumerate(headers, start=1):
-        cell = sheet.cell(row=1, column=index, value=header)
-        cell.fill = HEADER_FILL
-        cell.font = HEADER_FONT
-        cell.alignment = Alignment(horizontal="center", vertical="center")
-        cell.border = BORDER
-        sheet.column_dimensions[get_column_letter(index)].width = (widths[index - 1] if widths and index <= len(widths) else 14)
-    sheet.row_dimensions[1].height = 26
-    for offset, row in enumerate(rows):
-        for index, value in enumerate(row, start=1):
-            cell = sheet.cell(row=offset + 2, column=index, value=value)
-            cell.font = BODY_FONT
+    workbook.remove(workbook.active)
+    for index, sheet_data in enumerate(sheets):
+        title = (sheet_data.get("title") or f"表{index + 1}")[:31]
+        sheet = workbook.create_sheet(title=title)
+        headers = sheet_data.get("headers") or []
+        rows = sheet_data.get("rows") or []
+        widths = sheet_data.get("widths")
+        for column, header in enumerate(headers, start=1):
+            cell = sheet.cell(row=1, column=column, value=header)
+            cell.fill = HEADER_FILL
+            cell.font = HEADER_FONT
+            cell.alignment = Alignment(horizontal="center", vertical="center")
             cell.border = BORDER
-            cell.alignment = Alignment(vertical="center", wrap_text=isinstance(value, str) and len(value) > 12)
-    sheet.freeze_panes = "A2"
+            sheet.column_dimensions[get_column_letter(column)].width = (widths[column - 1] if widths and column <= len(widths) else 14)
+        sheet.row_dimensions[1].height = 26
+        for offset, row in enumerate(rows):
+            for column, value in enumerate(row, start=1):
+                cell = sheet.cell(row=offset + 2, column=column, value=value)
+                cell.font = BODY_FONT
+                cell.border = BORDER
+                cell.alignment = Alignment(vertical="center", wrap_text=isinstance(value, str) and len(value) > 12)
+                if isinstance(value, float):
+                    cell.number_format = "#,##0.00"
+        sheet.freeze_panes = "A2"
+    if not workbook.sheetnames:
+        workbook.create_sheet("报表")
     buffer = BytesIO()
     workbook.save(buffer)
     return buffer.getvalue()

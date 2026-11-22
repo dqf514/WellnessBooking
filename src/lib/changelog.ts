@@ -12,6 +12,25 @@ export const changelogReleases: ChangelogRelease[] = [
   {
     date: "2026-11-22",
     version: APP_VERSION,
+    title: { zh: "报表中心：多种维度报表与 Excel 导出", en: "Report centre: multi-dimension reports with Excel export" },
+    summary: { zh: "报表页升级为报表中心，销售、财务、管理、总经理与会员经营各有预设，维度与指标可自由组合，全部改为导出 Excel。", en: "The reports page is now a report centre with presets for sales, finance, management, executive and member views; dimensions and metrics combine freely and every report exports to Excel." },
+    groups: [
+      { title: { zh: "报表类型", en: "Report types" }, points: [
+        { zh: "销售业绩报表：按顾问与产品看合同金额、笔数与客单价", en: "Sales report: contract amount, entry count and average order by advisor and product" },
+        { zh: "财务报表：按月份与类别看现金实收、确认营收、退款与流水笔数", en: "Finance report: cash received, recognised revenue, refunds and entries by month and category" },
+        { zh: "教学管理报表：按教练看排课、取消、上课人次、课时与出席率", en: "Management report: classes, cancellations, attendance, hours and attendance rate by instructor" },
+        { zh: "总经理经营报表与会员经营报表：月度趋势与会员规模、到期情况", en: "Executive and member reports: monthly trends plus member size and expiries" },
+      ] },
+      { title: { zh: "自定义与导出", en: "Customisation and export" }, points: [
+        { zh: "数据源、分组维度、统计指标都能自行勾选，切换后立即重算并给出合计行", en: "Pick the data source, grouping dimensions and metrics yourself; results recalculate instantly with a totals row" },
+        { zh: "经营总览导出为多页签 Excel：总览、分类汇总、课程、教练与教室使用率各一页", en: "The overview exports as a multi-sheet Excel: summary, categories, classes, instructors and room usage" },
+        { zh: "报表一律导出 Excel，原“导出报表 PDF”已取消，财务流水与账单小票 PDF 不变", en: "Reports now export to Excel only; the report PDF is gone, while the transaction ledger and receipt PDFs stay" },
+      ] },
+    ],
+  },
+  {
+    date: "2026-11-22",
+    version: APP_VERSION,
     title: { zh: "会员照片、名单导出、会员卡操作与开卡日期待定", en: "Member photos, roster export, card operations and pending card start" },
     summary: { zh: "补齐会员照片与名单导出，会员卡支持编辑、续卡、请假停卡与跨类目升卡，并把开卡日期与营收口径交还给管理员。", en: "Member photos and Excel roster export are in; membership cards can be edited, renewed, paused and upgraded; card start date and revenue policy are now admin-controlled." },
     groups: [

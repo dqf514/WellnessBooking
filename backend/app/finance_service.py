@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from .models import AppSettings, Booking, CardProduct, ClassSession, Course, MemberCard, Transaction, User
+from .models import AppSettings, Booking, CardProduct, ClassSession, Course, Member, MemberCard, Transaction, User
 from .utils import valid_date
 
 REVENUE_MODES = {"none", "immediate", "amortized"}
@@ -86,13 +86,30 @@ def _amortized_amount(row: Transaction, card: MemberCard | None, product: CardPr
     return row.amount / validity * days
 
 
-def recognized_revenue(db: Session, start: str, end: str) -> dict:
-    transactions = db.query(Transaction).filter(Transaction.status.in_(["paid", "refunded"]), Transaction.deleted_at.is_(None)).all()
+def _amortization_date(row: Transaction, card: MemberCard | None, product: CardProduct | None, start: str, end: str) -> str:
+    """均摊营收归属的日期：取摊销起始日与统计区间起点的较晚者。"""
+    start_value = row.revenue_start_on or (card.starts_on if card and card.starts_on else row.occurred_at.date().isoformat())
+    amortization_start = datetime.fromisoformat(start_value).date()
+    return max(amortization_start, datetime.fromisoformat(start).date()).isoformat()
+
+
+def revenue_breakdown(db: Session, start: str, end: str) -> dict:
+    """把现金与营收拆到每一笔流水，另附私教消课隐含营收行。
+
+    ledger_rows 按发生日期归属期间，revenue_rows 按确认日期归属期间（均摊取摊销起始日），
+    报表中心据此按任意维度汇总时，与“确认营收 / 现金实收”口径保持一致。
+    """
+    transactions = db.query(Transaction).filter(Transaction.status.in_(["paid", "refunded"]), Transaction.deleted_at.is_(None)).order_by(Transaction.occurred_at, Transaction.id).all()
+    cards = {row.id: row for row in db.query(MemberCard).all()}
+    members = {row.id: row for row in db.query(Member).all()}
+    products = {row.id: row for row in db.query(CardProduct).all()}
     revenue = defaultdict(float)
     cash_revenue = defaultdict(float)
     annual_revenue = 0.0
     private_revenue = 0.0
     cash_received = 0.0
+    ledger_rows: list[dict] = []
+    revenue_rows: list[dict] = []
 
     def add_revenue(category: str, amount: float, amortized: bool = False) -> None:
         nonlocal annual_revenue, private_revenue
@@ -104,27 +121,74 @@ def recognized_revenue(db: Session, start: str, end: str) -> dict:
             annual_revenue += amount
 
     for row in transactions:
-        card = db.get(MemberCard, row.member_card_id) if row.member_card_id else None
-        product = card.product if card else row.product
-        if row.cash_basis and _in_range(row.occurred_at, start, end):
+        card = cards.get(row.member_card_id) if row.member_card_id else None
+        product = products.get(card.product_id) if card and card.product_id else (products.get(row.product_id) if row.product_id else None)
+        member = members.get(row.member_id) if row.member_id else None
+        occurred = row.occurred_at.date().isoformat()
+        in_range = _in_range(row.occurred_at, start, end)
+        cash_amount = 0.0
+        if row.cash_basis and in_range:
+            cash_amount = row.amount
             cash_received += row.amount
             cash_revenue[normalized_category(row.category)] += row.amount
+        recognized = 0.0
+        recognized_date = ""
         mode = row.revenue_mode or "legacy"
         if mode == "immediate":
-            if _in_range(row.occurred_at, start, end):
-                add_revenue(row.category, row.amount)
+            if in_range:
+                recognized = row.amount
+                add_revenue(row.category, recognized)
+                recognized_date = occurred
         elif mode == "amortized":
-            add_revenue(row.category, _amortized_amount(row, card, product, start, end), amortized=True)
+            recognized = _amortized_amount(row, card, product, start, end)
+            add_revenue(row.category, recognized, amortized=True)
+            recognized_date = _amortization_date(row, card, product, start, end)
         elif mode == "none":
-            continue
+            recognized = 0.0
         else:
             annual = bool(product and product.category in {"annual", "package", "group"} and product.validity_days == 365)
             if annual:
-                add_revenue(row.category, _amortized_amount(row, card, product, start, end), amortized=True)
+                recognized = _amortized_amount(row, card, product, start, end)
+                add_revenue(row.category, recognized, amortized=True)
+                recognized_date = _amortization_date(row, card, product, start, end)
             elif row.category == "private" and row.product_id and row.kind in {"purchase", "upgrade"}:
-                continue
-            elif _in_range(row.occurred_at, start, end):
-                add_revenue(row.category, row.amount)
+                recognized = 0.0
+            elif in_range:
+                recognized = row.amount
+                add_revenue(row.category, recognized)
+                recognized_date = occurred
+        base = {
+            "date": occurred,
+            "month": occurred[:7],
+            "category": normalized_category(row.category),
+            "product": product.name if product else "",
+            "member": member.name if member else "",
+            "member_id": row.member_id or 0,
+            "advisor": member.advisor.full_name if member and member.advisor else "",
+            "payment": row.payment_method,
+            "kind": row.kind,
+            "revenue_mode": mode,
+        }
+        if in_range:
+            ledger_rows.append({
+                **base,
+                "amount": row.amount,
+                "cash_amount": cash_amount,
+                "recognized": 0.0,
+                "sales_amount": row.amount if (row.kind in {"purchase", "upgrade"} and row.amount > 0) else 0.0,
+                "refund_amount": abs(row.amount) if row.kind == "refund" else 0.0,
+            })
+        if recognized:
+            revenue_rows.append({
+                **base,
+                "date": recognized_date or occurred,
+                "month": (recognized_date or occurred)[:7],
+                "amount": 0.0,
+                "cash_amount": 0.0,
+                "recognized": recognized,
+                "sales_amount": 0.0,
+                "refund_amount": 0.0,
+            })
 
     revenue_booking_ids = {row[0] for row in db.query(Transaction.booking_id).filter(Transaction.booking_id.isnot(None), Transaction.deleted_at.is_(None)).all()}
     explicit_card_ids = {row[0] for row in db.query(Transaction.member_card_id).filter(Transaction.member_card_id.isnot(None), Transaction.kind.in_(["purchase", "upgrade"]), Transaction.revenue_mode != "legacy", Transaction.deleted_at.is_(None)).all()}
@@ -143,7 +207,26 @@ def recognized_revenue(db: Session, start: str, end: str) -> dict:
         card = booking.member_card
         if not card or card.product.category not in {"private", "assessment"} or not card.total_sessions:
             continue
-        add_revenue("private", card.purchase_price / card.total_sessions)
+        amount = card.purchase_price / card.total_sessions
+        add_revenue("private", amount)
+        member = booking.member
+        revenue_rows.append({
+            "date": booking.session.session_date,
+            "month": booking.session.session_date[:7],
+            "category": "private",
+            "product": card.product.name if card.product else "",
+            "member": member.name if member else "",
+            "member_id": booking.member_id or 0,
+            "advisor": member.advisor.full_name if member and member.advisor else "",
+            "payment": "fitness_member",
+            "kind": "consumption",
+            "revenue_mode": "immediate",
+            "amount": 0.0,
+            "cash_amount": 0.0,
+            "recognized": amount,
+            "sales_amount": 0.0,
+            "refund_amount": 0.0,
+        })
 
     ordered = sorted(revenue.items(), key=lambda item: (CATEGORY_ORDER.get(item[0], 99), item[0]))
     ordered_cash = sorted(cash_revenue.items(), key=lambda item: (CATEGORY_ORDER.get(item[0], 99), item[0]))
@@ -154,7 +237,14 @@ def recognized_revenue(db: Session, start: str, end: str) -> dict:
         "private": round(private_revenue, 2),
         "by_category": [{"label": key, "value": round(value, 2)} for key, value in ordered],
         "cash_by_category": [{"label": key, "value": round(value, 2)} for key, value in ordered_cash],
+        "ledger_rows": ledger_rows,
+        "revenue_rows": revenue_rows,
     }
+
+
+def recognized_revenue(db: Session, start: str, end: str) -> dict:
+    data = revenue_breakdown(db, start, end)
+    return {key: data[key] for key in ("cash_received", "recognized", "annual", "private", "by_category", "cash_by_category")}
 
 
 def create_consumption_revenue(db: Session, *, booking: Booking, amount: float, payment_method: str, note: str, user: User) -> Transaction:
