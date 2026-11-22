@@ -292,11 +292,14 @@ def room_overview_pdf(db: Session, day: str, floor: str, settings: AppSettings |
     return branded_table_pdf(title="教室安排总览", subtitle=subtitle, settings=settings, summary=[("课程 / 活动", str(len(rows))), ("教室数量", str(len(rooms))), ("首项开始", rows[0][2].split("–")[0] if rows else "—"), ("导出日期", datetime.now().strftime("%Y-%m-%d"))], sections=[{"title": "课程与活动安排", "headers": ["课程 / 活动名称", "类型", "时间", "教练", "教室", "预约人数", "备注"], "rows": rows, "widths": [52, 23, 29, 28, 38, 22, 77]}])
 
 
-def transactions_pdf(rows: list[Transaction], date_from: str, date_to: str, category: str, settings: AppSettings | None) -> bytes:
+def transactions_pdf(rows: list[Transaction], date_from: str, date_to: str, category: str, settings: AppSettings | None, totals: dict | None = None) -> bytes:
     data = []
     for row in rows:
         data.append([f"#{row.id}\n{row.occurred_at.strftime('%Y-%m-%d %H:%M')}", row.member.name if row.member else "非会员", CATEGORY_LABELS.get(row.category, row.category), KIND_LABELS.get(row.kind, row.kind), entry_type_label(row), PAYMENT_LABELS.get(row.payment_method, row.payment_method), _money(row.amount), STATUS_LABELS.get(row.status, row.status), row.note])
-    cash = round(sum(row.amount for row in rows if row.cash_basis and row.status in {"paid", "refunded"}), 2)
-    revenue_only = round(sum(row.amount for row in rows if not row.cash_basis and row.revenue_mode == "immediate" and row.status in {"paid", "refunded"}), 2)
-    subtitle = f"统计范围：{date_from or '最早'} 至 {date_to or '当前'}    类别：{CATEGORY_LABELS.get(category, category or '全部')}"
-    return branded_table_pdf(title="财务流水明细", subtitle=subtitle, settings=settings, summary=[("记录数量", f"{len(rows)} 笔"), ("现金实收", _money(cash)), ("即时营收（仅营收）", _money(revenue_only))], sections=[{"title": "流水与营收入账记录", "headers": ["编号 / 时间", "会员", "类别", "业务", "入账类型", "结账方式", "金额", "状态", "备注"], "rows": data, "widths": [29, 22, 24, 20, 32, 24, 25, 20, 93]}])
+    totals = totals or {}
+    cash = round(float(totals.get("cash_total", sum(row.amount for row in rows if row.cash_basis and row.status in {"paid", "refunded"}))), 2)
+    revenue = round(float(totals.get("revenue_total", 0)), 2)
+    refund = round(float(totals.get("refund_total", sum(abs(row.amount) for row in rows if row.kind == "refund" and row.cash_basis))), 2)
+    payment_filter = str(totals.get("payment_label") or "全部")
+    subtitle = f"统计范围：{date_from or '最早'} 至 {date_to or '当前'}    类别：{CATEGORY_LABELS.get(category, category or '全部')}    结账方式：{payment_filter}"
+    return branded_table_pdf(title="财务流水明细", subtitle=subtitle, settings=settings, summary=[("记录数量", f"{len(rows)} 笔"), ("流水总额（已扣退款）", _money(cash)), ("营收总额（已扣退款）", _money(revenue)), ("退款总额", _money(refund))], sections=[{"title": "流水与营收入账记录", "headers": ["编号 / 时间", "会员", "类别", "业务", "入账类型", "结账方式", "金额", "状态", "备注"], "rows": data, "widths": [29, 22, 24, 20, 32, 24, 25, 20, 93]}])

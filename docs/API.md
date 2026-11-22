@@ -1058,9 +1058,11 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 #### GET /api/admin/transactions
 
 - **权限**：财务查看（`finance.view`：`admin`、`finance`、`viewer`）。
-- **Query**：`date_from`、`date_to`、`category`、`member_id`，均可选。
-- **响应**：`{ items: Transaction[]（最多1000）, total_amount }`。
+- **Query**：`date_from`、`date_to`、`category`、`payment_method`、`member_id`，均可选。
+- **响应**：`{ items: Transaction[]（最多1000）, total_amount, revenue_amount, refund_amount }`。
 - `total_amount` 仅汇总 `cash_basis=true` 且状态为 `paid`、`refunded` 的记录；仅营收和待核销记录不计入。类别筛选 `private` 包含历史 `assessment`，`annual` 包含历史 `package`。
+- `payment_method` 支持多选，用逗号分隔（如 `youzan,dianping`），用于按结账方式查账。
+- `total_amount` 为流水总额（已扣退款），`revenue_amount` 为营收总额（已扣退款，按系统设置的口径确认），`refund_amount` 为退款总额；三项都跟随当前筛选条件。
 
 ### 9.5 手工入账
 
@@ -1139,7 +1141,7 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 
 #### GET /api/admin/reports/table
 
-- **权限**：报表（`reports.view`）；**Query**：`dataset`（默认 `transactions`）、`dimensions`（逗号分隔的维度 key）、`metrics`（逗号分隔的指标 key）、`date_from`、`date_to`，以及可选筛选 `category`、`advisor`、`teacher`、`course_type`、`member_id`、`keyword`。
+- **权限**：报表（`reports.view`）；**Query**：`dataset`（默认 `transactions`）、`dimensions`（逗号分隔的维度 key）、`metrics`（逗号分隔的指标 key）、`date_from`、`date_to`，以及可选筛选 `category`、`advisor`、`teacher`、`course_type`、`payment`、`member_id`、`keyword`。
 - **响应**：`{ dataset, dataset_name, columns, rows, totals, row_count }`。
 - `columns` 中 `kind="dimension"` 的列是分组维度，`kind="metric"` 的列是统计指标；`rows` 每行是一个维度组合，`totals` 是全量合计。
 - 指标汇总方式：`sum` 求和、`count` 计数、`avg` 平均（按非零样本）、`rate` 比率（`num`/`den`，返回百分数）。
@@ -1615,8 +1617,9 @@ const dashboard = await api("/api/admin/dashboard", {
 
 #### GET /api/admin/transactions.pdf
 
-- **权限**：财务查看（`finance.view`）；**Query**：`date_from`、`date_to`、`category`、`member_id`，与流水列表一致。
+- **权限**：财务查看（`finance.view`）；**Query**：`date_from`、`date_to`、`category`、`payment_method`、`member_id`，与流水列表一致。
 - 包含编号/时间、会员、类别、业务、入账类型、结账方式、金额、状态和备注，并区分流水、流水+营收、营收、每日均摊及营收冲销。
+- 抬头合计为「记录数量」「流水总额（已扣退款）」「营收总额（已扣退款）」「退款总额」，并副标题标注当前类别与结账方式筛选。
 
 ### 17.3 导出账单小票 PDF
 

@@ -38,15 +38,15 @@ def report_center_options(db: Session = Depends(get_db), _: User = Depends(requi
 
 
 @router.get("/reports/table")
-def report_table(dataset: str = Query("transactions"), dimensions: str = Query(""), metrics: str = Query(""), date_from: str = Query(""), date_to: str = Query(""), category: str = Query(""), advisor: str = Query(""), teacher: str = Query(""), course_type: str = Query(""), member_id: int = Query(0), keyword: str = Query(""), db: Session = Depends(get_db), _: User = Depends(require_reports)):
+def report_table(dataset: str = Query("transactions"), dimensions: str = Query(""), metrics: str = Query(""), date_from: str = Query(""), date_to: str = Query(""), category: str = Query(""), advisor: str = Query(""), teacher: str = Query(""), course_type: str = Query(""), payment: str = Query(""), member_id: int = Query(0), keyword: str = Query(""), db: Session = Depends(get_db), _: User = Depends(require_reports)):
     """按维度分组统计指标：所有报表类型共用同一套引擎。"""
-    return _table(db, dataset, dimensions, metrics, date_from, date_to, category=category, advisor=advisor, teacher=teacher, course_type=course_type, member_id=member_id, keyword=keyword)
+    return _table(db, dataset, dimensions, metrics, date_from, date_to, category=category, advisor=advisor, teacher=teacher, course_type=course_type, payment=payment, member_id=member_id, keyword=keyword)
 
 
 @router.get("/reports/table.xlsx")
-def report_table_xlsx(dataset: str = Query("transactions"), dimensions: str = Query(""), metrics: str = Query(""), date_from: str = Query(""), date_to: str = Query(""), category: str = Query(""), advisor: str = Query(""), teacher: str = Query(""), course_type: str = Query(""), member_id: int = Query(0), keyword: str = Query(""), db: Session = Depends(get_db), _: User = Depends(require_reports)):
+def report_table_xlsx(dataset: str = Query("transactions"), dimensions: str = Query(""), metrics: str = Query(""), date_from: str = Query(""), date_to: str = Query(""), category: str = Query(""), advisor: str = Query(""), teacher: str = Query(""), course_type: str = Query(""), payment: str = Query(""), member_id: int = Query(0), keyword: str = Query(""), db: Session = Depends(get_db), _: User = Depends(require_reports)):
     """导出任意报表的 Excel：表头为中文，末行合计。"""
-    data = _table(db, dataset, dimensions, metrics, date_from, date_to, category=category, advisor=advisor, teacher=teacher, course_type=course_type, member_id=member_id, keyword=keyword)
+    data = _table(db, dataset, dimensions, metrics, date_from, date_to, category=category, advisor=advisor, teacher=teacher, course_type=course_type, payment=payment, member_id=member_id, keyword=keyword)
     headers = [column["label"] for column in data["columns"]]
     rows = [[record.get(column["key"], "") for column in data["columns"]] for record in data["rows"]]
     if data["columns"] and data["rows"]:

@@ -668,3 +668,29 @@
 - `npm run build` 通过；`python docs/build_api_docs.py` 重新生成 `public/api-docs.html`（17 章、134 个接口）。
 - 接口实测：待定卡购买 → 签到自动开卡（起始日 = 课程日期、到期日 = +有效期、次数扣减）→ 撤销签到退回待定（次数返还）；系统设置切换 `amortized` / `immediate` / `auto` 后购卡流水的营收方式随之变化，私教卡始终为 `none`；非法 `revenue_mode` 返回 400。
 - 截图核对：购卡弹窗（开卡方式 + 营收口径只读提示）、系统设置营收口径区块。
+
+---
+
+## 二十一、财务：结账方式筛选与合计口径（2026-11-22）
+
+### 1. 结账方式筛选
+
+- `finance_service.revenue_breakdown()` 新增可选筛选参数 `category`、`member_id`、`payment_methods`，在遍历流水与追加私教消课营收行时统一过滤；`recognized_revenue()` 透传同样的筛选。
+- `finance_service.category_matches()` 统一类别归类（私教/评估、年卡/组合套餐），`CATEGORY_ALIASES` 与 `query_transactions` 的历史类别映射保持一致。
+- `admin_finance.query_transactions()` 新增 `payment_method`（逗号分隔，支持多选）；`GET /api/admin/transactions` 与 `GET /api/admin/transactions.pdf` 均支持该参数。
+
+### 2. 合计口径
+
+- `admin_finance.finance_totals()` 返回流水总额（已扣退款）、营收总额（已扣退款，按系统设置口径确认）、退款总额三项；流水列表接口一并返回 `revenue_amount` 与 `refund_amount`。
+- `pdf_service.transactions_pdf()` 抬头合计改为「记录数量 / 流水总额（已扣退款）/ 营收总额（已扣退款）/ 退款总额」，副标题补充当前类别与结账方式。
+- 前端 `FinancePage` 三张合计卡同步改名，并新增结账方式多选筛选条（`.picker-chip` 样式，导出 PDF 沿用当前筛选）。
+
+### 3. 报表中心结账方式筛选
+
+- `report_service._apply_filters()` 支持 `payment` 过滤（结账方式 key → 中文标签）；`report_options()` 的 `filters` 增加结账方式可选项。
+- `GET /api/admin/reports/table` 与 `/api/admin/reports/table.xlsx` 新增 `payment` 查询参数；前端报表中心在财务流水数据源下显示结账方式下拉。
+
+### 4. 验证
+
+- `npm run build` 通过；`python docs/build_api_docs.py` 重新生成 `public/api-docs.html`（17 章、137 个接口）。
+- 接口实测：`/api/admin/transactions` 全量返回 `total_amount=30064`、`revenue_amount=10064`、`refund_amount=0`；按 `payment_method=wechat,cash` 过滤后一致；`/api/admin/transactions.pdf` 抬头显示四项合计与结账方式。

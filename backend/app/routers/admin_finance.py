@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from ..card_service import issue_card
 from ..database import get_db
 from ..deps import require_finance, require_finance_view, require_products_view, require_products_write, require_reports, require_revenue
-from ..finance_service import create_consumption_revenue, normalized_category, recognized_revenue, resolve_entry_options, resolve_purchase_revenue_mode, resolve_revenue_details, system_revenue_mode
+from ..finance_service import create_consumption_revenue, normalized_category, recognized_revenue, resolve_entry_options, resolve_purchase_revenue_mode, resolve_revenue_details, revenue_breakdown, system_revenue_mode
 from ..log_util import audit
 from ..models import Booking, CardProduct, ClassSession, Member, Room, RoomReservation, Transaction, User
 from ..recycle_service import move_to_recycle
@@ -22,7 +22,12 @@ TRANSACTION_CATEGORIES = {"group", "private", "annual", "workshop", "training", 
 MANUAL_FIELDS = {"member_id", "category", "amount", "payment_method", "note", "record_cash", "revenue_mode", "revenue_start_on", "revenue_days"}
 
 
-def query_transactions(db: Session, date_from: str = "", date_to: str = "", category: str = "", member_id: int = 0) -> list[Transaction]:
+def split_payment_methods(value: str) -> list[str]:
+    """结账方式筛选支持多选，传逗号分隔。"""
+    return [item for item in (part.strip() for part in (value or "").split(",")) if item]
+
+
+def query_transactions(db: Session, date_from: str = "", date_to: str = "", category: str = "", member_id: int = 0, payment_method: str = "") -> list[Transaction]:
     query = db.query(Transaction).filter(Transaction.deleted_at.is_(None))
     if date_from:
         query = query.filter(Transaction.occurred_at >= datetime.fromisoformat(f"{valid_date(date_from)}T00:00:00"))
@@ -33,7 +38,20 @@ def query_transactions(db: Session, date_from: str = "", date_to: str = "", cate
         query = query.filter(Transaction.category.in_(categories))
     if member_id:
         query = query.filter(Transaction.member_id == member_id)
+    methods = split_payment_methods(payment_method)
+    if methods:
+        query = query.filter(Transaction.payment_method.in_(methods))
     return query.order_by(Transaction.occurred_at.desc(), Transaction.id.desc()).limit(1000).all()
+
+
+def finance_totals(db: Session, rows: list[Transaction], *, date_from: str = "", date_to: str = "", category: str = "", member_id: int = 0, payment_method: str = "") -> dict:
+    """流水总额（已扣退款）、营收总额（已扣退款）与退款总额，口径与流水列表一致。"""
+    start = valid_date(date_from, "开始日期") if date_from else "0001-01-01"
+    end = valid_date(date_to, "结束日期") if date_to else "9999-12-31"
+    methods = split_payment_methods(payment_method)
+    breakdown = revenue_breakdown(db, start, end, category=category, member_id=member_id, payment_methods=set(methods) if methods else None)
+    refund = round(sum(abs(row.amount) for row in rows if row.kind == "refund" and row.cash_basis and row.status in {"paid", "refunded"}), 2)
+    return {"cash_total": breakdown["cash_received"], "revenue_total": breakdown["recognized"], "refund_total": refund}
 
 
 @router.get("/products")
@@ -101,9 +119,11 @@ def update_product(product_id: int, payload: dict = Body(...), db: Session = Dep
 
 
 @router.get("/transactions")
-def list_transactions(date_from: str = Query(""), date_to: str = Query(""), category: str = Query(""), member_id: int = Query(0), db: Session = Depends(get_db), _: User = Depends(require_finance_view)):
-    rows = query_transactions(db, date_from, date_to, category, member_id)
-    return {"items": [transaction_dict(row) for row in rows], "total_amount": round(sum(row.amount for row in rows if row.cash_basis and row.status in {"paid", "refunded"}), 2)}
+def list_transactions(date_from: str = Query(""), date_to: str = Query(""), category: str = Query(""), payment_method: str = Query(""), member_id: int = Query(0), db: Session = Depends(get_db), _: User = Depends(require_finance_view)):
+    """财务流水：支持按结账方式（可多选）与类别筛选，并返回流水/营收/退款三项合计。"""
+    rows = query_transactions(db, date_from, date_to, category, member_id, payment_method)
+    totals = finance_totals(db, rows, date_from=date_from, date_to=date_to, category=category, member_id=member_id, payment_method=payment_method)
+    return {"items": [transaction_dict(row) for row in rows], "total_amount": totals["cash_total"], "revenue_amount": totals["revenue_total"], "refund_amount": totals["refund_total"]}
 
 
 @router.post("/transactions/manual")

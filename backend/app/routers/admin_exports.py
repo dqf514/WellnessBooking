@@ -5,9 +5,9 @@ from ..database import get_db
 from ..deps import require_catalog_view, require_finance_view, require_members_view
 from ..export_service import build_member_workbook
 from ..models import AppSettings, Transaction, User
-from ..pdf_service import receipt_pdf, room_overview_pdf, transactions_pdf
+from ..pdf_service import PAYMENT_LABELS, receipt_pdf, room_overview_pdf, transactions_pdf
 from ..utils import today, valid_date
-from .admin_finance import query_transactions
+from .admin_finance import finance_totals, query_transactions, split_payment_methods
 
 router = APIRouter(prefix="/api/admin", tags=["admin-exports"])
 
@@ -24,13 +24,15 @@ def export_room_overview(date: str = Query(""), floor: str = Query(""), db: Sess
 
 
 @router.get("/transactions.pdf")
-def export_transactions(date_from: str = Query(""), date_to: str = Query(""), category: str = Query(""), member_id: int = Query(0), db: Session = Depends(get_db), _: User = Depends(require_finance_view)):
+def export_transactions(date_from: str = Query(""), date_to: str = Query(""), category: str = Query(""), payment_method: str = Query(""), member_id: int = Query(0), db: Session = Depends(get_db), _: User = Depends(require_finance_view)):
     start = valid_date(date_from, "开始日期") if date_from else ""
     end = valid_date(date_to, "结束日期") if date_to else ""
     if start and end and end < start:
         raise HTTPException(400, "开始日期不能晚于结束日期")
-    rows = query_transactions(db, start, end, category, member_id)
-    content = transactions_pdf(rows, start, end, category, db.get(AppSettings, 1))
+    rows = query_transactions(db, start, end, category, member_id, payment_method)
+    totals = finance_totals(db, rows, date_from=start, date_to=end, category=category, member_id=member_id, payment_method=payment_method)
+    totals["payment_label"] = "、".join(PAYMENT_LABELS.get(item, item) for item in split_payment_methods(payment_method)) or "全部"
+    content = transactions_pdf(rows, start, end, category, db.get(AppSettings, 1), totals)
     return _pdf(content, f"wellness-transactions-{start or 'all'}-{end or today()}.pdf")
 
 

@@ -224,6 +224,9 @@ def _apply_filters(rows: list[dict], filters: dict) -> list[dict]:
     course_type = str(filters.get("course_type") or "").strip()
     if course_type:
         result = [row for row in result if row.get("course_type") == COURSE_TYPE_LABELS.get(course_type, course_type)]
+    payment = str(filters.get("payment") or "").strip()
+    if payment:
+        result = [row for row in result if row.get("payment") == PAYMENT_LABELS.get(payment, payment)]
     member_id = int(filters.get("member_id") or 0)
     if member_id:
         result = [row for row in result if int(row.get("member_id") or 0) == member_id]
@@ -296,5 +299,6 @@ def report_options() -> dict:
         "filters": [
             {"key": "category", "label": "类别", "options": [{"value": key, "label": label} for key, label in CATEGORY_LABELS.items()]},
             {"key": "course_type", "label": "课程类型", "options": [{"value": key, "label": label} for key, label in COURSE_TYPE_LABELS.items()]},
+            {"key": "payment", "label": "结账方式", "options": [{"value": key, "label": label} for key, label in PAYMENT_LABELS.items()]},
         ],
     }

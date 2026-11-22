@@ -2,13 +2,30 @@
 export const APP_VERSION = "1.1.0";
 export const APP_RELEASE_DATE = "2026-11-22";
 export const API_VERSION = "v1.0.0";
-export const API_ENDPOINT_COUNT = 134;
+export const API_ENDPOINT_COUNT = 137;
 
 export interface ChangelogText { zh: string; en: string }
 export interface ChangelogGroup { title: ChangelogText; points: ChangelogText[] }
 export interface ChangelogRelease { date: string; version: string; title: ChangelogText; summary: ChangelogText; groups: ChangelogGroup[] }
 
 export const changelogReleases: ChangelogRelease[] = [
+  {
+    date: "2026-11-22",
+    version: APP_VERSION,
+    title: { zh: "财务入账：按结账方式查账，合计口径更清楚", en: "Finance ledger: filter by payment method with clearer totals" },
+    summary: { zh: "财务入账新增结账方式多选筛选，合计金额改名为流水总额、营收总额与退款总额，报表中心也能按结账方式筛选。", en: "The finance ledger gains a multi-select payment-method filter; totals are renamed to ledger, revenue and refund totals, and the report centre can filter by payment method too." },
+    groups: [
+      { title: { zh: "按结账方式查账", en: "Filter by payment method" }, points: [
+        { zh: "财务入账新增结账方式多选筛选，现金、微信、有赞、大众点评等可同时勾选", en: "The ledger now filters by payment method; cash, WeChat, Youzan, Dianping and more can be selected together" },
+        { zh: "导出的财务流水 PDF 沿用当前筛选，并在抬头注明类别与结账方式", en: "Exported ledger PDFs keep the current filter and note the category and payment methods in the header" },
+        { zh: "报表中心选择财务流水数据源时，可先按结账方式筛选再分组统计", en: "In the report centre, the transaction dataset can be filtered by payment method before grouping" },
+      ] },
+      { title: { zh: "合计口径", en: "Totals" }, points: [
+        { zh: "合计改为流水总额（已扣退款）、营收总额（已扣退款）与退款总额三项", en: "Totals are now ledger total (net of refunds), revenue total (net of refunds) and refund total" },
+        { zh: "三项金额都跟随筛选条件同步变化", en: "All three totals follow the current filters" },
+      ] },
+    ],
+  },
   {
     date: "2026-11-22",
     version: APP_VERSION,

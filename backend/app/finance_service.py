@@ -69,6 +69,16 @@ def _in_range(value: datetime, start: str, end: str) -> bool:
     return datetime.fromisoformat(f"{start}T00:00:00") <= value <= datetime.fromisoformat(f"{end}T23:59:59")
 
 
+CATEGORY_ALIASES = {"private": {"private", "assessment"}, "annual": {"annual", "package"}}
+
+
+def category_matches(category: str, wanted: str) -> bool:
+    """类别筛选：私教/评估同属一大类，年卡/组合套餐同理。"""
+    if not wanted:
+        return True
+    return normalized_category(category) in CATEGORY_ALIASES.get(wanted, {wanted})
+
+
 def _amortized_amount(row: Transaction, card: MemberCard | None, product: CardProduct | None, start: str, end: str) -> float:
     if card is not None and card.start_pending:
         # 开卡日期待定：尚未开卡，不确认营收，开卡后再按实际开始日均摊。
@@ -93,11 +103,12 @@ def _amortization_date(row: Transaction, card: MemberCard | None, product: CardP
     return max(amortization_start, datetime.fromisoformat(start).date()).isoformat()
 
 
-def revenue_breakdown(db: Session, start: str, end: str) -> dict:
+def revenue_breakdown(db: Session, start: str, end: str, *, category: str = "", member_id: int = 0, payment_methods: set[str] | None = None) -> dict:
     """把现金与营收拆到每一笔流水，另附私教消课隐含营收行。
 
     ledger_rows 按发生日期归属期间，revenue_rows 按确认日期归属期间（均摊取摊销起始日），
     报表中心据此按任意维度汇总时，与“确认营收 / 现金实收”口径保持一致。
+    category / member_id / payment_methods 用于财务入账页面按条件筛选口径。
     """
     transactions = db.query(Transaction).filter(Transaction.status.in_(["paid", "refunded"]), Transaction.deleted_at.is_(None)).order_by(Transaction.occurred_at, Transaction.id).all()
     cards = {row.id: row for row in db.query(MemberCard).all()}
@@ -121,6 +132,12 @@ def revenue_breakdown(db: Session, start: str, end: str) -> dict:
             annual_revenue += amount
 
     for row in transactions:
+        if not category_matches(row.category, category):
+            continue
+        if member_id and (row.member_id or 0) != member_id:
+            continue
+        if payment_methods and row.payment_method not in payment_methods:
+            continue
         card = cards.get(row.member_card_id) if row.member_card_id else None
         product = products.get(card.product_id) if card and card.product_id else (products.get(row.product_id) if row.product_id else None)
         member = members.get(row.member_id) if row.member_id else None
@@ -207,6 +224,12 @@ def revenue_breakdown(db: Session, start: str, end: str) -> dict:
         card = booking.member_card
         if not card or card.product.category not in {"private", "assessment"} or not card.total_sessions:
             continue
+        if category and not category_matches("private", category):
+            continue
+        if member_id and (booking.member_id or 0) != member_id:
+            continue
+        if payment_methods and "fitness_member" not in payment_methods:
+            continue
         amount = card.purchase_price / card.total_sessions
         add_revenue("private", amount)
         member = booking.member
@@ -242,8 +265,8 @@ def revenue_breakdown(db: Session, start: str, end: str) -> dict:
     }
 
 
-def recognized_revenue(db: Session, start: str, end: str) -> dict:
-    data = revenue_breakdown(db, start, end)
+def recognized_revenue(db: Session, start: str, end: str, **filters) -> dict:
+    data = revenue_breakdown(db, start, end, **filters)
     return {key: data[key] for key in ("cash_received", "recognized", "annual", "private", "by_category", "cash_by_category")}
 
 

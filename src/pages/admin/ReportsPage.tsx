@@ -4,7 +4,7 @@ import { Empty, Icon, ResponsiveTable, Spinner } from "@/components/UI";
 import { useLanguage } from "@/context/LanguageContext";
 import { apiFetch, downloadFile } from "@/lib/api";
 import { money, today } from "@/lib/date";
-import { categoryLabel } from "@/lib/financeCopy";
+import { categoryLabel, paymentLabel, paymentMethods } from "@/lib/financeCopy";
 
 interface ReportData {
   summary: { revenue: number; cash_received: number; sessions: number; cancelled_sessions: number; attendees: number; booking_count: number; cancelled_bookings: number };
@@ -42,6 +42,7 @@ export function ReportsPage() {
   const [dataset, setDataset] = useState("transactions");
   const [dimensions, setDimensions] = useState<string[]>(["month", "category"]);
   const [metrics, setMetrics] = useState<string[]>(["cash_amount", "recognized", "orders"]);
+  const [payment, setPayment] = useState("");
   const [data, setData] = useState<ReportData | null>(null);
   const [table, setTable] = useState<ReportTable | null>(null);
   const [loading, setLoading] = useState(true);
@@ -61,6 +62,7 @@ export function ReportsPage() {
     setError("");
     try {
       const params = new URLSearchParams({ dataset, dimensions: dimensions.join(","), metrics: metrics.join(","), date_from: from, date_to: to });
+      if (payment) params.set("payment", payment);
       const result = await apiFetch<ReportTable>(`/api/admin/reports/table?${params.toString()}`);
       setTable(result);
       // 服务端会兜底补齐无效维度与指标，这里把实际生效的列同步回勾选状态，保证界面与表格一致。
@@ -70,7 +72,7 @@ export function ReportsPage() {
       if (nextMetrics.join(",") !== metrics.join(",")) setMetrics(nextMetrics);
     } catch (err) { setError(err instanceof Error ? err.message : local("报表加载失败", "Report load failed")); }
     finally { setLoading(false); }
-  }, [dataset, dimensions, metrics, from, to, local]);
+  }, [dataset, dimensions, metrics, from, to, payment, local]);
   useEffect(() => { void loadOptions(); }, [loadOptions]);
   useEffect(() => { if (tab === "overview") void load(); else void loadTable(); }, [tab, load, loadTable]);
   const maxHour = Math.max(1, ...(data?.hour.map((item) => item.value) ?? [1]));
@@ -98,6 +100,7 @@ export function ReportsPage() {
   async function exportTable() {
     setError("");
     const params = new URLSearchParams({ dataset, dimensions: dimensions.join(","), metrics: metrics.join(","), date_from: from, date_to: to });
+    if (payment) params.set("payment", payment);
     try { await downloadFile(`/api/admin/reports/table.xlsx?${params.toString()}`, `wellness-report-${dataset}-${from}-${to}.xlsx`); }
     catch (err) { setError(err instanceof Error ? err.message : local("导出失败", "Export failed")); }
   }
@@ -110,6 +113,7 @@ export function ReportsPage() {
       <div><span>{a("数据源")}</span><select value={dataset} onChange={(event) => selectDataset(event.target.value)}>{(options?.datasets ?? []).map((item) => <option key={item.key} value={item.key}>{local(item.name, item.name_en)}</option>)}</select></div>
       <div><span>{a("分组维度")}</span>{(activeDataset?.dimensions ?? []).map((item) => <button key={item.key} className={dimensions.includes(item.key) ? "picker-chip active" : "picker-chip"} type="button" onClick={() => toggle(dimensions, item.key, setDimensions)}>{item.label}</button>)}</div>
       <div><span>{a("统计指标")}</span>{(activeDataset?.metrics ?? []).map((item) => <button key={item.key} className={metrics.includes(item.key) ? "picker-chip active" : "picker-chip"} type="button" onClick={() => toggle(metrics, item.key, setMetrics)}>{item.label}</button>)}</div>
+      {dataset === "transactions" && <div><span>{a("结账方式")}</span><select value={payment} onChange={(event) => setPayment(event.target.value)}><option value="">{local("全部结账方式", "All payment methods")}</option>{paymentMethods.map((value) => <option key={value} value={value}>{paymentLabel(value, local)}</option>)}</select></div>}
       <div><span>{a("统计区间")}</span><input type="date" value={from} onChange={(event) => setFrom(event.target.value)}/><input type="date" value={to} onChange={(event) => setTo(event.target.value)}/><button className="button button-outline" type="button" onClick={() => void loadTable()}>{a("查询报表")}</button></div>
       <p>{activePreset?.description ?? activeDataset?.description ?? ""}</p>
     </section>}

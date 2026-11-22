@@ -1011,3 +1011,7 @@ html:fullscreen, html:fullscreen body { overflow: hidden; background: #fff; }
 .picker-chip:hover { border-color: var(--sage-500); }
 .picker-chip.active { border-color: var(--pine-700); background: var(--pine-900); color: #fff; }
 .data-table tfoot td { border-top: 2px solid var(--line); background: #f7f8f5; font-weight: 600; }
+
+/* 结账方式筛选 */
+.filter-chips-field { min-width: 260px; }
+.filter-chips { display: flex; flex-wrap: wrap; gap: 6px; }
