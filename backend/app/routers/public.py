@@ -2,7 +2,7 @@ import random
 import uuid
 from datetime import date, datetime
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, Response, UploadFile
 from sqlalchemy.orm import Session, joinedload
 
 from ..booking_service import create_booking, transition_booking
@@ -14,6 +14,7 @@ from ..models import AppSettings, Booking, CardProduct, ClassSession, Course, Ex
 from ..security import create_access_token
 from ..serializers import booking_dict, card_dict, course_dict, member_dict, product_dict, session_dict, teacher_dict, transaction_dict
 from ..sms_service import notify_booking, send_otp, verify_otp
+from ..upload_service import remove_upload, save_image
 from ..utils import add_days, as_int, clean_payload, session_datetime, today, valid_date, valid_phone
 
 router = APIRouter(prefix="/api/public", tags=["public"])
@@ -117,6 +118,27 @@ def member_update_profile(payload: dict = Body(...), db: Session = Depends(get_d
     audit(db, None, "member", "update_profile", "member", member.id, changes)
     db.commit()
     db.refresh(member)
+    return member_dict(member)
+
+
+@router.post("/me/photo")
+def member_upload_photo(file: UploadFile = File(...), db: Session = Depends(get_db), member: Member = Depends(get_current_member)):
+    """会员自助上传照片（支持手机直接拍照）。"""
+    previous = member.photo_url
+    member.photo_url = save_image(file, "members", f"member-{member.id}")
+    audit(db, None, "member", "upload_photo", "member", member.id, {"method": "member_self_service"})
+    db.commit()
+    remove_upload(previous, "members")
+    return member_dict(member)
+
+
+@router.delete("/me/photo")
+def member_delete_photo(db: Session = Depends(get_db), member: Member = Depends(get_current_member)):
+    previous = member.photo_url
+    member.photo_url = ""
+    audit(db, None, "member", "delete_photo", "member", member.id, {"method": "member_self_service"})
+    db.commit()
+    remove_upload(previous, "members")
     return member_dict(member)
 
 

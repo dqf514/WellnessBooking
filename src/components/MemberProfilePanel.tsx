@@ -46,6 +46,22 @@ export function MemberProfilePanel({ member, onUpdated }: { member: Member; onUp
     finally { setBusy(false); }
   }
 
+  async function uploadPhoto(file: File | null) {
+    if (!file) return;
+    setBusy(true); setError(""); setMessage("");
+    const body = new FormData(); body.append("file", file);
+    try { await apiFetch("/api/public/me/photo", { method: "POST", body, tokenKind: "member" }); setMessage(local("照片已更新", "Photo updated")); await onUpdated(); }
+    catch (err) { setError(err instanceof Error ? err.message : local("照片上传失败，请稍后重试", "Photo upload failed. Please try again later.")); }
+    finally { setBusy(false); }
+  }
+
+  async function removePhoto() {
+    setBusy(true); setError(""); setMessage("");
+    try { await apiFetch("/api/public/me/photo", { method: "DELETE", tokenKind: "member" }); setMessage(local("照片已删除", "Photo removed")); await onUpdated(); }
+    catch (err) { setError(err instanceof Error ? err.message : local("照片删除失败，请稍后重试", "Failed to remove the photo. Please try again later.")); }
+    finally { setBusy(false); }
+  }
+
   async function savePhone() {
     setBusy(true); setError(""); setMessage("");
     try {
@@ -67,6 +83,17 @@ export function MemberProfilePanel({ member, onUpdated }: { member: Member; onUp
         <label>{local("姓名", "Name")}<input required maxLength={40} value={name} onChange={(event) => setName(event.target.value)}/></label>
         <label>{local("出生日期", "Birth date")}<input type="date" max={new Date().toISOString().slice(0, 10)} value={birthDate} onChange={(event) => setBirthDate(event.target.value)}/></label>
         <button className="button button-primary button-full" disabled={busy} type="button" onClick={() => void saveProfile()}><Icon name="check" size={17}/>{busy ? local("保存中…", "Saving…") : local("保存资料", "Save details")}</button>
+      </div>
+    </section>
+    <section className="profile-block">
+      <h3>{local("会员照片", "Profile photo")}</h3>
+      <p className="form-help">{local("上传一张本人照片，前台签到、员工查询会员时都能更快认出你。", "Upload a photo of yourself so staff can recognise you at check-in.")}</p>
+      <div className="photo-editor">
+        {member.photo_url ? <img className="photo-preview" src={member.photo_url} alt={member.name}/> : <span className="photo-preview photo-preview-empty">{local("暂无照片", "No photo")}</span>}
+        <div>
+          <label className="profile-upload"><Icon name="user" size={16}/><span>{local("拍照或选择图片", "Take a photo or choose an image")}</span><input type="file" accept="image/png,image/jpeg,image/webp" capture="user" onChange={(event) => void uploadPhoto(event.target.files?.[0] ?? null)}/></label>
+          {member.photo_url && <button className="text-button danger" type="button" disabled={busy} onClick={() => void removePhoto()}>{local("删除照片", "Remove photo")}</button>}
+        </div>
       </div>
     </section>
     <section className="profile-block">

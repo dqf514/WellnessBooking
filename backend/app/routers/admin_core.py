@@ -1,7 +1,7 @@
 import json
 from datetime import datetime
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 
@@ -14,6 +14,7 @@ from ..membership_service import MEMBER_SOURCE_OPTIONS, due_reminders, normalize
 from ..models import Booking, CardProduct, ClassSession, Course, ExperienceVoucher, Member, MemberCard, MemberCardShare, MemberRecord, MemberReminder, Room, Teacher, Transaction, User
 from ..permissions import has_capability
 from ..serializers import booking_dict, card_dict, course_dict, member_dict, product_dict, room_dict, session_dict, teacher_dict, transaction_dict, user_dict
+from ..upload_service import image_size, remove_upload, save_image
 from ..utils import add_days, as_bool, as_float, as_int, clean_payload, today, valid_benefits, valid_date, valid_phone
 
 router = APIRouter(prefix="/api/admin", tags=["admin-core"])
@@ -73,7 +74,7 @@ def meta(db: Session = Depends(get_db), user: User = Depends(require_catalog_vie
 
 
 @router.get("/members")
-def list_members(q: str = Query(""), category: str = Query(""), active_only: bool = Query(False), db: Session = Depends(get_db), _: User = Depends(require_members_view)):
+def list_members(q: str = Query(""), category: str = Query(""), card_status: str = Query(""), active_only: bool = Query(False), db: Session = Depends(get_db), _: User = Depends(require_members_view)):
     query = db.query(Member).options(joinedload(Member.advisor), joinedload(Member.cards).joinedload(MemberCard.product)).filter(Member.deleted_at.is_(None))
     if q.strip():
         term = f"%{q.strip()}%"
@@ -81,8 +82,22 @@ def list_members(q: str = Query(""), category: str = Query(""), active_only: boo
     if active_only:
         query = query.filter(Member.active.is_(True))
     rows = query.order_by(Member.id.desc()).all()
-    if category:
-        rows = [row for row in rows if any(card.product.category == category and card.status == "active" and card.deleted_at is None for card in row.cards)]
+    categories = [item for item in category.split(",") if item]
+    if categories:
+        rows = [row for row in rows if any(card.product and card.product.category in categories and card.deleted_at is None for card in row.cards)]
+    statuses = [item for item in card_status.split(",") if item]
+    if statuses:
+        current = today()
+        def matches(row: Member) -> bool:
+            cards = [card for card in row.cards if card.deleted_at is None]
+            if "none" in statuses and not cards:
+                return True
+            if "active" in statuses and any(card.status == "active" and (card.expires_on or "") >= current for card in cards):
+                return True
+            if "expired" in statuses and any(card.status == "active" and (card.expires_on or "") < current for card in cards):
+                return True
+            return False
+        rows = [row for row in rows if matches(row)]
     return {"items": [member_dict(row, include_cards=True) for row in rows], "total": len(rows)}
 
 
@@ -106,6 +121,32 @@ def create_member(payload: dict = Body(...), db: Session = Depends(get_db), user
     audit(db, user, "member", "create", "member", row.id, {"name": name, "phone": phone})
     db.commit()
     db.refresh(row)
+    return member_dict(row, include_cards=True)
+
+
+@router.post("/members/{member_id}/photo")
+def upload_member_photo(member_id: int, file: UploadFile = File(...), db: Session = Depends(get_db), user: User = Depends(require_members_write)):
+    row = db.get(Member, member_id)
+    if not row or row.deleted_at is not None:
+        raise HTTPException(404, "会员不存在")
+    previous = row.photo_url
+    row.photo_url = save_image(file, "members", f"member-{member_id}")
+    audit(db, user, "member", "upload_photo", "member", member_id, {"size_bytes": image_size(file)})
+    db.commit()
+    remove_upload(previous, "members")
+    return member_dict(row, include_cards=True)
+
+
+@router.delete("/members/{member_id}/photo")
+def delete_member_photo(member_id: int, db: Session = Depends(get_db), user: User = Depends(require_members_write)):
+    row = db.get(Member, member_id)
+    if not row or row.deleted_at is not None:
+        raise HTTPException(404, "会员不存在")
+    previous = row.photo_url
+    row.photo_url = ""
+    audit(db, user, "member", "delete_photo", "member", member_id)
+    db.commit()
+    remove_upload(previous, "members")
     return member_dict(row, include_cards=True)
 
 

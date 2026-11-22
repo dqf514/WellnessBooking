@@ -1,8 +1,8 @@
 # 音昱 Wellness API 对接文档
 
-> 版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 **128 个 HTTP 接口**。
+> 版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 **133 个 HTTP 接口**。
 >
-> 文档更新：2026-11-18 · 功能基线：预约排课、动态二维码签到、购卡申请取消、会员权益与营收业务闭环、角色能力矩阵与课程库独立接口。
+> 文档更新：2026-11-22 · 功能基线：预约排课、动态二维码签到、购卡申请取消、会员权益与营收业务闭环、角色能力矩阵与课程库独立接口。
 >
 > 在线交互文档：`/docs`（Swagger UI）、`/redoc`（ReDoc）；原始 OpenAPI 3 定义：`/openapi.json`。接口路径、方法、参数和实时响应结构以同版本 `/openapi.json` 为最终依据。
 
@@ -181,6 +181,7 @@ FastAPI 参数校验错误格式：
 | `gender`、`id_number`、`birth_date` | string | 性别、证件号、出生日期 |
 | `source`、`advisor_id`、`advisor_name` | string / integer / null | 来源、会籍员工 ID 和姓名 |
 | `emergency_phone`、`wechat`、`notes` | string | 紧急电话、微信、备注 |
+| `photo_url` | string | 会员照片地址（`/uploads/members/...`），未上传时为空字符串 |
 | `no_show_blocked_until` | string | 自助预约限制截止日，无限制为空字符串 |
 | `active` | boolean | 是否允许登录与预约 |
 | `created_at` | string | 建档时间 |
@@ -329,7 +330,7 @@ curl -X POST "$API/api/auth/login" \
 - 新密码至少 8 位；原密码错误返回 `400`。
 - **响应**：`{ "ok": true }`。只更新当前 Token 对应员工。
 
-## 4. 会员端接口（15）
+## 4. 会员端接口（17）
 
 ### 4.1 会员端初始化数据
 
@@ -467,6 +468,21 @@ curl -X POST "$API/api/auth/login" \
 - 新手机号已被其他会员占用返回 `400`；验证码错误或过期返回 `400`。
 - 换号后原号码不能再作为验证码接收方；操作写入日志（`member / change_phone`，日志中手机号做掩码）。
 
+### 4.16 会员上传照片
+
+#### POST /api/public/me/photo
+
+- **权限**：会员；**multipart**：字段 `file`，支持 PNG、JPG、WebP，单张最大 6 MiB。
+- **响应**：更新后的 `member`，`photo_url` 为新照片地址。
+- 会员可在会员端直接拍照上传；重复上传会覆盖旧照片并删除旧文件。
+
+### 4.17 会员删除照片
+
+#### DELETE /api/public/me/photo
+
+- **权限**：会员；**请求**：无 Body。
+- **响应**：`member`，`photo_url` 为空字符串；原照片文件同时从服务器删除。
+
 ## 5. 经营概览与基础元数据（2）
 
 ### 5.1 今日经营概览
@@ -487,14 +503,14 @@ curl -X POST "$API/api/auth/login" \
 - **响应**：`courses`、`rooms`、`teachers`、`products`、`users` 五个完整数组，包括停用项；另含 `member_sources`（获客来源下拉选项）。
 - 用于表单选项和关联展示；接口含全部员工账号，前端不应把响应暴露给非授权用户。
 
-## 6. 会员档案、会员卡、权益与爽约（20）
+## 6. 会员档案、会员卡、权益与爽约（22）
 
 ### 6.1 查询会员列表
 
 #### GET /api/admin/members
 
 - **权限**：只读。
-- **Query**：`q`（姓名/英文名/手机号模糊搜索）、`category`（具有该类别活动卡）、`active_only`（默认 `false`）。
+- **Query**：`q`（姓名/英文名/手机号模糊搜索）、`category`（卡类别，可多选，用英文逗号分隔，如 `group,private`）、`card_status`（持卡状态：`active` 有有效卡 / `expired` 卡已过期 / `none` 未开卡）、`active_only`（默认 `false`）。
 - **响应**：`{ items: Member[]（含 cards）, total }`，按 ID 倒序。
 
 ### 6.2 新建会员
@@ -676,6 +692,21 @@ curl -X POST "$API/api/auth/login" \
 
 - **权限**：前台；**Body**：`teacher_id`、`record_type`、`title`、`content`、`record_date` 任意子集。
 - **响应**：更新后的会员记录。标题不能为空，日期必须为 `YYYY-MM-DD`；删除使用第 16 章回收站接口。
+
+### 6.21 上传会员照片
+
+#### POST /api/admin/members/{member_id}/photo
+
+- **权限**：前台；**multipart**：字段 `file`，支持 PNG、JPG、WebP，单张最大 6 MiB。
+- **响应**：更新后的 Member（含 cards），`photo_url` 为新照片地址。
+- 会员在会员端上传过的照片可由前台重新替换，旧照片文件会被删除。
+
+### 6.22 删除会员照片
+
+#### DELETE /api/admin/members/{member_id}/photo
+
+- **权限**：前台；**请求**：无 Body。
+- **响应**：更新后的 Member，`photo_url` 为空字符串；原照片文件同时从服务器删除。
 
 ## 7. 会员合同与评估文件（7）
 
@@ -1271,7 +1302,7 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 - 日志项：`id`、`api_key_id`、`key_name`、`key_prefix`、`method`、`path`、`status_code`、`ip`、`user_agent`、`created_at`。
 - 无效或过期密钥的拒绝请求也会记录；路径不含 Query String，日志中不会出现完整密钥。
 
-## 13. 数据导出、备份与恢复（10）
+## 13. 数据导出、备份与恢复（11）
 
 > 以下接口均需管理员。备份工具只支持 SQLite 文件数据库；数据库备份不包含 `/uploads` 中的合同、Logo 等文件，完整灾难恢复还需另行备份上传目录。
 
@@ -1353,6 +1384,16 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 - **multipart**：`file`，最大 5 MiB，编码必须 UTF-8 / UTF-8 BOM。
 - **响应**：`{ ok, created, updated, skipped, error_count, errors }`，最多返回前 100 条行级错误。
 - 姓名和手机号逐行校验；`skip` 跳过同手机号，`update` 用 CSV 字段覆盖已有会员。错误行跳过，其余有效行仍提交。
+
+### 13.11 导出会员名单 Excel
+
+#### GET /api/admin/export/members.xlsx
+
+- **权限**：需 `members.view`；API Key 需 `read` 范围。
+- **Query**：`scope` 取 `all`（全部会员）、`new`（当月新进会员）、`renew_pending`（当月未续会会员），默认 `all`；`month` 为统计月份 `YYYY-MM`，`scope=all` 时忽略。
+- **响应**：`application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` 文件流，`Content-Disposition: attachment`。
+- 工作表名为“会员列表”，中文表头：会员姓名、照片、手机号码、生日、性别、会员卡类别、合同总金额、购买时间、到期时间、会籍归属、会员时长、备注；首行冻结。
+- 会员照片直接嵌入“照片”列单元格（无照片留空），其余列取该会员当前有效会员卡的汇总数据。
 
 ## 14. 典型业务调用顺序
 

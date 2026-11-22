@@ -8,7 +8,7 @@ def user_dict(row: User) -> dict:
 
 
 def member_dict(row: Member, include_cards: bool = False) -> dict:
-    data = {"id": row.id, "name": row.name, "name_en": row.name_en, "phone": row.phone, "gender": row.gender, "id_number": row.id_number, "birth_date": row.birth_date, "source": row.source, "advisor_id": row.advisor_id, "advisor_name": row.advisor.full_name if row.advisor else "", "emergency_phone": row.emergency_phone, "wechat": row.wechat, "notes": row.notes, "no_show_blocked_until": row.no_show_blocked_until, "active": row.active, "created_at": dt(row.created_at)}
+    data = {"id": row.id, "name": row.name, "name_en": row.name_en, "phone": row.phone, "gender": row.gender, "id_number": row.id_number, "birth_date": row.birth_date, "source": row.source, "advisor_id": row.advisor_id, "advisor_name": row.advisor.full_name if row.advisor else "", "emergency_phone": row.emergency_phone, "wechat": row.wechat, "photo_url": row.photo_url, "notes": row.notes, "no_show_blocked_until": row.no_show_blocked_until, "active": row.active, "created_at": dt(row.created_at)}
     if include_cards:
         data["cards"] = [card_dict(card) for card in sorted(row.cards, key=lambda item: item.id, reverse=True) if card.deleted_at is None]
     return data

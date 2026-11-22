@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 
 export type IconName = "calendar" | "users" | "room" | "card" | "chart" | "settings" | "home" | "user" | "plus" | "search" | "close" | "arrow" | "check" | "clock" | "phone" | "logout" | "menu" | "download" | "money" | "book" | "bell" | "database" | "chevron" | "refresh" | "qr" | "scan" | "globe" | "expand" | "sun" | "moon";
@@ -88,6 +88,20 @@ export function LogoutConfirm({ title, description, cancelLabel, confirmLabel, o
   return <Modal title={title} onClose={onClose}><div className="logout-confirmation"><span className="logout-confirmation-icon"><Icon name="logout" size={25}/></span><p>{description}</p><div className="logout-confirmation-actions"><button className="button button-outline" type="button" onClick={onClose}>{cancelLabel}</button><button className="button button-primary" type="button" onClick={onConfirm}><Icon name="logout" size={17}/>{confirmLabel}</button></div></div></Modal>;
 }
 
-export function Badge({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | "green" | "red" | "amber" | "blue" }) { return <span className={`badge badge-${tone}`}>{children}</span>; }
-export function Empty({ children }: { children: ReactNode }) { return <div className="empty-state"><Icon name="calendar" size={28} /><p>{children}</p></div>; }
+export function Badge({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | "green" | "red" | "amber" | "blue" }) { return <span className={`badge badge-${tone}`}>{children}</span>; }export function Empty({ children }: { children: ReactNode }) { return <div className="empty-state"><Icon name="calendar" size={28} /><p>{children}</p></div>; }
 export function Spinner() { const { t } = useLanguage(); return <div className="loading-state" role="status"><span className="spinner" />{t("loading")}</div>; }
+
+/** 通用下拉菜单：点击外部自动收起，供筛选与导出等多选项复用。 */
+export function Dropdown({ label, children, align = "left", className = "" }: { label: ReactNode; children: ReactNode; align?: "left" | "right"; className?: string }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const handler = (event: MouseEvent) => { if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false); };
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", handler);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", handler); document.removeEventListener("keydown", onKey); };
+  }, [open]);
+  return <div className={`dropdown ${className}`} ref={ref}><button type="button" className="dropdown-trigger" aria-expanded={open} onClick={() => setOpen((value) => !value)}>{label}<Icon name="chevron" size={13}/></button>{open && <div className={`dropdown-menu dropdown-${align}`} role="menu">{children}</div>}</div>;
+}

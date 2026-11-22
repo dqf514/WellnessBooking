@@ -20,10 +20,10 @@ function navSections(a: (zh: string, en?: string) => string, local: (zh: string,
       { to: "/admin/bookings/private", label: local("私教预约", "PT bookings"), capability: "bookings.view" },
       { to: "/admin/bookings/workshop", label: local("工作坊预约", "Workshop bookings"), capability: "bookings.view" },
     ] },
-    { title: a("排课与场地"), icon: "calendar", children: [
+    { to: "/admin/rooms", label: a("教室总览"), icon: "room", capability: "catalog.view" },
+    { title: a("排课中心"), icon: "calendar", children: [
       { to: "/admin/schedule/group", label: local("团课排课", "Group schedule"), capability: "bookings.view" },
       { to: "/admin/schedule/workshop", label: local("工作坊排课", "Workshop schedule"), capability: "bookings.view" },
-      { to: "/admin/rooms", label: a("教室总览"), capability: "catalog.view" },
     ] },
     { to: "/admin/members", label: a("会员管理"), icon: "users", capability: "members.view" },
     { title: a("资源与商品", "Resources & products"), icon: "database", children: [
@@ -32,10 +32,8 @@ function navSections(a: (zh: string, en?: string) => string, local: (zh: string,
       { to: "/admin/resources/rooms", label: a("教室管理"), capability: "catalog.write" },
       { to: "/admin/products", label: local("卡课产品", "Cards & products"), capability: "products.view" },
     ] },
-    { title: a("财务与报表", "Finance & reports"), icon: "money", children: [
-      { to: "/admin/finance", label: a("财务入账"), capability: ["finance.view", "revenue.write"] },
-      { to: "/admin/reports", label: a("报表分析"), capability: "reports.view" },
-    ] },
+    { to: "/admin/finance", label: a("财务入账"), icon: "money", capability: ["finance.view", "revenue.write"] },
+    { to: "/admin/reports", label: a("报表分析"), icon: "chart", capability: "reports.view" },
     { to: "/admin/settings", label: a("系统设置"), icon: "settings", capability: "settings.view" },
   ];
 }

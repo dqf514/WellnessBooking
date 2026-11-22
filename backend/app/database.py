@@ -45,6 +45,7 @@ def ensure_schema():
     with engine.begin() as connection:
         additions = {
             "app_settings": {"logo_url": "VARCHAR(600) DEFAULT ''", "favicon_url": "VARCHAR(600) DEFAULT ''"},
+            "members": {"photo_url": "VARCHAR(600) DEFAULT ''"},
             "class_sessions": {"reserved_count": "INTEGER DEFAULT 0"},
             "member_cards": {"version": "INTEGER DEFAULT 0"},
             "rooms": {"floor": "VARCHAR(30) DEFAULT '1F'", "sort_order": "INTEGER DEFAULT 0"},

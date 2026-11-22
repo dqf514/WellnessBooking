@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#173f35">
-  <meta name="description" content="音昱 Wellness 完整 API 对接文档，覆盖 128 个接口、权限、字段、业务规则与示例。">
+  <meta name="description" content="音昱 Wellness 完整 API 对接文档，覆盖 133 个接口、权限、字段、业务规则与示例。">
   <meta name="generator" content="docs/build_api_docs.py">
   <link id="api-favicon" rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Crect width='36' height='36' rx='18' fill='%23173f35'/%3E%3Cpath d='M28 6C15 7 8 13 8 23c7 1 15-2 20-17ZM8 29c3-8 8-12 16-17' fill='none' stroke='%23e9efe7' stroke-width='1.5'/%3E%3C/svg%3E">
   <title>API 对接文档 · 音昱 Wellness</title>
@@ -33,20 +33,20 @@
     <aside class="sidebar" aria-label="API 文档目录">
       <label class="search-label"><span>搜索接口、字段或业务规则</span><input class="search-input" id="api-search" type="search" placeholder="例如：签到、退款、bookings" autocomplete="off"><span class="search-hint">按 / 快速搜索，Esc 清空</span></label>
       <p class="search-results" id="search-results" aria-live="polite"></p>
-      <p class="toc-title">API REFERENCE · 128 ENDPOINTS</p>
+      <p class="toc-title">API REFERENCE · 133 ENDPOINTS</p>
       <nav><ul class="toc-list"><li><a href="#1-接入基础">1. 接入基础</a></li>
 <li><a href="#2-通用数据结构">2. 通用数据结构</a></li>
 <li><a href="#3-健康检查与员工认证-7">3. 健康检查与员工认证（7）</a></li>
-<li><a href="#4-会员端接口-15">4. 会员端接口（15）</a></li>
+<li><a href="#4-会员端接口-17">4. 会员端接口（17）</a></li>
 <li><a href="#5-经营概览与基础元数据-2">5. 经营概览与基础元数据（2）</a></li>
-<li><a href="#6-会员档案-会员卡-权益与爽约-20">6. 会员档案、会员卡、权益与爽约（20）</a></li>
+<li><a href="#6-会员档案-会员卡-权益与爽约-22">6. 会员档案、会员卡、权益与爽约（22）</a></li>
 <li><a href="#7-会员合同与评估文件-7">7. 会员合同与评估文件（7）</a></li>
 <li><a href="#8-排课-预约-教室与目录-29">8. 排课、预约、教室与目录（29）</a></li>
 <li><a href="#9-产品-财务与报表-10">9. 产品、财务与报表（10）</a></li>
 <li><a href="#10-场馆-品牌与账号-9">10. 场馆、品牌与账号（9）</a></li>
 <li><a href="#11-短信与审计日志-5">11. 短信与审计日志（5）</a></li>
 <li><a href="#12-api-key-管理与调用日志-6">12. API Key 管理与调用日志（6）</a></li>
-<li><a href="#13-数据导出-备份与恢复-10">13. 数据导出、备份与恢复（10）</a></li>
+<li><a href="#13-数据导出-备份与恢复-11">13. 数据导出、备份与恢复（11）</a></li>
 <li><a href="#14-典型业务调用顺序">14. 典型业务调用顺序</a></li>
 <li><a href="#15-对接检查清单">15. 对接检查清单</a></li>
 <li><a href="#16-回收站与-180-天保留-4">16. 回收站与 180 天保留（4）</a></li>
@@ -57,23 +57,23 @@
       <label class="section-jump"><span>跳转到文档章节</span><select id="mobile-jump"><option value="1-接入基础">1. 接入基础</option>
 <option value="2-通用数据结构">2. 通用数据结构</option>
 <option value="3-健康检查与员工认证-7">3. 健康检查与员工认证（7）</option>
-<option value="4-会员端接口-15">4. 会员端接口（15）</option>
+<option value="4-会员端接口-17">4. 会员端接口（17）</option>
 <option value="5-经营概览与基础元数据-2">5. 经营概览与基础元数据（2）</option>
-<option value="6-会员档案-会员卡-权益与爽约-20">6. 会员档案、会员卡、权益与爽约（20）</option>
+<option value="6-会员档案-会员卡-权益与爽约-22">6. 会员档案、会员卡、权益与爽约（22）</option>
 <option value="7-会员合同与评估文件-7">7. 会员合同与评估文件（7）</option>
 <option value="8-排课-预约-教室与目录-29">8. 排课、预约、教室与目录（29）</option>
 <option value="9-产品-财务与报表-10">9. 产品、财务与报表（10）</option>
 <option value="10-场馆-品牌与账号-9">10. 场馆、品牌与账号（9）</option>
 <option value="11-短信与审计日志-5">11. 短信与审计日志（5）</option>
 <option value="12-api-key-管理与调用日志-6">12. API Key 管理与调用日志（6）</option>
-<option value="13-数据导出-备份与恢复-10">13. 数据导出、备份与恢复（10）</option>
+<option value="13-数据导出-备份与恢复-11">13. 数据导出、备份与恢复（11）</option>
 <option value="14-典型业务调用顺序">14. 典型业务调用顺序</option>
 <option value="15-对接检查清单">15. 对接检查清单</option>
 <option value="16-回收站与-180-天保留-4">16. 回收站与 180 天保留（4）</option>
 <option value="17-品牌-pdf-导出与账单-4">17. 品牌 PDF 导出与账单（4）</option></select></label>
       <div class="search-empty" id="search-empty" hidden>没有匹配的接口。可尝试“预约”“卡”“settings”或清空搜索。</div>
       <h1 id="音昱-wellness-api-对接文档">音昱 Wellness API 对接文档<a class="anchor" href="#音昱-wellness-api-对接文档" aria-label="链接到此节">#</a></h1>
-<aside class="callout">版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 <strong>128 个 HTTP 接口</strong>。 文档更新：2026-11-18 · 功能基线：预约排课、动态二维码签到、购卡申请取消、会员权益与营收业务闭环、角色能力矩阵与课程库独立接口。 在线交互文档：<code>/docs</code>（Swagger UI）、<code>/redoc</code>（ReDoc）；原始 OpenAPI 3 定义：<code>/openapi.json</code>。接口路径、方法、参数和实时响应结构以同版本 <code>/openapi.json</code> 为最终依据。</aside>
+<aside class="callout">版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 <strong>133 个 HTTP 接口</strong>。 文档更新：2026-11-22 · 功能基线：预约排课、动态二维码签到、购卡申请取消、会员权益与营收业务闭环、角色能力矩阵与课程库独立接口。 在线交互文档：<code>/docs</code>（Swagger UI）、<code>/redoc</code>（ReDoc）；原始 OpenAPI 3 定义：<code>/openapi.json</code>。接口路径、方法、参数和实时响应结构以同版本 <code>/openapi.json</code> 为最终依据。</aside>
 <h2 id="1-接入基础">1. 接入基础<a class="anchor" href="#1-接入基础" aria-label="链接到此节">#</a></h2>
 <h3 id="1-1-服务地址">1.1 服务地址<a class="anchor" href="#1-1-服务地址" aria-label="链接到此节">#</a></h3>
 <div class="table-wrap"><table>
@@ -198,6 +198,7 @@
 <tr><td><code>gender</code>、<code>id_number</code>、<code>birth_date</code></td><td>string</td><td>性别、证件号、出生日期</td></tr>
 <tr><td><code>source</code>、<code>advisor_id</code>、<code>advisor_name</code></td><td>string / integer / null</td><td>来源、会籍员工 ID 和姓名</td></tr>
 <tr><td><code>emergency_phone</code>、<code>wechat</code>、<code>notes</code></td><td>string</td><td>紧急电话、微信、备注</td></tr>
+<tr><td><code>photo_url</code></td><td>string</td><td>会员照片地址（<code>/uploads/members/...</code>），未上传时为空字符串</td></tr>
 <tr><td><code>no_show_blocked_until</code></td><td>string</td><td>自助预约限制截止日，无限制为空字符串</td></tr>
 <tr><td><code>active</code></td><td>boolean</td><td>是否允许登录与预约</td></tr>
 <tr><td><code>created_at</code></td><td>string</td><td>建档时间</td></tr>
@@ -312,7 +313,7 @@
 <h4 id="post-api-auth-change-password"><span class="method method-post">POST</span><a href="#post-api-auth-change-password" class="route">/api/auth/change-password</a></h4>
 <ul><li><strong>权限</strong>：员工；<strong>Body</strong>：<code>old_password</code>、<code>new_password</code>。</li><li>新密码至少 8 位；原密码错误返回 <code>400</code>。</li><li><strong>响应</strong>：<code>{ &quot;ok&quot;: true }</code>。只更新当前 Token 对应员工。</li></ul>
 </section>
-<h2 id="4-会员端接口-15">4. 会员端接口（15）<a class="anchor" href="#4-会员端接口-15" aria-label="链接到此节">#</a></h2>
+<h2 id="4-会员端接口-17">4. 会员端接口（17）<a class="anchor" href="#4-会员端接口-17" aria-label="链接到此节">#</a></h2>
 <h3 id="4-1-会员端初始化数据">4.1 会员端初始化数据<a class="anchor" href="#4-1-会员端初始化数据" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/public/bootstrap">
 <h4 id="get-api-public-bootstrap"><span class="method method-get">GET</span><a href="#get-api-public-bootstrap" class="route">/api/public/bootstrap</a></h4>
@@ -389,6 +390,16 @@
 <h4 id="post-api-public-me-phone"><span class="method method-post">POST</span><a href="#post-api-public-me-phone" class="route">/api/public/me/phone</a></h4>
 <ul><li><strong>权限</strong>：会员；<strong>Body</strong>：<code>{ new_phone, current_code, new_code }</code>。</li><li><strong>响应</strong>：更新后的 <code>member</code>，<code>phone</code> 为新号码。</li><li>必须同时提供原手机号验证码与新手机号验证码，两段验证码均校验通过后才换号，验证码一次性使用。</li><li>新手机号已被其他会员占用返回 <code>400</code>；验证码错误或过期返回 <code>400</code>。</li><li>换号后原号码不能再作为验证码接收方；操作写入日志（<code>member / change_phone</code>，日志中手机号做掩码）。</li></ul>
 </section>
+<h3 id="4-16-会员上传照片">4.16 会员上传照片<a class="anchor" href="#4-16-会员上传照片" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="post /api/public/me/photo">
+<h4 id="post-api-public-me-photo"><span class="method method-post">POST</span><a href="#post-api-public-me-photo" class="route">/api/public/me/photo</a></h4>
+<ul><li><strong>权限</strong>：会员；<strong>multipart</strong>：字段 <code>file</code>，支持 PNG、JPG、WebP，单张最大 6 MiB。</li><li><strong>响应</strong>：更新后的 <code>member</code>，<code>photo_url</code> 为新照片地址。</li><li>会员可在会员端直接拍照上传；重复上传会覆盖旧照片并删除旧文件。</li></ul>
+</section>
+<h3 id="4-17-会员删除照片">4.17 会员删除照片<a class="anchor" href="#4-17-会员删除照片" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="delete /api/public/me/photo">
+<h4 id="delete-api-public-me-photo"><span class="method method-delete">DELETE</span><a href="#delete-api-public-me-photo" class="route">/api/public/me/photo</a></h4>
+<ul><li><strong>权限</strong>：会员；<strong>请求</strong>：无 Body。</li><li><strong>响应</strong>：<code>member</code>，<code>photo_url</code> 为空字符串；原照片文件同时从服务器删除。</li></ul>
+</section>
 <h2 id="5-经营概览与基础元数据-2">5. 经营概览与基础元数据（2）<a class="anchor" href="#5-经营概览与基础元数据-2" aria-label="链接到此节">#</a></h2>
 <h3 id="5-1-今日经营概览">5.1 今日经营概览<a class="anchor" href="#5-1-今日经营概览" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/dashboard">
@@ -400,11 +411,11 @@
 <h4 id="get-api-admin-meta"><span class="method method-get">GET</span><a href="#get-api-admin-meta" class="route">/api/admin/meta</a></h4>
 <ul><li><strong>权限</strong>：只读（<code>catalog.view</code>）；<strong>请求</strong>：无。</li><li><code>products</code> 仅在具备 <code>products.view</code> 时返回，<code>users</code> 仅在具备 <code>settings.view</code> 或 <code>members.write</code> 时返回，避免下发用不到的数据。</li><li><strong>响应</strong>：<code>courses</code>、<code>rooms</code>、<code>teachers</code>、<code>products</code>、<code>users</code> 五个完整数组，包括停用项；另含 <code>member_sources</code>（获客来源下拉选项）。</li><li>用于表单选项和关联展示；接口含全部员工账号，前端不应把响应暴露给非授权用户。</li></ul>
 </section>
-<h2 id="6-会员档案-会员卡-权益与爽约-20">6. 会员档案、会员卡、权益与爽约（20）<a class="anchor" href="#6-会员档案-会员卡-权益与爽约-20" aria-label="链接到此节">#</a></h2>
+<h2 id="6-会员档案-会员卡-权益与爽约-22">6. 会员档案、会员卡、权益与爽约（22）<a class="anchor" href="#6-会员档案-会员卡-权益与爽约-22" aria-label="链接到此节">#</a></h2>
 <h3 id="6-1-查询会员列表">6.1 查询会员列表<a class="anchor" href="#6-1-查询会员列表" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/members">
 <h4 id="get-api-admin-members"><span class="method method-get">GET</span><a href="#get-api-admin-members" class="route">/api/admin/members</a></h4>
-<ul><li><strong>权限</strong>：只读。</li><li><strong>Query</strong>：<code>q</code>（姓名/英文名/手机号模糊搜索）、<code>category</code>（具有该类别活动卡）、<code>active_only</code>（默认 <code>false</code>）。</li><li><strong>响应</strong>：<code>{ items: Member[]（含 cards）, total }</code>，按 ID 倒序。</li></ul>
+<ul><li><strong>权限</strong>：只读。</li><li><strong>Query</strong>：<code>q</code>（姓名/英文名/手机号模糊搜索）、<code>category</code>（卡类别，可多选，用英文逗号分隔，如 <code>group,private</code>）、<code>card_status</code>（持卡状态：<code>active</code> 有有效卡 / <code>expired</code> 卡已过期 / <code>none</code> 未开卡）、<code>active_only</code>（默认 <code>false</code>）。</li><li><strong>响应</strong>：<code>{ items: Member[]（含 cards）, total }</code>，按 ID 倒序。</li></ul>
 </section>
 <h3 id="6-2-新建会员">6.2 新建会员<a class="anchor" href="#6-2-新建会员" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/members">
@@ -524,6 +535,16 @@
 <section class="endpoint" data-search="patch /api/admin/records/{record_id}">
 <h4 id="patch-api-admin-records-record-id"><span class="method method-patch">PATCH</span><a href="#patch-api-admin-records-record-id" class="route">/api/admin/records/{record_id}</a></h4>
 <ul><li><strong>权限</strong>：前台；<strong>Body</strong>：<code>teacher_id</code>、<code>record_type</code>、<code>title</code>、<code>content</code>、<code>record_date</code> 任意子集。</li><li><strong>响应</strong>：更新后的会员记录。标题不能为空，日期必须为 <code>YYYY-MM-DD</code>；删除使用第 16 章回收站接口。</li></ul>
+</section>
+<h3 id="6-21-上传会员照片">6.21 上传会员照片<a class="anchor" href="#6-21-上传会员照片" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="post /api/admin/members/{member_id}/photo">
+<h4 id="post-api-admin-members-member-id-photo"><span class="method method-post">POST</span><a href="#post-api-admin-members-member-id-photo" class="route">/api/admin/members/{member_id}/photo</a></h4>
+<ul><li><strong>权限</strong>：前台；<strong>multipart</strong>：字段 <code>file</code>，支持 PNG、JPG、WebP，单张最大 6 MiB。</li><li><strong>响应</strong>：更新后的 Member（含 cards），<code>photo_url</code> 为新照片地址。</li><li>会员在会员端上传过的照片可由前台重新替换，旧照片文件会被删除。</li></ul>
+</section>
+<h3 id="6-22-删除会员照片">6.22 删除会员照片<a class="anchor" href="#6-22-删除会员照片" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="delete /api/admin/members/{member_id}/photo">
+<h4 id="delete-api-admin-members-member-id-photo"><span class="method method-delete">DELETE</span><a href="#delete-api-admin-members-member-id-photo" class="route">/api/admin/members/{member_id}/photo</a></h4>
+<ul><li><strong>权限</strong>：前台；<strong>请求</strong>：无 Body。</li><li><strong>响应</strong>：更新后的 Member，<code>photo_url</code> 为空字符串；原照片文件同时从服务器删除。</li></ul>
 </section>
 <h2 id="7-会员合同与评估文件-7">7. 会员合同与评估文件（7）<a class="anchor" href="#7-会员合同与评估文件-7" aria-label="链接到此节">#</a></h2>
 <h3 id="7-1-文件列表">7.1 文件列表<a class="anchor" href="#7-1-文件列表" aria-label="链接到此节">#</a></h3>
@@ -904,7 +925,7 @@
 <h4 id="get-api-admin-api-key-logs"><span class="method method-get">GET</span><a href="#get-api-admin-api-key-logs" class="route">/api/admin/api-key-logs</a></h4>
 <ul><li><strong>权限</strong>：管理员登录会话。</li><li><strong>Query</strong>：<code>key_id</code>（0 表示全部）、<code>result=all|success|denied</code>、<code>page</code>（≥1）、<code>q</code>（按密钥名称、路径或 IP 模糊搜索）。</li><li><code>success</code> 为状态码小于 400，<code>denied</code> 为状态码大于等于 400。</li><li><strong>响应</strong>：<code>{ items, total, page, page_size: 20 }</code>，按日志 ID 倒序。</li><li>日志项：<code>id</code>、<code>api_key_id</code>、<code>key_name</code>、<code>key_prefix</code>、<code>method</code>、<code>path</code>、<code>status_code</code>、<code>ip</code>、<code>user_agent</code>、<code>created_at</code>。</li><li>无效或过期密钥的拒绝请求也会记录；路径不含 Query String，日志中不会出现完整密钥。</li></ul>
 </section>
-<h2 id="13-数据导出-备份与恢复-10">13. 数据导出、备份与恢复（10）<a class="anchor" href="#13-数据导出-备份与恢复-10" aria-label="链接到此节">#</a></h2>
+<h2 id="13-数据导出-备份与恢复-11">13. 数据导出、备份与恢复（11）<a class="anchor" href="#13-数据导出-备份与恢复-11" aria-label="链接到此节">#</a></h2>
 <aside class="callout">以下接口均需管理员。备份工具只支持 SQLite 文件数据库；数据库备份不包含 <code>/uploads</code> 中的合同、Logo 等文件，完整灾难恢复还需另行备份上传目录。</aside>
 <h3 id="13-1-立即一致性备份">13.1 立即一致性备份<a class="anchor" href="#13-1-立即一致性备份" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/maintenance/backup-db">
@@ -955,6 +976,11 @@
 <section class="endpoint" data-search="post /api/admin/maintenance/members/import.csv">
 <h4 id="post-api-admin-maintenance-members-import-csv"><span class="method method-post">POST</span><a href="#post-api-admin-maintenance-members-import-csv" class="route">/api/admin/maintenance/members/import.csv</a></h4>
 <ul><li><strong>Query</strong>：<code>duplicate_strategy=skip|update</code>，默认 <code>skip</code>。</li><li><strong>multipart</strong>：<code>file</code>，最大 5 MiB，编码必须 UTF-8 / UTF-8 BOM。</li><li><strong>响应</strong>：<code>{ ok, created, updated, skipped, error_count, errors }</code>，最多返回前 100 条行级错误。</li><li>姓名和手机号逐行校验；<code>skip</code> 跳过同手机号，<code>update</code> 用 CSV 字段覆盖已有会员。错误行跳过，其余有效行仍提交。</li></ul>
+</section>
+<h3 id="13-11-导出会员名单-excel">13.11 导出会员名单 Excel<a class="anchor" href="#13-11-导出会员名单-excel" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="get /api/admin/export/members.xlsx">
+<h4 id="get-api-admin-export-members-xlsx"><span class="method method-get">GET</span><a href="#get-api-admin-export-members-xlsx" class="route">/api/admin/export/members.xlsx</a></h4>
+<ul><li><strong>权限</strong>：需 <code>members.view</code>；API Key 需 <code>read</code> 范围。</li><li><strong>Query</strong>：<code>scope</code> 取 <code>all</code>（全部会员）、<code>new</code>（当月新进会员）、<code>renew_pending</code>（当月未续会会员），默认 <code>all</code>；<code>month</code> 为统计月份 <code>YYYY-MM</code>，<code>scope=all</code> 时忽略。</li><li><strong>响应</strong>：<code>application/vnd.openxmlformats-officedocument.spreadsheetml.sheet</code> 文件流，<code>Content-Disposition: attachment</code>。</li><li>工作表名为“会员列表”，中文表头：会员姓名、照片、手机号码、生日、性别、会员卡类别、合同总金额、购买时间、到期时间、会籍归属、会员时长、备注；首行冻结。</li><li>会员照片直接嵌入“照片”列单元格（无照片留空），其余列取该会员当前有效会员卡的汇总数据。</li></ul>
 </section>
 <h2 id="14-典型业务调用顺序">14. 典型业务调用顺序<a class="anchor" href="#14-典型业务调用顺序" aria-label="链接到此节">#</a></h2>
 <h3 id="14-1-会员预约闭环">14.1 会员预约闭环<a class="anchor" href="#14-1-会员预约闭环" aria-label="链接到此节">#</a></h3>
@@ -1076,7 +1102,7 @@ const dashboard = await api(&quot;/api/admin/dashboard&quot;, {
 <h4 id="get-api-admin-transactions-transaction-id-receipt-pdf"><span class="method method-get">GET</span><a href="#get-api-admin-transactions-transaction-id-receipt-pdf" class="route">/api/admin/transactions/{transaction_id}/receipt.pdf</a></h4>
 <ul><li><strong>权限</strong>：财务查看（<code>finance.view</code>）。</li><li><strong>响应</strong>：单页 <strong>75 × 145 mm</strong> 小票；待核销或已取消记录返回 <code>400</code>。</li><li>包含 Octave/自定义品牌 Logo、健康管理 Wellness、日期时间、项目、金额、入账类型、客户、结账方式、备注、入账人、6% 增值税与去税金额、签字栏及场馆地址电话。</li><li>去税金额按“含税金额 ÷ 1.06”计算，增值税为含税金额减去去税金额；退款或冲销记录以负数展示。</li></ul>
 </section>
-      <footer class="docs-footer"><span>音昱 Wellness · API v1.0.0 · 128 个业务接口</span><span><a href="/help.html">系统操作指南</a> · <a href="/openapi.json">OpenAPI 3</a> · 文档源：<a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md">docs/API.md</a></span></footer>
+      <footer class="docs-footer"><span>音昱 Wellness · API v1.0.0 · 133 个业务接口</span><span><a href="/help.html">系统操作指南</a> · <a href="/openapi.json">OpenAPI 3</a> · 文档源：<a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md">docs/API.md</a></span></footer>
     </main>
   </div>
   <script>

@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..deps import require_catalog_view, require_finance_view, require_reports
+from ..deps import require_catalog_view, require_finance_view, require_members_view, require_reports
+from ..export_service import build_member_workbook
 from ..models import AppSettings, Transaction, User
 from ..pdf_service import receipt_pdf, report_pdf, room_overview_pdf, transactions_pdf
 from ..utils import today, valid_date
@@ -31,6 +32,16 @@ def export_transactions(date_from: str = Query(""), date_to: str = Query(""), ca
     rows = query_transactions(db, start, end, category, member_id)
     content = transactions_pdf(rows, start, end, category, db.get(AppSettings, 1))
     return _pdf(content, f"wellness-transactions-{start or 'all'}-{end or today()}.pdf")
+
+
+@router.get("/export/members.xlsx")
+def export_members_xlsx(scope: str = Query("all"), month: str = Query(""), db: Session = Depends(get_db), _: User = Depends(require_members_view)):
+    """会员列表 Excel 导出：中文表头并嵌入会员照片；scope = all / new / renew_pending。"""
+    if scope not in {"all", "new", "renew_pending"}:
+        raise HTTPException(400, "不支持的导出范围")
+    content = build_member_workbook(db, scope, month)
+    filename = f"wellness-members-{scope}-{month or today()}.xlsx"
+    return Response(content=content, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": f'attachment; filename="{filename}"', "Cache-Control": "no-store"})
 
 
 @router.get("/reports.pdf")

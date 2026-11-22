@@ -28,6 +28,21 @@ export function categoryLabel(value: string, local: (zh: string, en?: string) =>
   return local(copy[0], copy[1]);
 }
 
+// 课程类型（用于套餐分项权益、预约类别等），与财务分类分开命名。
+const courseTypeCopy: Record<string, [string, string]> = {
+  group: ["团课", "Group class"],
+  private: ["私教", "Personal training"],
+  assessment: ["体测评估", "Assessment"],
+  workshop: ["工作坊", "Workshop"],
+  training: ["培训课", "Training"],
+  enterprise: ["企业课", "Corporate class"],
+};
+
+export function courseTypeLabel(value: string, local: (zh: string, en?: string) => string) {
+  const copy = courseTypeCopy[value] ?? [value, value];
+  return local(copy[0], copy[1]);
+}
+
 export function paymentLabel(value: string, local: (zh: string, en?: string) => string) {
   const copy = paymentCopy[value] ?? [value, value];
   return local(copy[0], copy[1]);
