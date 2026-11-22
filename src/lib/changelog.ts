@@ -1,14 +1,38 @@
 // 系统版本与更新日志：后台“系统设置 → 更新日志”展示，按日期为分界列出主要内容。
 export const APP_VERSION = "1.1.0";
-export const APP_RELEASE_DATE = "2026-11-18";
+export const APP_RELEASE_DATE = "2026-11-22";
 export const API_VERSION = "v1.0.0";
-export const API_ENDPOINT_COUNT = 128;
+export const API_ENDPOINT_COUNT = 134;
 
 export interface ChangelogText { zh: string; en: string }
 export interface ChangelogGroup { title: ChangelogText; points: ChangelogText[] }
 export interface ChangelogRelease { date: string; version: string; title: ChangelogText; summary: ChangelogText; groups: ChangelogGroup[] }
 
 export const changelogReleases: ChangelogRelease[] = [
+  {
+    date: "2026-11-22",
+    version: APP_VERSION,
+    title: { zh: "会员照片、名单导出、会员卡操作与开卡日期待定", en: "Member photos, roster export, card operations and pending card start" },
+    summary: { zh: "补齐会员照片与名单导出，会员卡支持编辑、续卡、请假停卡与跨类目升卡，并把开卡日期与营收口径交还给管理员。", en: "Member photos and Excel roster export are in; membership cards can be edited, renewed, paused and upgraded; card start date and revenue policy are now admin-controlled." },
+    groups: [
+      { title: { zh: "会员资料", en: "Member profiles" }, points: [
+        { zh: "会员新增照片字段，会员端可自行拍照上传，后台也能代为更换或移除", en: "Members now have a photo: they can take and upload one themselves, and staff can replace or remove it" },
+        { zh: "会员列表支持按名称、手机号、卡状态与来源筛选，筛选结果可导出 Excel 名单", en: "The member list filters by name, phone, card status and source, and the filtered result exports to Excel" },
+      ] },
+      { title: { zh: "会员卡操作", en: "Card operations" }, points: [
+        { zh: "会员卡新增编辑、续卡、请假停卡与跨类目升卡四类操作，卡片上直接进入", en: "Cards gained edit, renew, pause and cross-category upgrade actions, all reachable from the card itself" },
+        { zh: "续卡即重新购卡，保留原卡的记录并生成新的购卡流水", en: "Renewing is simply buying again: the old card is kept and a new purchase record is created" },
+        { zh: "请假停卡只冻结冻结区间内的权益，区间之外照常可用", en: "A paused card only freezes benefits inside the paused window; outside it the card works normally" },
+        { zh: "升卡自动结转原卡剩余次数与有效期并生成升卡流水", en: "Upgrading carries over remaining sessions and validity and produces an upgrade record" },
+      ] },
+      { title: { zh: "开卡日期待定与营收口径", en: "Pending start and revenue policy" }, points: [
+        { zh: "购卡时可选择“开卡日期待定”，卡片立即可用，首次签到当天自动开卡并按产品有效期顺延", en: "A card can be bought with a pending start date: it is usable at once and opens automatically on the first check-in" },
+        { zh: "撤销签到时若本次才开卡，会退回“开卡日期待定”状态，均摊起始日一并清空", en: "Undoing the check-in that opened a pending card returns it to pending and clears the amortisation start" },
+        { zh: "营收确认口径移入系统设置，可选按卡种自动、购卡即全额确认或按有效期每日均摊", en: "Revenue policy moved to system settings: automatic by card type, full recognition at purchase, or daily amortisation" },
+        { zh: "私教与评估类始终不入营收，实际消课后单独确认，规则不受全局设置影响", en: "Private and assessment sessions never enter revenue at purchase; they are recognised after delivery, regardless of the global setting" },
+      ] },
+    ],
+  },
   {
     date: "2026-11-18",
     version: APP_VERSION,

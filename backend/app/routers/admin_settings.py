@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from ..config import UPLOAD_DIR
 from ..database import get_db
 from ..deps import require_settings_view, require_settings_write
+from ..finance_service import SYSTEM_REVENUE_MODES
 from ..log_util import audit, sms_log
 from ..models import AppSettings, OperationLog, SmsSendLog, SmsSettings, User
 from ..permissions import ROLE_LABELS, permission_matrix, role_capabilities
@@ -24,7 +25,7 @@ router = APIRouter(prefix="/api/admin", tags=["admin-settings"])
 
 
 def _settings_dict(row: AppSettings) -> dict:
-    return {"venue_name": row.venue_name, "venue_name_en": row.venue_name_en, "address": row.address, "address_en": row.address_en, "phone": row.phone, "logo_url": row.logo_url, "favicon_url": row.favicon_url, "booking_cutoff_minutes": row.booking_cutoff_minutes, "no_show_block_days": row.no_show_block_days, "reminder_hours": row.reminder_hours}
+    return {"venue_name": row.venue_name, "venue_name_en": row.venue_name_en, "address": row.address, "address_en": row.address_en, "phone": row.phone, "logo_url": row.logo_url, "favicon_url": row.favicon_url, "booking_cutoff_minutes": row.booking_cutoff_minutes, "no_show_block_days": row.no_show_block_days, "reminder_hours": row.reminder_hours, "revenue_mode": row.revenue_mode or "auto"}
 
 
 @router.get("/settings")
@@ -35,10 +36,12 @@ def get_app_settings(db: Session = Depends(get_db), _: User = Depends(require_se
 @router.put("/settings")
 def put_app_settings(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_settings_write)):
     row = db.get(AppSettings, 1)
-    allowed = {"venue_name", "venue_name_en", "address", "address_en", "phone", "booking_cutoff_minutes", "no_show_block_days", "reminder_hours"}
+    allowed = {"venue_name", "venue_name_en", "address", "address_en", "phone", "booking_cutoff_minutes", "no_show_block_days", "reminder_hours", "revenue_mode"}
     for key, value in payload.items():
         if key in allowed:
             setattr(row, key, value)
+    if row.revenue_mode not in SYSTEM_REVENUE_MODES:
+        raise HTTPException(400, "营收口径不合法")
     # 先做类型与范围校验，避免把非法数值写进数据库后触发 500。
     cutoff = as_int(row.booking_cutoff_minutes, "自助预约截止（分钟）")
     block_days = as_int(row.no_show_block_days, "爽约禁止预约天数")

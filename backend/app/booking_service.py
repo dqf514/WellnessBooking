@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from .membership_service import find_available_voucher
-from .models import AppSettings, Booking, ClassSession, ExperienceVoucher, Member, MemberCard, MemberCardShare
+from .models import AppSettings, Booking, ClassSession, ExperienceVoucher, Member, MemberCard, MemberCardShare, Transaction
 from .utils import add_days, json_loads, session_datetime, today
 
 ACTIVE_BOOKING_STATUSES = {"booked", "checked_in", "completed", "no_show"}
@@ -28,7 +28,10 @@ def _card_quantity_for(card: MemberCard, course_type: str) -> int | None:
 
 
 def _card_usable(card: MemberCard, course_type: str, on_date: str) -> bool:
-    if card.deleted_at is not None or card.status != "active" or card.expires_on < on_date or card.starts_on > on_date:
+    if card.deleted_at is not None or card.status != "active":
+        return False
+    if not card.start_pending and (card.expires_on < on_date or card.starts_on > on_date):
+        # 开卡日期待定的卡没有有效期，等首次签到时自动开卡，期间照常可用。
         return False
     if card.frozen_until and card.frozen_until >= on_date:
         # 请假 / 停卡只在冻结区间内停用权益：冻结开始日之前、结束日之后照常可用。
@@ -39,10 +42,11 @@ def _card_usable(card: MemberCard, course_type: str, on_date: str) -> bool:
 
 
 def find_available_card(db: Session, member: Member, course_type: str, on_date: str) -> MemberCard | None:
-    filters = [MemberCard.status == "active", MemberCard.expires_on >= on_date, MemberCard.deleted_at.is_(None)]
+    filters = [MemberCard.status == "active", or_(MemberCard.start_pending.is_(True), MemberCard.expires_on >= on_date), MemberCard.deleted_at.is_(None)]
     own = db.query(MemberCard).filter(MemberCard.member_id == member.id, *filters).all()
     shared = db.query(MemberCard).join(MemberCardShare, MemberCardShare.card_id == MemberCard.id).filter(MemberCardShare.member_id == member.id, MemberCardShare.deleted_at.is_(None), *filters).all()
-    for card in sorted({card.id: card for card in [*own, *shared]}.values(), key=lambda item: (item.expires_on, item.id)):
+    # 已开卡的卡优先使用，开卡日期待定的卡排到最后，避免提前把待定卡打开。
+    for card in sorted({card.id: card for card in [*own, *shared]}.values(), key=lambda item: (bool(item.start_pending), item.expires_on, item.id)):
         if _card_usable(card, course_type, on_date):
             return card
     return None
@@ -157,6 +161,32 @@ def _restore_voucher(db: Session, voucher: ExperienceVoucher) -> None:
     voucher.version = voucher_version + 1
 
 
+def _open_pending_card(db: Session, card: MemberCard, on_date: str, booking: Booking) -> None:
+    """开卡日期待定的卡在首次签到时自动开卡：起始日为签到当天，有效期按产品天数顺延。"""
+    validity = max(1, card.product.validity_days if card.product else 365)
+    card.starts_on = on_date
+    card.expires_on = add_days(on_date, validity)
+    card.start_pending = False
+    card.opened_booking_id = booking.id
+    transaction = db.query(Transaction).filter(Transaction.member_card_id == card.id, Transaction.kind == "purchase", Transaction.deleted_at.is_(None)).first()
+    if transaction and transaction.revenue_mode == "amortized":
+        transaction.revenue_start_on = on_date
+        transaction.revenue_days = validity
+
+
+def _revert_pending_card(db: Session, card: MemberCard, booking: Booking) -> None:
+    """撤销签到时，如果这张卡是本次签到才开出来的，则退回“开卡日期待定”。"""
+    if not card.opened_booking_id or card.opened_booking_id != booking.id:
+        return
+    card.starts_on = ""
+    card.expires_on = ""
+    card.start_pending = True
+    card.opened_booking_id = 0
+    transaction = db.query(Transaction).filter(Transaction.member_card_id == card.id, Transaction.kind == "purchase", Transaction.deleted_at.is_(None)).first()
+    if transaction and transaction.revenue_mode == "amortized":
+        transaction.revenue_start_on = ""
+
+
 def consume_booking(db: Session, booking: Booking) -> None:
     if booking.consumed:
         return
@@ -166,7 +196,9 @@ def consume_booking(db: Session, booking: Booking) -> None:
     if not card or not _card_usable(card, course_type, on_date):
         card = find_available_card(db, booking.member, course_type, on_date)
     if card:
-        if card.starts_on > on_date:
+        if card.start_pending:
+            _open_pending_card(db, card, on_date, booking)
+        elif card.starts_on > on_date:
             previous_start = card.starts_on
             card.starts_on = on_date
             days = (datetime.fromisoformat(previous_start) - datetime.fromisoformat(on_date)).days
@@ -187,6 +219,7 @@ def restore_consumption(db: Session, booking: Booking) -> None:
         return
     if booking.member_card:
         _restore(db, booking.member_card, booking.session.course.course_type)
+        _revert_pending_card(db, booking.member_card, booking)
     if booking.experience_voucher:
         _restore_voucher(db, booking.experience_voucher)
     booking.consumed = False

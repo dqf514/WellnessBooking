@@ -148,6 +148,9 @@ class MemberCard(Base, TimestampMixin, SoftDeleteMixin):
     frozen_from: Mapped[str] = mapped_column(String(10), default="")
     frozen_until: Mapped[str] = mapped_column(String(10), default="")
     is_renewal: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    # 开卡日期待定：首次签到时按签到当天自动开卡并顺延有效期。
+    start_pending: Mapped[bool] = mapped_column(Boolean, default=False)
+    opened_booking_id: Mapped[int] = mapped_column(Integer, default=0)
     note: Mapped[str] = mapped_column(Text, default="")
     version: Mapped[int] = mapped_column(Integer, default=0)
 
@@ -300,6 +303,8 @@ class AppSettings(Base):
     booking_cutoff_minutes: Mapped[int] = mapped_column(Integer, default=120)
     no_show_block_days: Mapped[int] = mapped_column(Integer, default=7)
     reminder_hours: Mapped[int] = mapped_column(Integer, default=24)
+    # 营收确认口径：auto（按卡种自动）/ immediate（购卡即全额确认）/ amortized（按有效期均摊）。
+    revenue_mode: Mapped[str] = mapped_column(String(20), default="auto")
 
 
 class SmsSettings(Base):

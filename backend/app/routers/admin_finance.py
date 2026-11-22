@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from ..card_service import issue_card
 from ..database import get_db
 from ..deps import require_finance, require_finance_view, require_products_view, require_products_write, require_reports, require_revenue
-from ..finance_service import create_consumption_revenue, normalized_category, recognized_revenue, resolve_entry_options, resolve_revenue_details
+from ..finance_service import create_consumption_revenue, normalized_category, recognized_revenue, resolve_entry_options, resolve_purchase_revenue_mode, resolve_revenue_details, system_revenue_mode
 from ..log_util import audit
 from ..models import Booking, CardProduct, ClassSession, Member, Room, RoomReservation, Transaction, User
 from ..recycle_service import move_to_recycle
@@ -42,6 +42,15 @@ def list_products(db: Session = Depends(get_db), _: User = Depends(require_produ
     order = {"group": 0, "private": 1, "assessment": 1, "annual": 2, "package": 2, "workshop": 3, "training": 4}
     rows.sort(key=lambda row: (order.get(row.category, 99), row.id))
     return {"items": [product_dict(row) for row in rows]}
+
+
+@router.get("/revenue-policy")
+def revenue_policy(product_id: int = Query(0), db: Session = Depends(get_db), _: User = Depends(require_revenue)):
+    """购卡营收口径由系统设置统一决定，这里把当前口径告诉前端，前台不再逐单勾选。"""
+    system = system_revenue_mode(db)
+    product = db.get(CardProduct, product_id) if product_id else None
+    effective = resolve_purchase_revenue_mode(db, product) if product else ("immediate" if system == "auto" else system)
+    return {"system": system, "effective": effective, "validity_days": product.validity_days if product else 0}
 
 
 @router.post("/products")

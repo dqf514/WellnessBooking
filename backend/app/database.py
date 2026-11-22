@@ -44,10 +44,10 @@ def get_db():
 def ensure_schema():
     with engine.begin() as connection:
         additions = {
-            "app_settings": {"logo_url": "VARCHAR(600) DEFAULT ''", "favicon_url": "VARCHAR(600) DEFAULT ''"},
+            "app_settings": {"logo_url": "VARCHAR(600) DEFAULT ''", "favicon_url": "VARCHAR(600) DEFAULT ''", "revenue_mode": "VARCHAR(20) DEFAULT 'auto'"},
             "members": {"photo_url": "VARCHAR(600) DEFAULT ''"},
             "class_sessions": {"reserved_count": "INTEGER DEFAULT 0"},
-            "member_cards": {"version": "INTEGER DEFAULT 0", "frozen_from": "VARCHAR(10) DEFAULT ''", "is_renewal": "BOOLEAN DEFAULT 0"},
+            "member_cards": {"version": "INTEGER DEFAULT 0", "frozen_from": "VARCHAR(10) DEFAULT ''", "is_renewal": "BOOLEAN DEFAULT 0", "start_pending": "BOOLEAN DEFAULT 0", "opened_booking_id": "INTEGER DEFAULT 0"},
             "rooms": {"floor": "VARCHAR(30) DEFAULT '1F'", "sort_order": "INTEGER DEFAULT 0"},
             "bookings": {"experience_voucher_id": "INTEGER REFERENCES experience_vouchers(id)"},
             "member_documents": {"category": "VARCHAR(24) DEFAULT 'contract'"},

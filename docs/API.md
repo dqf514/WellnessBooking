@@ -1,6 +1,6 @@
 # 音昱 Wellness API 对接文档
 
-> 版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 **133 个 HTTP 接口**。
+> 版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 **134 个 HTTP 接口**。
 >
 > 文档更新：2026-11-22 · 功能基线：预约排课、动态二维码签到、购卡申请取消、会员权益与营收业务闭环、角色能力矩阵与课程库独立接口。
 >
@@ -217,6 +217,7 @@ FastAPI 参数校验错误格式：
 | `status` | string | `active` / `cancelled` / `upgraded`；响应可将过期活动卡显示为 `expired` |
 | `frozen_from`、`frozen_until` | string | 冻结开始日与截止日，未冻结为空字符串；冻结区间内不消耗权益 |
 | `is_renewal` | boolean | 是否为续卡（重新购卡）开的卡 |
+| `start_pending` | boolean | 开卡日期待定：卡已生效可预约，首次签到当天自动开卡并按产品有效期顺延 |
 | `note` | string | 操作备注 |
 | `version` | integer | 乐观锁版本号，每次成功更新后加一 |
 | `shared_with` | object[] | 共享会员的 `id`、`name`、`phone` |
@@ -512,7 +513,7 @@ curl -X POST "$API/api/auth/login" \
 #### GET /api/admin/members
 
 - **权限**：只读。
-- **Query**：`q`（姓名/英文名/手机号模糊搜索）、`category`（卡类别，可多选，用英文逗号分隔，如 `group,private`）、`card_status`（持卡状态：`active` 有有效卡 / `expired` 卡已过期 / `none` 未开卡）、`active_only`（默认 `false`）。
+- **Query**：`q`（姓名/英文名/手机号模糊搜索）、`category`（卡类别，可多选，用英文逗号分隔，如 `group,private`）、`card_status`（持卡状态：`active` 有有效卡 / `expired` 卡已过期 / `pending` 开卡日期待定 / `none` 未开卡）、`active_only`（默认 `false`）。
 - **响应**：`{ items: Member[]（含 cards）, total }`，按 ID 倒序。
 
 ### 6.2 新建会员
@@ -548,12 +549,13 @@ curl -X POST "$API/api/auth/login" \
 #### POST /api/admin/members/{member_id}/cards
 
 - **权限**：前台。
-- **Body**：`product_id` 必填；`price`（默认产品价，不能为负）、`payment_method`（默认 `cash`）、`starts_on`（默认今日）、`note` 可选、`is_renewal`（默认 `false`）。
-- **入账选项**：`record_cash`（默认 `true`）、`revenue_mode`（`none` / `immediate` / `amortized`）；均摊时可传 `revenue_start_on`、`revenue_days`，默认使用开卡日期和产品有效期。
+- **Body**：`product_id` 必填；`price`（默认产品价，不能为负）、`payment_method`（默认 `cash`）、`starts_on`（默认今日）、`note` 可选、`is_renewal`（默认 `false`）、`start_pending`（默认 `false`）。
+- **入账选项**：`record_cash`（默认 `true`）。营收口径统一由系统设置决定（`GET /api/admin/revenue-policy`），请求里的 `revenue_mode` 不再生效。
 - **响应**：MemberCard。
 - 同一事务创建活动会员卡和正数 `purchase` 流水。有效期为 `starts_on + validity_days`，初始次数与权益复制自产品。入流水与入营收至少选择一项。
 - `is_renewal=true` 表示这是**续卡**（重新购卡）：新卡与流水都带续卡标记，便于统计续卡人数与续卡金额；备注会自动以“续卡”开头。
-- 私教/评估产品购买只允许 `revenue_mode=none`，营收须在实际消课后通过专用接口确认；团课等默认即时营收，年卡/组合套餐及 365 天产品默认每日均摊。
+- `start_pending=true` 表示**开卡日期待定**：卡开出来即可正常预约，`starts_on` 与 `expires_on` 暂为空；会员首次签到当天自动开卡，起始日为签到当天、到期日为起始日 + 产品有效期，均摊口径的购卡流水同步改为该起始日。撤销签到会把卡退回“开卡日期待定”状态。
+- 私教/评估产品购买不计营收，营收须在实际消课后通过专用接口确认；其余按系统设置的口径执行（`auto` 时年卡/组合套餐及 365 天产品每日均摊，其余购卡时全额确认）。
 
 ### 6.6 维护单张会员卡
 
@@ -566,7 +568,7 @@ curl -X POST "$API/api/auth/login" \
 | `action` | 附加字段 | 行为 |
 | --- | --- | --- |
 | `extend` | `days`（非零，绝对值不超过 3650）、`note` | 增加或减少到期日天数 |
-| `edit` | `starts_on`、`expires_on`、`note` | 直接修改开卡日期与到期日（顺延到期日用这个动作），备注可选 |
+| `edit` | `starts_on`、`expires_on`、`note`、`start_pending` | 直接修改开卡日期与到期日（顺延到期日用这个动作），备注可选；`start_pending=true` 把卡改回开卡日期待定，填了 `starts_on` 则当场正式开卡并按产品有效期补出到期日 |
 | `freeze` | `frozen_from`（可空，默认今日）、`frozen_until`、`note` | 设置冻结区间，区间内不消耗权益，卡状态置为 `active` |
 | `unfreeze` | 无 | 清空冻结开始日与截止日 |
 | `activate` | 无 | 状态置为 `active`，不会自动延长已过期日期 |
@@ -1028,7 +1030,7 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 - **权限**：管理员；**Body**：无。
 - 清空课程的 `image_url` 并删除服务器上的旧文件；**响应**：更新后的 Course。
 
-## 9. 产品、财务与报表（10）
+## 9. 产品、财务与报表（11）
 
 ### 9.1 产品列表
 
@@ -1113,6 +1115,16 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 - **权限**：财务；**响应**：`{ ok, item, message }`。
 - 只允许手工入账。删除后立即从流水、现金实收、确认营收和导出中排除，恢复后重新计入；购买、升卡和退款流水不可删除。
 
+### 9.11 读取购卡营收口径
+
+#### GET /api/admin/revenue-policy
+
+- **权限**：收款与核销（前台 / 财务）；**查询参数**：`product_id` 可选。
+- **响应**：`{ system, effective, validity_days }`。
+- `system` 是系统设置里设定的口径：`auto`（按卡种自动）/ `immediate`（购卡即全额确认）/ `amortized`（按有效期每日均摊）。
+- `effective` 是当前产品实际生效的营收方式：私教与评估始终为 `none`（消课后确认营收），其余按 `system` 与卡种判定。
+- 前端购卡弹窗用这个接口展示当前口径，不再逐单勾选；后端以系统设置为准，不接受前端传入的 `revenue_mode` 覆盖。
+
 ## 10. 场馆、品牌与账号（9）
 
 ### 10.1 读取系统设置
@@ -1120,7 +1132,8 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 #### GET /api/admin/settings
 
 - **权限**：管理员；**响应**：AppSettings。
-- 字段：`venue_name`、`venue_name_en`、`address`、`address_en`、`phone`、`logo_url`、`favicon_url`、`booking_cutoff_minutes`、`no_show_block_days`、`reminder_hours`。
+- 字段：`venue_name`、`venue_name_en`、`address`、`address_en`、`phone`、`logo_url`、`favicon_url`、`booking_cutoff_minutes`、`no_show_block_days`、`reminder_hours`、`revenue_mode`。
+- `revenue_mode` 是购卡营收口径：`auto`（按卡种自动）/ `immediate`（购卡即全额确认营收）/ `amortized`（按有效期每日均摊确认营收）；私教与评估卡始终在实际消课后确认营收。
 
 ### 10.2 更新系统设置
 
@@ -1128,6 +1141,7 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 
 - **权限**：管理员；**Body**：上述字段，但品牌 URL 不接受此接口修改。
 - 自助截止 0–10080 分钟，爽约限制 0–365 天，提醒提前量 1–168 小时。
+- `revenue_mode` 只能取 `auto` / `immediate` / `amortized`，其他值返回 `400`；修改后立即对新的购卡与升卡生效。
 - **响应**：完整 AppSettings；未传字段保持原值。
 
 ### 10.3 上传 Logo / favicon

@@ -92,9 +92,11 @@ def list_members(q: str = Query(""), category: str = Query(""), card_status: str
             cards = [card for card in row.cards if card.deleted_at is None]
             if "none" in statuses and not cards:
                 return True
-            if "active" in statuses and any(card.status == "active" and (card.expires_on or "") >= current for card in cards):
+            if "active" in statuses and any(card.status == "active" and (card.start_pending or (card.expires_on or "") >= current) for card in cards):
                 return True
-            if "expired" in statuses and any(card.status == "active" and (card.expires_on or "") < current for card in cards):
+            if "expired" in statuses and any(card.status == "active" and not card.start_pending and (card.expires_on or "") < current for card in cards):
+                return True
+            if "pending" in statuses and any(card.status == "active" and card.start_pending for card in cards):
                 return True
             return False
         rows = [row for row in rows if matches(row)]
@@ -188,7 +190,7 @@ def update_member(member_id: int, payload: dict = Body(...), db: Session = Depen
 
 @router.post("/members/{member_id}/cards")
 def purchase_card(member_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_revenue)):
-    from ..finance_service import resolve_entry_options, resolve_revenue_details
+    from ..finance_service import resolve_entry_options, resolve_purchase_revenue_mode
 
     member = db.get(Member, member_id)
     product = db.get(CardProduct, int(payload.get("product_id", 0)))
@@ -197,21 +199,25 @@ def purchase_card(member_id: int, payload: dict = Body(...), db: Session = Depen
     price = as_float(payload.get("price", product.price), "购买价格")
     if price < 0:
         raise HTTPException(400, "购买价格不能为负数")
-    starts_on = valid_date(str(payload.get("starts_on") or today()), "开卡日期")
+    # 开卡日期待定：先买卡，之后首次签到当天自动开卡并顺延有效期。
+    start_pending = bool(payload.get("start_pending"))
+    starts_on = "" if start_pending else valid_date(str(payload.get("starts_on") or today()), "开卡日期")
     # 续卡就是重新购卡：带上续卡标记，便于后续统计续卡人数与续卡金额。
     is_renewal = bool(payload.get("is_renewal"))
     note = str(payload.get("note", ""))
     if is_renewal and not note.startswith("续卡"):
         note = f"续卡 · {note}".strip(" ·")
-    record_cash, revenue_mode = resolve_entry_options(payload, product)
-    revenue_start_on, revenue_days = resolve_revenue_details(payload, revenue_mode, starts_on, product.validity_days)
-    entry_payload = {**payload, "revenue_start_on": revenue_start_on, "revenue_days": revenue_days}
-    card = issue_card(db, member=member, product=product, price=price, payment_method=str(payload.get("payment_method", "cash")), starts_on=starts_on, note=note, record_cash=record_cash, revenue_mode=revenue_mode, created_by=user.full_name or user.username, is_renewal=is_renewal)
+    # 营收口径以系统设置为准，前端不再逐单选择。
+    revenue_mode = resolve_purchase_revenue_mode(db, product)
+    record_cash, revenue_mode = resolve_entry_options(payload, product, revenue_mode=revenue_mode)
+    revenue_start_on = "" if start_pending else starts_on
+    revenue_days = product.validity_days if revenue_mode == "amortized" else 0
+    card = issue_card(db, member=member, product=product, price=price, payment_method=str(payload.get("payment_method", "cash")), starts_on=starts_on, note=note, record_cash=record_cash, revenue_mode=revenue_mode, created_by=user.full_name or user.username, is_renewal=is_renewal, start_pending=start_pending)
     transaction = db.query(Transaction).filter(Transaction.member_card_id == card.id, Transaction.kind == "purchase").first()
     if transaction:
-        transaction.revenue_start_on = entry_payload["revenue_start_on"]
-        transaction.revenue_days = entry_payload["revenue_days"]
-    audit(db, user, "member_card", "purchase", "member_card", card.id, {"member_id": member_id, "product_id": product.id, "price": price, "record_cash": record_cash, "revenue_mode": revenue_mode, "is_renewal": is_renewal})
+        transaction.revenue_start_on = revenue_start_on
+        transaction.revenue_days = revenue_days
+    audit(db, user, "member_card", "purchase", "member_card", card.id, {"member_id": member_id, "product_id": product.id, "price": price, "record_cash": record_cash, "revenue_mode": revenue_mode, "is_renewal": is_renewal, "start_pending": start_pending})
     db.commit()
     return card_dict(card)
 
@@ -233,6 +239,13 @@ def update_card(card_id: int, payload: dict = Body(...), db: Session = Depends(g
         updates["note"] = str(payload.get("note", card.note))
     elif action == "edit":
         # 编辑卡：开卡日期、到期日与备注；延期直接改到期日，不再单独做延期动作。
+        if "start_pending" in payload:
+            pending = bool(payload.get("start_pending"))
+            updates["start_pending"] = pending
+            if pending:
+                updates["starts_on"] = ""
+                updates["expires_on"] = ""
+                updates["opened_booking_id"] = 0
         if "starts_on" in payload:
             updates["starts_on"] = valid_date(str(payload.get("starts_on") or ""), "开卡日期")
         if "expires_on" in payload:
@@ -241,7 +254,16 @@ def update_card(card_id: int, payload: dict = Body(...), db: Session = Depends(g
             updates["note"] = str(payload.get("note", ""))
         if not updates:
             raise HTTPException(400, "没有需要更新的内容")
-        if updates.get("expires_on", card.expires_on) < updates.get("starts_on", card.starts_on):
+        if not updates.get("start_pending") and card.start_pending and updates.get("starts_on"):
+            # 待定卡在这里正式开卡：没填到期日就按产品有效期自动顺延。
+            validity = max(1, card.product.validity_days if card.product else 365)
+            if not updates.get("expires_on"):
+                updates["expires_on"] = add_days(updates["starts_on"], validity)
+            updates["start_pending"] = False
+            updates["opened_booking_id"] = 0
+        start_value = updates.get("starts_on", card.starts_on)
+        expiry_value = updates.get("expires_on", card.expires_on)
+        if start_value and expiry_value and expiry_value < start_value:
             raise HTTPException(400, "到期日期不能早于开卡日期")
     elif action == "freeze":
         frozen_until = valid_date(str(payload.get("frozen_until", "")), "冻结截止日期")

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#173f35">
-  <meta name="description" content="音昱 Wellness 完整 API 对接文档，覆盖 133 个接口、权限、字段、业务规则与示例。">
+  <meta name="description" content="音昱 Wellness 完整 API 对接文档，覆盖 134 个接口、权限、字段、业务规则与示例。">
   <meta name="generator" content="docs/build_api_docs.py">
   <link id="api-favicon" rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Crect width='36' height='36' rx='18' fill='%23173f35'/%3E%3Cpath d='M28 6C15 7 8 13 8 23c7 1 15-2 20-17ZM8 29c3-8 8-12 16-17' fill='none' stroke='%23e9efe7' stroke-width='1.5'/%3E%3C/svg%3E">
   <title>API 对接文档 · 音昱 Wellness</title>
@@ -33,7 +33,7 @@
     <aside class="sidebar" aria-label="API 文档目录">
       <label class="search-label"><span>搜索接口、字段或业务规则</span><input class="search-input" id="api-search" type="search" placeholder="例如：签到、退款、bookings" autocomplete="off"><span class="search-hint">按 / 快速搜索，Esc 清空</span></label>
       <p class="search-results" id="search-results" aria-live="polite"></p>
-      <p class="toc-title">API REFERENCE · 133 ENDPOINTS</p>
+      <p class="toc-title">API REFERENCE · 134 ENDPOINTS</p>
       <nav><ul class="toc-list"><li><a href="#1-接入基础">1. 接入基础</a></li>
 <li><a href="#2-通用数据结构">2. 通用数据结构</a></li>
 <li><a href="#3-健康检查与员工认证-7">3. 健康检查与员工认证（7）</a></li>
@@ -42,7 +42,7 @@
 <li><a href="#6-会员档案-会员卡-权益与爽约-22">6. 会员档案、会员卡、权益与爽约（22）</a></li>
 <li><a href="#7-会员合同与评估文件-7">7. 会员合同与评估文件（7）</a></li>
 <li><a href="#8-排课-预约-教室与目录-29">8. 排课、预约、教室与目录（29）</a></li>
-<li><a href="#9-产品-财务与报表-10">9. 产品、财务与报表（10）</a></li>
+<li><a href="#9-产品-财务与报表-11">9. 产品、财务与报表（11）</a></li>
 <li><a href="#10-场馆-品牌与账号-9">10. 场馆、品牌与账号（9）</a></li>
 <li><a href="#11-短信与审计日志-5">11. 短信与审计日志（5）</a></li>
 <li><a href="#12-api-key-管理与调用日志-6">12. API Key 管理与调用日志（6）</a></li>
@@ -62,7 +62,7 @@
 <option value="6-会员档案-会员卡-权益与爽约-22">6. 会员档案、会员卡、权益与爽约（22）</option>
 <option value="7-会员合同与评估文件-7">7. 会员合同与评估文件（7）</option>
 <option value="8-排课-预约-教室与目录-29">8. 排课、预约、教室与目录（29）</option>
-<option value="9-产品-财务与报表-10">9. 产品、财务与报表（10）</option>
+<option value="9-产品-财务与报表-11">9. 产品、财务与报表（11）</option>
 <option value="10-场馆-品牌与账号-9">10. 场馆、品牌与账号（9）</option>
 <option value="11-短信与审计日志-5">11. 短信与审计日志（5）</option>
 <option value="12-api-key-管理与调用日志-6">12. API Key 管理与调用日志（6）</option>
@@ -73,7 +73,7 @@
 <option value="17-品牌-pdf-导出与账单-4">17. 品牌 PDF 导出与账单（4）</option></select></label>
       <div class="search-empty" id="search-empty" hidden>没有匹配的接口。可尝试“预约”“卡”“settings”或清空搜索。</div>
       <h1 id="音昱-wellness-api-对接文档">音昱 Wellness API 对接文档<a class="anchor" href="#音昱-wellness-api-对接文档" aria-label="链接到此节">#</a></h1>
-<aside class="callout">版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 <strong>133 个 HTTP 接口</strong>。 文档更新：2026-11-22 · 功能基线：预约排课、动态二维码签到、购卡申请取消、会员权益与营收业务闭环、角色能力矩阵与课程库独立接口。 在线交互文档：<code>/docs</code>（Swagger UI）、<code>/redoc</code>（ReDoc）；原始 OpenAPI 3 定义：<code>/openapi.json</code>。接口路径、方法、参数和实时响应结构以同版本 <code>/openapi.json</code> 为最终依据。</aside>
+<aside class="callout">版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 <strong>134 个 HTTP 接口</strong>。 文档更新：2026-11-22 · 功能基线：预约排课、动态二维码签到、购卡申请取消、会员权益与营收业务闭环、角色能力矩阵与课程库独立接口。 在线交互文档：<code>/docs</code>（Swagger UI）、<code>/redoc</code>（ReDoc）；原始 OpenAPI 3 定义：<code>/openapi.json</code>。接口路径、方法、参数和实时响应结构以同版本 <code>/openapi.json</code> 为最终依据。</aside>
 <h2 id="1-接入基础">1. 接入基础<a class="anchor" href="#1-接入基础" aria-label="链接到此节">#</a></h2>
 <h3 id="1-1-服务地址">1.1 服务地址<a class="anchor" href="#1-1-服务地址" aria-label="链接到此节">#</a></h3>
 <div class="table-wrap"><table>
@@ -227,6 +227,7 @@
 <tr><td><code>status</code></td><td>string</td><td><code>active</code> / <code>cancelled</code> / <code>upgraded</code>；响应可将过期活动卡显示为 <code>expired</code></td></tr>
 <tr><td><code>frozen_from</code>、<code>frozen_until</code></td><td>string</td><td>冻结开始日与截止日，未冻结为空字符串；冻结区间内不消耗权益</td></tr>
 <tr><td><code>is_renewal</code></td><td>boolean</td><td>是否为续卡（重新购卡）开的卡</td></tr>
+<tr><td><code>start_pending</code></td><td>boolean</td><td>开卡日期待定：卡已生效可预约，首次签到当天自动开卡并按产品有效期顺延</td></tr>
 <tr><td><code>note</code></td><td>string</td><td>操作备注</td></tr>
 <tr><td><code>version</code></td><td>integer</td><td>乐观锁版本号，每次成功更新后加一</td></tr>
 <tr><td><code>shared_with</code></td><td>object[]</td><td>共享会员的 <code>id</code>、<code>name</code>、<code>phone</code></td></tr>
@@ -417,7 +418,7 @@
 <h3 id="6-1-查询会员列表">6.1 查询会员列表<a class="anchor" href="#6-1-查询会员列表" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/members">
 <h4 id="get-api-admin-members"><span class="method method-get">GET</span><a href="#get-api-admin-members" class="route">/api/admin/members</a></h4>
-<ul><li><strong>权限</strong>：只读。</li><li><strong>Query</strong>：<code>q</code>（姓名/英文名/手机号模糊搜索）、<code>category</code>（卡类别，可多选，用英文逗号分隔，如 <code>group,private</code>）、<code>card_status</code>（持卡状态：<code>active</code> 有有效卡 / <code>expired</code> 卡已过期 / <code>none</code> 未开卡）、<code>active_only</code>（默认 <code>false</code>）。</li><li><strong>响应</strong>：<code>{ items: Member[]（含 cards）, total }</code>，按 ID 倒序。</li></ul>
+<ul><li><strong>权限</strong>：只读。</li><li><strong>Query</strong>：<code>q</code>（姓名/英文名/手机号模糊搜索）、<code>category</code>（卡类别，可多选，用英文逗号分隔，如 <code>group,private</code>）、<code>card_status</code>（持卡状态：<code>active</code> 有有效卡 / <code>expired</code> 卡已过期 / <code>pending</code> 开卡日期待定 / <code>none</code> 未开卡）、<code>active_only</code>（默认 <code>false</code>）。</li><li><strong>响应</strong>：<code>{ items: Member[]（含 cards）, total }</code>，按 ID 倒序。</li></ul>
 </section>
 <h3 id="6-2-新建会员">6.2 新建会员<a class="anchor" href="#6-2-新建会员" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/members">
@@ -437,7 +438,7 @@
 <h3 id="6-5-到店购卡并开卡">6.5 到店购卡并开卡<a class="anchor" href="#6-5-到店购卡并开卡" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/members/{member_id}/cards">
 <h4 id="post-api-admin-members-member-id-cards"><span class="method method-post">POST</span><a href="#post-api-admin-members-member-id-cards" class="route">/api/admin/members/{member_id}/cards</a></h4>
-<ul><li><strong>权限</strong>：前台。</li><li><strong>Body</strong>：<code>product_id</code> 必填；<code>price</code>（默认产品价，不能为负）、<code>payment_method</code>（默认 <code>cash</code>）、<code>starts_on</code>（默认今日）、<code>note</code> 可选、<code>is_renewal</code>（默认 <code>false</code>）。</li><li><strong>入账选项</strong>：<code>record_cash</code>（默认 <code>true</code>）、<code>revenue_mode</code>（<code>none</code> / <code>immediate</code> / <code>amortized</code>）；均摊时可传 <code>revenue_start_on</code>、<code>revenue_days</code>，默认使用开卡日期和产品有效期。</li><li><strong>响应</strong>：MemberCard。</li><li>同一事务创建活动会员卡和正数 <code>purchase</code> 流水。有效期为 <code>starts_on + validity_days</code>，初始次数与权益复制自产品。入流水与入营收至少选择一项。</li><li><code>is_renewal=true</code> 表示这是<strong>续卡</strong>（重新购卡）：新卡与流水都带续卡标记，便于统计续卡人数与续卡金额；备注会自动以“续卡”开头。</li><li>私教/评估产品购买只允许 <code>revenue_mode=none</code>，营收须在实际消课后通过专用接口确认；团课等默认即时营收，年卡/组合套餐及 365 天产品默认每日均摊。</li></ul>
+<ul><li><strong>权限</strong>：前台。</li><li><strong>Body</strong>：<code>product_id</code> 必填；<code>price</code>（默认产品价，不能为负）、<code>payment_method</code>（默认 <code>cash</code>）、<code>starts_on</code>（默认今日）、<code>note</code> 可选、<code>is_renewal</code>（默认 <code>false</code>）、<code>start_pending</code>（默认 <code>false</code>）。</li><li><strong>入账选项</strong>：<code>record_cash</code>（默认 <code>true</code>）。营收口径统一由系统设置决定（<code>GET /api/admin/revenue-policy</code>），请求里的 <code>revenue_mode</code> 不再生效。</li><li><strong>响应</strong>：MemberCard。</li><li>同一事务创建活动会员卡和正数 <code>purchase</code> 流水。有效期为 <code>starts_on + validity_days</code>，初始次数与权益复制自产品。入流水与入营收至少选择一项。</li><li><code>is_renewal=true</code> 表示这是<strong>续卡</strong>（重新购卡）：新卡与流水都带续卡标记，便于统计续卡人数与续卡金额；备注会自动以“续卡”开头。</li><li><code>start_pending=true</code> 表示<strong>开卡日期待定</strong>：卡开出来即可正常预约，<code>starts_on</code> 与 <code>expires_on</code> 暂为空；会员首次签到当天自动开卡，起始日为签到当天、到期日为起始日 + 产品有效期，均摊口径的购卡流水同步改为该起始日。撤销签到会把卡退回“开卡日期待定”状态。</li><li>私教/评估产品购买不计营收，营收须在实际消课后通过专用接口确认；其余按系统设置的口径执行（<code>auto</code> 时年卡/组合套餐及 365 天产品每日均摊，其余购卡时全额确认）。</li></ul>
 </section>
 <h3 id="6-6-维护单张会员卡">6.6 维护单张会员卡<a class="anchor" href="#6-6-维护单张会员卡" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="patch /api/admin/cards/{card_id}">
@@ -447,7 +448,7 @@
 <thead><tr><th><code>action</code></th><th>附加字段</th><th>行为</th></tr></thead>
 <tbody>
 <tr><td><code>extend</code></td><td><code>days</code>（非零，绝对值不超过 3650）、<code>note</code></td><td>增加或减少到期日天数</td></tr>
-<tr><td><code>edit</code></td><td><code>starts_on</code>、<code>expires_on</code>、<code>note</code></td><td>直接修改开卡日期与到期日（顺延到期日用这个动作），备注可选</td></tr>
+<tr><td><code>edit</code></td><td><code>starts_on</code>、<code>expires_on</code>、<code>note</code>、<code>start_pending</code></td><td>直接修改开卡日期与到期日（顺延到期日用这个动作），备注可选；<code>start_pending=true</code> 把卡改回开卡日期待定，填了 <code>starts_on</code> 则当场正式开卡并按产品有效期补出到期日</td></tr>
 <tr><td><code>freeze</code></td><td><code>frozen_from</code>（可空，默认今日）、<code>frozen_until</code>、<code>note</code></td><td>设置冻结区间，区间内不消耗权益，卡状态置为 <code>active</code></td></tr>
 <tr><td><code>unfreeze</code></td><td>无</td><td>清空冻结开始日与截止日</td></tr>
 <tr><td><code>activate</code></td><td>无</td><td>状态置为 <code>active</code>，不会自动延长已过期日期</td></tr>
@@ -761,7 +762,7 @@
 <h4 id="delete-api-admin-courses-course-id-image"><span class="method method-delete">DELETE</span><a href="#delete-api-admin-courses-course-id-image" class="route">/api/admin/courses/{course_id}/image</a></h4>
 <ul><li><strong>权限</strong>：管理员；<strong>Body</strong>：无。</li><li>清空课程的 <code>image_url</code> 并删除服务器上的旧文件；<strong>响应</strong>：更新后的 Course。</li></ul>
 </section>
-<h2 id="9-产品-财务与报表-10">9. 产品、财务与报表（10）<a class="anchor" href="#9-产品-财务与报表-10" aria-label="链接到此节">#</a></h2>
+<h2 id="9-产品-财务与报表-11">9. 产品、财务与报表（11）<a class="anchor" href="#9-产品-财务与报表-11" aria-label="链接到此节">#</a></h2>
 <h3 id="9-1-产品列表">9.1 产品列表<a class="anchor" href="#9-1-产品列表" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/products">
 <h4 id="get-api-admin-products"><span class="method method-get">GET</span><a href="#get-api-admin-products" class="route">/api/admin/products</a></h4>
@@ -812,16 +813,21 @@
 <h4 id="delete-api-admin-transactions-transaction-id"><span class="method method-delete">DELETE</span><a href="#delete-api-admin-transactions-transaction-id" class="route">/api/admin/transactions/{transaction_id}</a></h4>
 <ul><li><strong>权限</strong>：财务；<strong>响应</strong>：<code>{ ok, item, message }</code>。</li><li>只允许手工入账。删除后立即从流水、现金实收、确认营收和导出中排除，恢复后重新计入；购买、升卡和退款流水不可删除。</li></ul>
 </section>
+<h3 id="9-11-读取购卡营收口径">9.11 读取购卡营收口径<a class="anchor" href="#9-11-读取购卡营收口径" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="get /api/admin/revenue-policy">
+<h4 id="get-api-admin-revenue-policy"><span class="method method-get">GET</span><a href="#get-api-admin-revenue-policy" class="route">/api/admin/revenue-policy</a></h4>
+<ul><li><strong>权限</strong>：收款与核销（前台 / 财务）；<strong>查询参数</strong>：<code>product_id</code> 可选。</li><li><strong>响应</strong>：<code>{ system, effective, validity_days }</code>。</li><li><code>system</code> 是系统设置里设定的口径：<code>auto</code>（按卡种自动）/ <code>immediate</code>（购卡即全额确认）/ <code>amortized</code>（按有效期每日均摊）。</li><li><code>effective</code> 是当前产品实际生效的营收方式：私教与评估始终为 <code>none</code>（消课后确认营收），其余按 <code>system</code> 与卡种判定。</li><li>前端购卡弹窗用这个接口展示当前口径，不再逐单勾选；后端以系统设置为准，不接受前端传入的 <code>revenue_mode</code> 覆盖。</li></ul>
+</section>
 <h2 id="10-场馆-品牌与账号-9">10. 场馆、品牌与账号（9）<a class="anchor" href="#10-场馆-品牌与账号-9" aria-label="链接到此节">#</a></h2>
 <h3 id="10-1-读取系统设置">10.1 读取系统设置<a class="anchor" href="#10-1-读取系统设置" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/settings">
 <h4 id="get-api-admin-settings"><span class="method method-get">GET</span><a href="#get-api-admin-settings" class="route">/api/admin/settings</a></h4>
-<ul><li><strong>权限</strong>：管理员；<strong>响应</strong>：AppSettings。</li><li>字段：<code>venue_name</code>、<code>venue_name_en</code>、<code>address</code>、<code>address_en</code>、<code>phone</code>、<code>logo_url</code>、<code>favicon_url</code>、<code>booking_cutoff_minutes</code>、<code>no_show_block_days</code>、<code>reminder_hours</code>。</li></ul>
+<ul><li><strong>权限</strong>：管理员；<strong>响应</strong>：AppSettings。</li><li>字段：<code>venue_name</code>、<code>venue_name_en</code>、<code>address</code>、<code>address_en</code>、<code>phone</code>、<code>logo_url</code>、<code>favicon_url</code>、<code>booking_cutoff_minutes</code>、<code>no_show_block_days</code>、<code>reminder_hours</code>、<code>revenue_mode</code>。</li><li><code>revenue_mode</code> 是购卡营收口径：<code>auto</code>（按卡种自动）/ <code>immediate</code>（购卡即全额确认营收）/ <code>amortized</code>（按有效期每日均摊确认营收）；私教与评估卡始终在实际消课后确认营收。</li></ul>
 </section>
 <h3 id="10-2-更新系统设置">10.2 更新系统设置<a class="anchor" href="#10-2-更新系统设置" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="put /api/admin/settings">
 <h4 id="put-api-admin-settings"><span class="method method-put">PUT</span><a href="#put-api-admin-settings" class="route">/api/admin/settings</a></h4>
-<ul><li><strong>权限</strong>：管理员；<strong>Body</strong>：上述字段，但品牌 URL 不接受此接口修改。</li><li>自助截止 0–10080 分钟，爽约限制 0–365 天，提醒提前量 1–168 小时。</li><li><strong>响应</strong>：完整 AppSettings；未传字段保持原值。</li></ul>
+<ul><li><strong>权限</strong>：管理员；<strong>Body</strong>：上述字段，但品牌 URL 不接受此接口修改。</li><li>自助截止 0–10080 分钟，爽约限制 0–365 天，提醒提前量 1–168 小时。</li><li><code>revenue_mode</code> 只能取 <code>auto</code> / <code>immediate</code> / <code>amortized</code>，其他值返回 <code>400</code>；修改后立即对新的购卡与升卡生效。</li><li><strong>响应</strong>：完整 AppSettings；未传字段保持原值。</li></ul>
 </section>
 <h3 id="10-3-上传-logo-favicon">10.3 上传 Logo / favicon<a class="anchor" href="#10-3-上传-logo-favicon" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/settings/branding/{kind}">
@@ -1105,7 +1111,7 @@ const dashboard = await api(&quot;/api/admin/dashboard&quot;, {
 <h4 id="get-api-admin-transactions-transaction-id-receipt-pdf"><span class="method method-get">GET</span><a href="#get-api-admin-transactions-transaction-id-receipt-pdf" class="route">/api/admin/transactions/{transaction_id}/receipt.pdf</a></h4>
 <ul><li><strong>权限</strong>：财务查看（<code>finance.view</code>）。</li><li><strong>响应</strong>：单页 <strong>75 × 145 mm</strong> 小票；待核销或已取消记录返回 <code>400</code>。</li><li>包含 Octave/自定义品牌 Logo、健康管理 Wellness、日期时间、项目、金额、入账类型、客户、结账方式、备注、入账人、6% 增值税与去税金额、签字栏及场馆地址电话。</li><li>去税金额按“含税金额 ÷ 1.06”计算，增值税为含税金额减去去税金额；退款或冲销记录以负数展示。</li></ul>
 </section>
-      <footer class="docs-footer"><span>音昱 Wellness · API v1.0.0 · 133 个业务接口</span><span><a href="/help.html">系统操作指南</a> · <a href="/openapi.json">OpenAPI 3</a> · 文档源：<a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md">docs/API.md</a></span></footer>
+      <footer class="docs-footer"><span>音昱 Wellness · API v1.0.0 · 134 个业务接口</span><span><a href="/help.html">系统操作指南</a> · <a href="/openapi.json">OpenAPI 3</a> · 文档源：<a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md">docs/API.md</a></span></footer>
     </main>
   </div>
   <script>

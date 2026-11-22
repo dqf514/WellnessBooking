@@ -37,9 +37,10 @@ def _product_benefits(product: CardProduct) -> list[dict]:
     return benefits
 
 
-def issue_card(db: Session, *, member: Member, product: CardProduct, price: float, payment_method: str, starts_on: str = "", note: str = "", record_transaction: bool = True, record_cash: bool = True, revenue_mode: str = "legacy", created_by: str = "", is_renewal: bool = False) -> MemberCard:
+def issue_card(db: Session, *, member: Member, product: CardProduct, price: float, payment_method: str, starts_on: str = "", note: str = "", record_transaction: bool = True, record_cash: bool = True, revenue_mode: str = "legacy", created_by: str = "", is_renewal: bool = False, start_pending: bool = False) -> MemberCard:
     if not product.active:
         raise HTTPException(400, "该卡课产品已停用")
+    validity = max(1, product.validity_days)
     start = starts_on or today()
     card = MemberCard(
         member_id=member.id,
@@ -47,12 +48,13 @@ def issue_card(db: Session, *, member: Member, product: CardProduct, price: floa
         card_no=_unique_card_no(db),
         purchase_price=price,
         purchased_at=today(),
-        starts_on=start,
-        expires_on=add_days(start, max(1, product.validity_days)),
+        starts_on="" if start_pending else start,
+        expires_on="" if start_pending else add_days(start, validity),
         total_sessions=product.total_sessions,
         remaining_sessions=product.total_sessions,
         benefits_json=json.dumps(_product_benefits(product), ensure_ascii=False),
         is_renewal=is_renewal,
+        start_pending=start_pending,
         note=note,
     )
     db.add(card)
@@ -70,8 +72,8 @@ def issue_card(db: Session, *, member: Member, product: CardProduct, price: floa
             status="paid",
             cash_basis=record_cash,
             revenue_mode=mode,
-            revenue_start_on=start if mode == "amortized" else "",
-            revenue_days=product.validity_days if mode == "amortized" else 0,
+            revenue_start_on="" if start_pending else (start if mode == "amortized" else ""),
+            revenue_days=validity if mode == "amortized" else 0,
             created_by=created_by,
             is_renewal=is_renewal,
             note=note or product.name,

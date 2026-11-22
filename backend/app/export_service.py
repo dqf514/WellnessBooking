@@ -21,7 +21,8 @@ MEMBER_WIDTHS = [12, 10, 15, 12, 6, 26, 13, 12, 12, 10, 10, 28]
 
 
 def _active_cards(member: Member, today: str) -> list[MemberCard]:
-    return [card for card in member.cards if card.deleted_at is None and card.status == "active" and card.expires_on >= today]
+    # 开卡日期待定的卡没有到期日，同样算作有效卡。
+    return [card for card in member.cards if card.deleted_at is None and card.status == "active" and (card.start_pending or card.expires_on >= today)]
 
 
 def _member_years(member: Member) -> str:
@@ -83,6 +84,8 @@ def build_member_workbook(db: Session, scope: str = "all", month: str = "") -> b
         total = sum(card.purchase_price for card in cards)
         purchased = min((card.purchased_at for card in cards if card.purchased_at), default="")
         expires = max((card.expires_on for card in cards if card.expires_on), default="")
+        if not expires and any(card.start_pending for card in cards):
+            expires = "待开卡"
         values = [member.name, "", member.phone, member.birth_date, member.gender, card_names or "未开卡", round(total, 2), purchased, expires, member.advisor.full_name if member.advisor else "", _member_years(member), member.notes]
         for index, value in enumerate(values, start=1):
             cell = sheet.cell(row=row_index, column=index, value=value)

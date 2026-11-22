@@ -613,6 +613,9 @@ input[type="number"] { -moz-appearance: textfield; }
 .entry-option-grid span, .entry-option-grid strong, .entry-option-grid small { display: block; }
 .entry-option-grid strong { color: var(--pine-900); font-size: 14px; }
 .entry-option-grid small { margin-top: 5px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.entry-option-locked { display: flex; flex-direction: column; justify-content: center; min-height: 72px; padding: 12px; border: 1px dashed var(--pine-700); border-radius: 5px; background: #fff; }
+.entry-option-locked strong { color: var(--pine-900); font-size: 14px; }
+.entry-option-locked small { margin-top: 5px; color: var(--muted); font-size: 11px; line-height: 1.5; }
 .revenue-period-fields { margin-top: 13px; }
 .field-error { margin: 10px 0 0; color: var(--red); font-size: 13px; }
 .revenue-booking-summary { display: flex; align-items: center; gap: 12px; padding: 13px; background: var(--sage-100); }

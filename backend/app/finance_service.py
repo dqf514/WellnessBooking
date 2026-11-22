@@ -5,10 +5,11 @@ from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from .models import Booking, CardProduct, ClassSession, Course, MemberCard, Transaction, User
+from .models import AppSettings, Booking, CardProduct, ClassSession, Course, MemberCard, Transaction, User
 from .utils import valid_date
 
 REVENUE_MODES = {"none", "immediate", "amortized"}
+SYSTEM_REVENUE_MODES = {"auto", "immediate", "amortized"}
 CATEGORY_ORDER = {"group": 0, "private": 1, "annual": 2, "workshop": 3, "training": 4, "enterprise": 5, "misc": 6}
 
 
@@ -24,17 +25,34 @@ def default_revenue_mode(product: CardProduct) -> str:
     return "immediate"
 
 
-def resolve_entry_options(payload: dict, product: CardProduct | None = None) -> tuple[bool, str]:
+def system_revenue_mode(db: Session) -> str:
+    """系统设置里的营收口径；auto 表示按卡种自动判断。"""
+    row = db.get(AppSettings, 1)
+    mode = str(getattr(row, "revenue_mode", "") or "auto")
+    return mode if mode in SYSTEM_REVENUE_MODES else "auto"
+
+
+def resolve_purchase_revenue_mode(db: Session, product: CardProduct) -> str:
+    """购卡营收口径以系统设置为准；私教/评估永远只在实际消课后确认营收。"""
+    mode = system_revenue_mode(db)
+    if product.category in {"private", "assessment"}:
+        return "none"
+    if mode == "auto":
+        return default_revenue_mode(product)
+    return mode
+
+
+def resolve_entry_options(payload: dict, product: CardProduct | None = None, revenue_mode: str | None = None) -> tuple[bool, str]:
     raw_cash = payload.get("record_cash", True)
     record_cash = raw_cash if isinstance(raw_cash, bool) else str(raw_cash).lower() not in {"0", "false", "no", "off"}
-    revenue_mode = str(payload.get("revenue_mode") or (default_revenue_mode(product) if product else "immediate"))
-    if revenue_mode not in REVENUE_MODES:
+    mode = str(revenue_mode or payload.get("revenue_mode") or (default_revenue_mode(product) if product else "immediate"))
+    if mode not in REVENUE_MODES:
         raise HTTPException(400, "请选择有效的营收方式")
-    if product and product.category in {"private", "assessment"} and revenue_mode != "none":
+    if product and product.category in {"private", "assessment"} and mode != "none":
         raise HTTPException(400, "私教/评估购卡仅入流水，营收请在实际消课后入账")
-    if not record_cash and revenue_mode == "none":
+    if not record_cash and mode == "none":
         raise HTTPException(400, "入流水和入营收至少需要选择一项")
-    return record_cash, revenue_mode
+    return record_cash, mode
 
 
 def resolve_revenue_details(payload: dict, revenue_mode: str, starts_on: str = "", days: int = 0) -> tuple[str, int]:
@@ -52,6 +70,9 @@ def _in_range(value: datetime, start: str, end: str) -> bool:
 
 
 def _amortized_amount(row: Transaction, card: MemberCard | None, product: CardProduct | None, start: str, end: str) -> float:
+    if card is not None and card.start_pending:
+        # 开卡日期待定：尚未开卡，不确认营收，开卡后再按实际开始日均摊。
+        return 0.0
     start_value = row.revenue_start_on or (card.starts_on if card and card.starts_on else row.occurred_at.date().isoformat())
     validity = row.revenue_days or (product.validity_days if product else 0)
     if validity < 1:

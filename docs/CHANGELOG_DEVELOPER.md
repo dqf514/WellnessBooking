@@ -1,6 +1,6 @@
 # 音昱 Wellness OS 更新日志（开发者版）
 
-**更新周期：** 2026-11-09 至 2026-11-18
+**更新周期：** 2026-11-09 至 2026-11-22
 **交付范围：** 会员端、员工及管理后台、后端服务、开放 API、短信与数据运维、帮助文档
 **提交规模：** 14 次 Git 提交
 **最终版本：** `2d110f8`
@@ -594,3 +594,44 @@
 - `npm run build` 通过。
 - CDP 实测：打开大屏时 class 为 `room-board light`、`localStorage` 写入 `light`；点击切换按钮后 class 为 `room-board dark`、背景 `rgb(12, 25, 23)`、标题文字 `rgb(243, 248, 245)`、`localStorage` 为 `dark`；关闭后重新打开仍为 `room-board dark`。
 - 截图核对：浅色与深色两版大屏（`public/changelog-2026-11-18/32-room-board.jpg`、`35-board-dark.jpg`）。
+
+---
+
+## 十九、会员照片、Excel 名单导出与会员卡操作重构（2026-11-22）
+
+### 1. 会员照片
+
+- `Member` 新增 `photo_url`（`models.py` + `ensure_schema()` 同步补列），`upload_service.save_image()` 校验 PNG/JPG/WebP 魔数并落盘到 `backend/uploads/members/`；替换照片时调用 `remove_upload()` 清理旧文件。
+- 后台：`POST /api/admin/members/{member_id}/photo`（multipart `file`）、`DELETE /api/admin/members/{member_id}/photo`；会员端：`POST /api/public/me/photo`、`DELETE /api/public/me/photo`。写操作均写操作日志。
+- `upload_service.image_size()` 用 `seek/tell` 取字节数，避免 `SpooledTemporaryFile` 没有 `getvalue()` 的异常。
+
+### 2. Excel 名单导出
+
+- 新增 `backend/app/export_service.py`：`build_member_workbook()` 用 openpyxl 生成 `.xlsx`，会员照片以 `openpyxl.drawing.image.Image` 嵌入 `B{row}` 单元格（行高 72、冻结首行），`build_table_workbook()` 提供通用表头 + 数据行的工作簿生成器。
+- 导出范围：`all`（全部会员）/ `new`（统计月份新进）/ `renew_pending`（统计月份未续会）；`GET /api/admin/export/members.xlsx`（GET 走 `read` 权限，无需改 API Key scope 映射）。
+- `ensure_schema()` 之外无表结构变更；`openpyxl` 与 `Pillow` 加入 `backend/requirements.txt`。
+
+### 3. 会员卡操作重构
+
+- `MemberCard` 新增 `frozen_from`（冻结开始日）、`is_renewal`（续卡标记），`Transaction` 新增 `is_renewal`；`card_service.issue_card()` 增加 `is_renewal` 参数并同步写入流水。
+- `PATCH /api/admin/cards/{card_id}` 新增 `edit` 动作（直接改 `starts_on` / `expires_on` / `note`）与 `freeze` 动作的 `frozen_from`；`booking_service._card_usable()` 的冻结判断改为区间内停用，区间外照常可用。
+- 升卡放开同类目限制，升级目标按卡种分组（前端 `<optgroup>`）。
+
+### 4. 开卡日期待定
+
+- `MemberCard` 新增 `start_pending`、`opened_booking_id`；`issue_card(start_pending=True)` 时 `starts_on` / `expires_on` 留空。
+- `booking_service.find_available_card()` 放宽有效期过滤并把待定卡排在最后（优先消耗已开卡的卡）；`consume_booking()` 首次签到时调用 `_open_pending_card()`：起始日为签到当天、到期日 = 起始日 + 产品有效期，均摊口径的购卡流水同步改写 `revenue_start_on` / `revenue_days`。
+- `restore_consumption()` 调用 `_revert_pending_card()`：撤销签到把卡退回待定状态并清空均摊起始日。
+- `finance_service._amortized_amount()` 对待定卡返回 0，未开卡不确认营收；`admin_core.list_members` 的 `card_status` 新增 `pending`。
+
+### 5. 营收口径收归系统设置
+
+- `AppSettings` 新增 `revenue_mode`（`auto` / `immediate` / `amortized`），`finance_service.system_revenue_mode()` 读取设置，`resolve_purchase_revenue_mode()` 结合卡种给出实际口径（私教与评估恒为 `none`）。
+- 购卡与升卡不再接受前端传入的 `revenue_mode`；`GET /api/admin/revenue-policy?product_id=` 返回当前口径供前端展示（权限 `revenue.write`，GET 走 `read` scope）。
+- 前端 `EntryOptionsFields` 新增 `lockedRevenueMode` 只读模式；`GeneralSettings` 新增“营收确认口径”下拉。
+
+### 6. 验证
+
+- `npm run build` 通过；`python docs/build_api_docs.py` 重新生成 `public/api-docs.html`（17 章、134 个接口）。
+- 接口实测：待定卡购买 → 签到自动开卡（起始日 = 课程日期、到期日 = +有效期、次数扣减）→ 撤销签到退回待定（次数返还）；系统设置切换 `amortized` / `immediate` / `auto` 后购卡流水的营收方式随之变化，私教卡始终为 `none`；非法 `revenue_mode` 返回 400。
+- 截图核对：购卡弹窗（开卡方式 + 营收口径只读提示）、系统设置营收口径区块。
