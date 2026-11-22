@@ -23,7 +23,7 @@ def _active_card(db: Session, card_id: int) -> MemberCard:
 
 @router.post("/cards/{card_id}/upgrade")
 def upgrade_card(card_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_revenue)):
-    from ..finance_service import default_revenue_mode, normalized_category
+    from ..finance_service import default_revenue_mode
 
     card = _active_card(db, card_id)
     product = db.get(CardProduct, as_int(payload.get("product_id", 0), "升级产品"))
@@ -31,8 +31,6 @@ def upgrade_card(card_id: int, payload: dict = Body(...), db: Session = Depends(
         raise HTTPException(404, "升级产品不存在或已停用")
     if product.id == card.product_id:
         raise HTTPException(400, "请选择不同的升级产品")
-    if normalized_category(product.category) != normalized_category(card.product.category):
-        raise HTTPException(400, "仅支持同类别卡课升级")
     difference = as_float(payload.get("price", max(0, product.price - card.purchase_price)), "补差金额")
     if difference < 0:
         raise HTTPException(400, "补差金额不能为负数")

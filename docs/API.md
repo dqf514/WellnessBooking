@@ -215,7 +215,8 @@ FastAPI 参数校验错误格式：
 | `total_sessions`、`remaining_sessions` | integer / null | 总次数、剩余次数；周期卡可为 `null` |
 | `benefits` | object[] | 分课程类型权益，见下表 |
 | `status` | string | `active` / `cancelled` / `upgraded`；响应可将过期活动卡显示为 `expired` |
-| `frozen_until` | string | 冻结截止日，未冻结为空字符串 |
+| `frozen_from`、`frozen_until` | string | 冻结开始日与截止日，未冻结为空字符串；冻结区间内不消耗权益 |
+| `is_renewal` | boolean | 是否为续卡（重新购卡）开的卡 |
 | `note` | string | 操作备注 |
 | `version` | integer | 乐观锁版本号，每次成功更新后加一 |
 | `shared_with` | object[] | 共享会员的 `id`、`name`、`phone` |
@@ -263,6 +264,7 @@ FastAPI 参数校验错误格式：
 | `redemption_code` | string / null | 线上购卡电子码 |
 | `redeemed_at` | string / null | 核销时间 |
 | `cancelled_at`、`cancelled_by` | string / null | 购卡申请取消时间与操作来源 |
+| `is_renewal` | boolean | 是否为续卡流水（续卡即重新购卡） |
 
 线上申请初始为 `pending`，核销后原单改为 `paid`，不会再新增一条购买流水。待核销申请可取消为 `cancelled`，电子码保留用于审计但立即失效；取消不开卡、不计实收。退款会新增负数 `refund` 流水，原正数单改为 `refunded`。私教/评估消课营收使用 `consumption`，取消签到或取消已消课预约会自动新增对应 `consumption_reversal`，不删除历史。
 
@@ -546,10 +548,11 @@ curl -X POST "$API/api/auth/login" \
 #### POST /api/admin/members/{member_id}/cards
 
 - **权限**：前台。
-- **Body**：`product_id` 必填；`price`（默认产品价，不能为负）、`payment_method`（默认 `cash`）、`starts_on`（默认今日）、`note` 可选。
+- **Body**：`product_id` 必填；`price`（默认产品价，不能为负）、`payment_method`（默认 `cash`）、`starts_on`（默认今日）、`note` 可选、`is_renewal`（默认 `false`）。
 - **入账选项**：`record_cash`（默认 `true`）、`revenue_mode`（`none` / `immediate` / `amortized`）；均摊时可传 `revenue_start_on`、`revenue_days`，默认使用开卡日期和产品有效期。
 - **响应**：MemberCard。
 - 同一事务创建活动会员卡和正数 `purchase` 流水。有效期为 `starts_on + validity_days`，初始次数与权益复制自产品。入流水与入营收至少选择一项。
+- `is_renewal=true` 表示这是**续卡**（重新购卡）：新卡与流水都带续卡标记，便于统计续卡人数与续卡金额；备注会自动以“续卡”开头。
 - 私教/评估产品购买只允许 `revenue_mode=none`，营收须在实际消课后通过专用接口确认；团课等默认即时营收，年卡/组合套餐及 365 天产品默认每日均摊。
 
 ### 6.6 维护单张会员卡
@@ -563,13 +566,14 @@ curl -X POST "$API/api/auth/login" \
 | `action` | 附加字段 | 行为 |
 | --- | --- | --- |
 | `extend` | `days`（非零，绝对值不超过 3650）、`note` | 增加或减少到期日天数 |
-| `freeze` | `frozen_until` | 设置冻结截止日，并将卡状态置为 `active` |
-| `unfreeze` | 无 | 清空冻结截止日 |
+| `edit` | `starts_on`、`expires_on`、`note` | 直接修改开卡日期与到期日（顺延到期日用这个动作），备注可选 |
+| `freeze` | `frozen_from`（可空，默认今日）、`frozen_until`、`note` | 设置冻结区间，区间内不消耗权益，卡状态置为 `active` |
+| `unfreeze` | 无 | 清空冻结开始日与截止日 |
 | `activate` | 无 | 状态置为 `active`，不会自动延长已过期日期 |
 | `cancel` | 无 | 状态置为 `cancelled`，不生成退款流水 |
 | `adjust` | `remaining_sessions`、`benefits`、`note` | 人工校正次数或权益，剩余次数不低于 0 |
 
-每次成功操作增加卡版本。调整权益应传完整 `benefits` 数组；此接口不会反向修改历史预约或财务流水。
+每次成功操作增加卡版本。调整权益应传完整 `benefits` 数组；此接口不会反向修改历史预约或财务流水。冻结只在 `frozen_from` ~ `frozen_until` 区间内停用权益，区间之前与之后照常可用；冻结不会自动顺延有效期，需要顺延请用 `edit` 修改 `expires_on`。
 
 ### 6.7 批量延期会员卡
 
@@ -617,7 +621,7 @@ curl -X POST "$API/api/auth/login" \
 }
 ```
 
-`price` 为本次补差金额，省略时按“新产品标价减原卡实购价、最低为 0”计算。仅支持同类别产品或年卡类别升级。响应包含 `old_card`、`card` 和 `difference`。新卡按新产品价格开卡，但不另生成全额购买流水；现金流水只记录本次补差金额。
+`price` 为本次补差金额，省略时按“新产品标价减原卡实购价、最低为 0”计算。可升级到任意在售产品（不再限制同类别），后台按类别分组展示可选项。响应包含 `old_card`、`card` 和 `difference`。新卡按新产品价格开卡，但不另生成全额购买流水；现金流水只记录本次补差金额。
 
 ### 6.12 转卡
 

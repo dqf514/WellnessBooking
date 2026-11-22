@@ -47,7 +47,7 @@ def ensure_schema():
             "app_settings": {"logo_url": "VARCHAR(600) DEFAULT ''", "favicon_url": "VARCHAR(600) DEFAULT ''"},
             "members": {"photo_url": "VARCHAR(600) DEFAULT ''"},
             "class_sessions": {"reserved_count": "INTEGER DEFAULT 0"},
-            "member_cards": {"version": "INTEGER DEFAULT 0"},
+            "member_cards": {"version": "INTEGER DEFAULT 0", "frozen_from": "VARCHAR(10) DEFAULT ''", "is_renewal": "BOOLEAN DEFAULT 0"},
             "rooms": {"floor": "VARCHAR(30) DEFAULT '1F'", "sort_order": "INTEGER DEFAULT 0"},
             "bookings": {"experience_voucher_id": "INTEGER REFERENCES experience_vouchers(id)"},
             "member_documents": {"category": "VARCHAR(24) DEFAULT 'contract'"},
@@ -61,6 +61,7 @@ def ensure_schema():
                 "revenue_days": "INTEGER DEFAULT 0",
                 "revenue_sequence": "INTEGER DEFAULT 0",
                 "created_by": "VARCHAR(80) DEFAULT ''",
+                "is_renewal": "BOOLEAN DEFAULT 0",
             },
         }
         soft_delete_tables = {"users", "members", "teachers", "rooms", "courses", "class_sessions", "card_products", "member_cards", "bookings", "member_card_shares", "experience_vouchers", "member_reminders", "room_reservations", "member_records", "member_documents", "transactions", "api_keys"}

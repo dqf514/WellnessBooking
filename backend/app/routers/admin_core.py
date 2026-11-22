@@ -198,15 +198,20 @@ def purchase_card(member_id: int, payload: dict = Body(...), db: Session = Depen
     if price < 0:
         raise HTTPException(400, "购买价格不能为负数")
     starts_on = valid_date(str(payload.get("starts_on") or today()), "开卡日期")
+    # 续卡就是重新购卡：带上续卡标记，便于后续统计续卡人数与续卡金额。
+    is_renewal = bool(payload.get("is_renewal"))
+    note = str(payload.get("note", ""))
+    if is_renewal and not note.startswith("续卡"):
+        note = f"续卡 · {note}".strip(" ·")
     record_cash, revenue_mode = resolve_entry_options(payload, product)
     revenue_start_on, revenue_days = resolve_revenue_details(payload, revenue_mode, starts_on, product.validity_days)
     entry_payload = {**payload, "revenue_start_on": revenue_start_on, "revenue_days": revenue_days}
-    card = issue_card(db, member=member, product=product, price=price, payment_method=str(payload.get("payment_method", "cash")), starts_on=starts_on, note=str(payload.get("note", "")), record_cash=record_cash, revenue_mode=revenue_mode, created_by=user.full_name or user.username)
+    card = issue_card(db, member=member, product=product, price=price, payment_method=str(payload.get("payment_method", "cash")), starts_on=starts_on, note=note, record_cash=record_cash, revenue_mode=revenue_mode, created_by=user.full_name or user.username, is_renewal=is_renewal)
     transaction = db.query(Transaction).filter(Transaction.member_card_id == card.id, Transaction.kind == "purchase").first()
     if transaction:
         transaction.revenue_start_on = entry_payload["revenue_start_on"]
         transaction.revenue_days = entry_payload["revenue_days"]
-    audit(db, user, "member_card", "purchase", "member_card", card.id, {"member_id": member_id, "product_id": product.id, "price": price, "record_cash": record_cash, "revenue_mode": revenue_mode})
+    audit(db, user, "member_card", "purchase", "member_card", card.id, {"member_id": member_id, "product_id": product.id, "price": price, "record_cash": record_cash, "revenue_mode": revenue_mode, "is_renewal": is_renewal})
     db.commit()
     return card_dict(card)
 
@@ -226,10 +231,29 @@ def update_card(card_id: int, payload: dict = Body(...), db: Session = Depends(g
             raise HTTPException(400, "延期天数需在 -3650 至 3650 之间且不能为 0")
         updates["expires_on"] = add_days(card.expires_on, days)
         updates["note"] = str(payload.get("note", card.note))
+    elif action == "edit":
+        # 编辑卡：开卡日期、到期日与备注；延期直接改到期日，不再单独做延期动作。
+        if "starts_on" in payload:
+            updates["starts_on"] = valid_date(str(payload.get("starts_on") or ""), "开卡日期")
+        if "expires_on" in payload:
+            updates["expires_on"] = valid_date(str(payload.get("expires_on") or ""), "到期日期")
+        if "note" in payload:
+            updates["note"] = str(payload.get("note", ""))
+        if not updates:
+            raise HTTPException(400, "没有需要更新的内容")
+        if updates.get("expires_on", card.expires_on) < updates.get("starts_on", card.starts_on):
+            raise HTTPException(400, "到期日期不能早于开卡日期")
     elif action == "freeze":
-        updates["frozen_until"] = valid_date(str(payload.get("frozen_until", "")), "冻结截止日期")
+        frozen_until = valid_date(str(payload.get("frozen_until", "")), "冻结截止日期")
+        frozen_from = str(payload.get("frozen_from", "") or "").strip()
+        frozen_from = valid_date(frozen_from, "冻结开始日期") if frozen_from else today()
+        if frozen_until < frozen_from:
+            raise HTTPException(400, "冻结截止日期不能早于冻结开始日期")
+        updates["frozen_from"] = frozen_from
+        updates["frozen_until"] = frozen_until
         updates["status"] = "active"
     elif action in {"unfreeze", "activate"}:
+        updates["frozen_from"] = ""
         updates["frozen_until"] = ""
         updates["status"] = "active"
     elif action == "cancel":

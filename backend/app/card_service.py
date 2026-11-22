@@ -37,7 +37,7 @@ def _product_benefits(product: CardProduct) -> list[dict]:
     return benefits
 
 
-def issue_card(db: Session, *, member: Member, product: CardProduct, price: float, payment_method: str, starts_on: str = "", note: str = "", record_transaction: bool = True, record_cash: bool = True, revenue_mode: str = "legacy", created_by: str = "") -> MemberCard:
+def issue_card(db: Session, *, member: Member, product: CardProduct, price: float, payment_method: str, starts_on: str = "", note: str = "", record_transaction: bool = True, record_cash: bool = True, revenue_mode: str = "legacy", created_by: str = "", is_renewal: bool = False) -> MemberCard:
     if not product.active:
         raise HTTPException(400, "该卡课产品已停用")
     start = starts_on or today()
@@ -52,6 +52,7 @@ def issue_card(db: Session, *, member: Member, product: CardProduct, price: floa
         total_sessions=product.total_sessions,
         remaining_sessions=product.total_sessions,
         benefits_json=json.dumps(_product_benefits(product), ensure_ascii=False),
+        is_renewal=is_renewal,
         note=note,
     )
     db.add(card)
@@ -72,6 +73,7 @@ def issue_card(db: Session, *, member: Member, product: CardProduct, price: floa
             revenue_start_on=start if mode == "amortized" else "",
             revenue_days=product.validity_days if mode == "amortized" else 0,
             created_by=created_by,
+            is_renewal=is_renewal,
             note=note or product.name,
         ))
     return card

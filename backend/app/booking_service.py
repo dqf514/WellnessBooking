@@ -31,7 +31,9 @@ def _card_usable(card: MemberCard, course_type: str, on_date: str) -> bool:
     if card.deleted_at is not None or card.status != "active" or card.expires_on < on_date or card.starts_on > on_date:
         return False
     if card.frozen_until and card.frozen_until >= on_date:
-        return False
+        # 请假 / 停卡只在冻结区间内停用权益：冻结开始日之前、结束日之后照常可用。
+        if not card.frozen_from or card.frozen_from <= on_date:
+            return False
     quantity = _card_quantity_for(card, course_type)
     return quantity is None or quantity > 0
 

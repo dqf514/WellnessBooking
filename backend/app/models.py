@@ -145,7 +145,9 @@ class MemberCard(Base, TimestampMixin, SoftDeleteMixin):
     remaining_sessions: Mapped[int | None] = mapped_column(Integer, nullable=True)
     benefits_json: Mapped[str] = mapped_column(Text, default="[]")
     status: Mapped[str] = mapped_column(String(20), default="active", index=True)
+    frozen_from: Mapped[str] = mapped_column(String(10), default="")
     frozen_until: Mapped[str] = mapped_column(String(10), default="")
+    is_renewal: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     note: Mapped[str] = mapped_column(Text, default="")
     version: Mapped[int] = mapped_column(Integer, default=0)
 
@@ -280,6 +282,7 @@ class Transaction(Base, SoftDeleteMixin):
     redeemed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     cancelled_by: Mapped[str] = mapped_column(String(80), default="")
+    is_renewal: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     member: Mapped[Member | None] = relationship()
     product: Mapped[CardProduct | None] = relationship()
 
