@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "@/components/UI";
 import type { Room, Session } from "@/types";
@@ -50,12 +50,28 @@ export function RoomScheduleBoard({ rooms, date, hours, local, onPrev, onNext, o
   const bodyRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef(onClose);
   const [layout, setLayout] = useState({ hourHeight: 48, roomWidth: 110 });
+  // 手机端：全屏排课表改为固定格宽 + 可缩放画布，桌面端仍然铺满整屏不动。
+  const [compact, setCompact] = useState(() => window.matchMedia("(max-width: 700px)").matches);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const zoomRef = useRef(1);
+  const panRef = useRef({ x: 0, y: 0 });
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const gesture = useRef<{ mode: "pan" | "pinch"; origin: { x: number; y: number }; startDist: number; startZoom: number; startPan: { x: number; y: number } } | null>(null);
   const now = useClock();
   const { theme, toggle } = useBoardTheme();
 
   useEffect(() => { closeRef.current = onClose; }, [onClose]);
 
   useEffect(() => {
+    const media = window.matchMedia("(max-width: 700px)");
+    const update = () => setCompact(media.matches);
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
+    if (compact) { setLayout({ hourHeight: 46, roomWidth: 132 }); return; }
     const update = () => {
       const body = bodyRef.current;
       if (!body) return;
@@ -68,7 +84,69 @@ export function RoomScheduleBoard({ rooms, date, hours, local, onPrev, onNext, o
     update();
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
-  }, [rooms.length, hours.length]);
+  }, [rooms.length, hours.length, compact]);
+
+  // 切换到手机端布局时重置缩放与位置，避免沿用桌面端的偏移。
+  useEffect(() => { zoomRef.current = 1; panRef.current = { x: 0, y: 0 }; setZoom(1); setPan({ x: 0, y: 0 }); }, [compact]);
+
+  // 缩放与平移：以锚点为基准换算画布坐标，缩放时锚点下的内容保持不动。
+  function applyZoom(next: number, anchor?: { x: number; y: number }) {
+    const body = bodyRef.current;
+    const point = anchor ?? { x: (body?.clientWidth ?? 0) / 2, y: (body?.clientHeight ?? 0) / 2 };
+    const current = zoomRef.current;
+    const clamped = Math.min(3, Math.max(0.5, next));
+    const canvasX = (point.x - panRef.current.x) / current;
+    const canvasY = (point.y - panRef.current.y) / current;
+    zoomRef.current = clamped;
+    panRef.current = { x: point.x - canvasX * clamped, y: point.y - canvasY * clamped };
+    setZoom(clamped);
+    setPan(panRef.current);
+  }
+  function resetView() { zoomRef.current = 1; panRef.current = { x: 0, y: 0 }; setZoom(1); setPan({ x: 0, y: 0 }); }
+
+  function handlePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
+    if (!compact) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pointers.current.size >= 2) {
+      const [a, b] = Array.from(pointers.current.values());
+      gesture.current = { mode: "pinch", origin: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, startDist: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), startZoom: zoomRef.current, startPan: { ...panRef.current } };
+    } else {
+      gesture.current = { mode: "pan", origin: { x: event.clientX, y: event.clientY }, startDist: 0, startZoom: zoomRef.current, startPan: { ...panRef.current } };
+    }
+  }
+  function handlePointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+    const g = gesture.current;
+    if (!g || !compact) return;
+    if (!pointers.current.has(event.pointerId)) return;
+    pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (g.mode === "pan" && pointers.current.size === 1) {
+      const next = { x: g.startPan.x + (event.clientX - g.origin.x), y: g.startPan.y + (event.clientY - g.origin.y) };
+      panRef.current = next; setPan(next);
+      return;
+    }
+    if (g.mode === "pinch" && pointers.current.size >= 2) {
+      const [a, b] = Array.from(pointers.current.values());
+      const dist = Math.max(1, Math.hypot(a.x - b.x, a.y - b.y));
+      const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      const canvasX = (g.origin.x - g.startPan.x) / g.startZoom;
+      const canvasY = (g.origin.y - g.startPan.y) / g.startZoom;
+      const next = Math.min(3, Math.max(0.5, g.startZoom * (dist / g.startDist)));
+      zoomRef.current = next;
+      panRef.current = { x: mid.x - canvasX * next, y: mid.y - canvasY * next };
+      setZoom(next);
+      setPan(panRef.current);
+    }
+  }
+  function handlePointerUp(event: ReactPointerEvent<HTMLDivElement>) {
+    pointers.current.delete(event.pointerId);
+    if (pointers.current.size === 1) {
+      const remaining = Array.from(pointers.current.values())[0];
+      gesture.current = { mode: "pan", origin: { x: remaining.x, y: remaining.y }, startDist: 0, startZoom: zoomRef.current, startPan: { ...panRef.current } };
+      return;
+    }
+    gesture.current = null;
+  }
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -114,22 +192,25 @@ export function RoomScheduleBoard({ rooms, date, hours, local, onPrev, onNext, o
           <div className="room-board-clock">{pad(now.getHours())}:{pad(now.getMinutes())}:{pad(now.getSeconds())}</div>
         </div>
         <div className="room-board-tools">
-          <p className="room-board-hint">{local("← → 切换日期 · Esc 退出 · Ctrl+P 打印当前画面", "← → change date · Esc to exit · Ctrl+P to print")}</p>
+          <p className="room-board-hint">{compact ? local("单指拖动 · 双指缩放查看全部教室", "Drag to pan · pinch to zoom") : local("← → 切换日期 · Esc 退出 · Ctrl+P 打印当前画面", "← → change date · Esc to exit · Ctrl+P to print")}</p>
+          {compact && <div className="room-board-zoom"><button className="icon-button" type="button" aria-label={local("缩小", "Zoom out")} onClick={() => applyZoom(zoomRef.current - 0.2)}><span aria-hidden="true">−</span></button><span>{Math.round(zoom * 100)}%</span><button className="icon-button" type="button" aria-label={local("放大", "Zoom in")} onClick={() => applyZoom(zoomRef.current + 0.2)}><Icon name="plus" size={15}/></button><button className="icon-button" type="button" aria-label={local("复位", "Reset")} onClick={resetView}><Icon name="refresh" size={15}/></button></div>}
           <button className="icon-button room-board-theme" type="button" onClick={toggle} title={theme === "dark" ? local("切换到浅色模式", "Switch to light mode") : local("切换到深色模式", "Switch to dark mode")} aria-label={theme === "dark" ? local("切换到浅色模式", "Switch to light mode") : local("切换到深色模式", "Switch to dark mode")}><Icon name={theme === "dark" ? "sun" : "moon"} size={17}/></button>
           <button className="icon-button" type="button" onClick={() => closeRef.current()} aria-label={local("退出全屏", "Exit full screen")}><Icon name="close"/></button>
         </div>
       </header>
-      <div className="room-board-body" ref={bodyRef} style={{ "--board-room-count": rooms.length, "--board-room-width": `${layout.roomWidth}px` } as React.CSSProperties}>
-        <div className="room-board-axis"><header>{local("时间", "Time")}</header><div className="room-board-axis-track" style={{ height: `${span}px` }}>{hours.map((hour) => <span key={hour} style={{ top: `${(hour - hours[0]) * layout.hourHeight}px` }}>{String(hour).padStart(2, "0")}:00</span>)}</div></div>
-        <div className="room-board-grid">
-          {rooms.map((room) => <div className="room-board-column" key={room.id}>
-            <header title={`${local(room.name, room.name_en)} · ${room.floor}`}><strong>{local(room.name, room.name_en)}</strong><span>{room.floor}</span></header>
-            <div className="room-board-slots" style={{ height: `${span}px` }}>
-              {hours.map((hour) => <i key={hour} style={{ top: `${(hour - hours[0]) * layout.hourHeight}px` }}/>)}
-              {room.sessions.map((session) => <div className="room-board-block course-block" key={`s-${session.id}`} style={{ top: `${topOf(session.start_time)}px`, height: `${sizeOf(session.start_time, session.end_time)}px`, "--course-color": session.course.color } as React.CSSProperties} title={`${session.start_time}-${session.end_time} ${local(session.course.name, session.course.name_en)} · ${local(session.teacher.name, session.teacher.name_en)} · ${session.booked_count}/${session.capacity}`}><span>{session.start_time}–{session.end_time}</span><strong>{local(session.course.name, session.course.name_en)}</strong></div>)}
-              {room.reservations.map((reservation) => <div className={`room-board-block internal-block ${reservation.usage_type}`} key={`r-${reservation.id}`} style={{ top: `${topOf(reservation.start_time)}px`, height: `${sizeOf(reservation.start_time, reservation.end_time)}px` }} title={`${reservation.start_time}-${reservation.end_time} ${reservation.title}${reservation.notes ? ` · ${reservation.notes}` : ""}`}><span>{reservation.start_time}–{reservation.end_time}</span><strong>{reservation.title}</strong></div>)}
-            </div>
-          </div>)}
+      <div className="room-board-body" ref={bodyRef} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp}>
+        <div className="room-board-canvas" style={compact ? { width: `${AXIS_WIDTH + rooms.length * layout.roomWidth}px`, height: `${COLUMN_HEADER + span}px`, transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` } : undefined}>
+          <div className="room-board-axis"><header>{local("时间", "Time")}</header><div className="room-board-axis-track" style={{ height: `${span}px` }}>{hours.map((hour) => <span key={hour} style={{ top: `${(hour - hours[0]) * layout.hourHeight}px` }}>{String(hour).padStart(2, "0")}:00</span>)}</div></div>
+          <div className="room-board-grid" style={{ "--board-room-count": rooms.length, "--board-room-width": `${layout.roomWidth}px` } as React.CSSProperties}>
+            {rooms.map((room) => <div className="room-board-column" key={room.id}>
+              <header title={`${local(room.name, room.name_en)} · ${room.floor}`}><strong>{local(room.name, room.name_en)}</strong><span>{room.floor}</span></header>
+              <div className="room-board-slots" style={{ height: `${span}px` }}>
+                {hours.map((hour) => <i key={hour} style={{ top: `${(hour - hours[0]) * layout.hourHeight}px` }}/>)}
+                {room.sessions.map((session) => <div className="room-board-block course-block" key={`s-${session.id}`} style={{ top: `${topOf(session.start_time)}px`, height: `${sizeOf(session.start_time, session.end_time)}px`, "--course-color": session.course.color } as React.CSSProperties} title={`${session.start_time}-${session.end_time} ${local(session.course.name, session.course.name_en)} · ${local(session.teacher.name, session.teacher.name_en)} · ${session.booked_count}/${session.capacity}`}><span>{session.start_time}–{session.end_time}</span><strong>{local(session.course.name, session.course.name_en)}</strong></div>)}
+                {room.reservations.map((reservation) => <div className={`room-board-block internal-block ${reservation.usage_type}`} key={`r-${reservation.id}`} style={{ top: `${topOf(reservation.start_time)}px`, height: `${sizeOf(reservation.start_time, reservation.end_time)}px` }} title={`${reservation.start_time}-${reservation.end_time} ${reservation.title}${reservation.notes ? ` · ${reservation.notes}` : ""}`}><span>{reservation.start_time}–{reservation.end_time}</span><strong>{reservation.title}</strong></div>)}
+              </div>
+            </div>)}
+          </div>
         </div>
       </div>
     </div>,

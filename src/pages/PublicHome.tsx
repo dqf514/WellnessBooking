@@ -10,9 +10,9 @@ import { addDays, isoDate, money, shortDate, today, weekday, weekStart } from "@
 import { useSwipeNavigation } from "@/lib/useSwipeNavigation";
 import type { Booking, Bootstrap, CourseType, MemberMe, Product, Session, Transaction } from "@/types";
 
-const types: Array<CourseType | "all"> = ["all", "group", "private", "assessment", "workshop", "training"];
 type ScheduleView = "day" | "week" | "month";
 type SeatStatus = "available" | "limited" | "full";
+const PHONE_KEY = "wellness_member_phone";
 
 function monthStart(value: string) { return `${value.slice(0, 7)}-01`; }
 function monthEnd(value: string) {
@@ -35,7 +35,6 @@ export function PublicHome() {
   const [data, setData] = useState<Bootstrap | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
-  const [type, setType] = useState<CourseType | "all">("all");
   const [view, setView] = useState<ScheduleView>("day");
   const [date, setDate] = useState(today());
   const [scheduleMotion, setScheduleMotion] = useState<"next" | "previous" | "none">("none");
@@ -49,8 +48,7 @@ export function PublicHome() {
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [meTab, setMeTab] = useState<"profile" | "bookings" | "cards" | "orders" | "checkin">("profile");
   const [me, setMe] = useState<MemberMe | null>(null);
-  const [phone, setPhone] = useState("");
-  const [name, setName] = useState("");
+  const [phone, setPhone] = useState(() => localStorage.getItem(PHONE_KEY) ?? "");
   const [code, setCode] = useState("");
   const [devCode, setDevCode] = useState("");
   const [cooldown, setCooldown] = useState(0);
@@ -61,7 +59,10 @@ export function PublicHome() {
   const [pendingProduct, setPendingProduct] = useState<number | null>(null);
   const [confirmProduct, setConfirmProduct] = useState<Product | null>(null);
   const [cancelOrderTarget, setCancelOrderTarget] = useState<Transaction | null>(null);
+  const [guidesOpen, setGuidesOpen] = useState(false);
+  const [cardsOpen, setCardsOpen] = useState(false);
   const scheduleSwipe = useSwipeNavigation(() => navigatePeriod(-1), () => navigatePeriod(1));
+  const codeSent = useRef("");
   const days = useMemo(() => {
     const start = weekStart(date);
     return Array.from({ length: 7 }, (_, index) => addDays(start, index));
@@ -71,7 +72,7 @@ export function PublicHome() {
     if (view === "month") return { start: monthStart(date), end: monthEnd(date) };
     return { start: date, end: date };
   }, [date, view]);
-  const scheduleKey = `${view}:${range.start}:${type}`;
+  const scheduleKey = `${view}:${range.start}`;
   const monthCells = useMemo(() => {
     const first = new Date(`${range.start}T12:00:00`);
     const offset = (first.getDay() + 6) % 7;
@@ -95,9 +96,9 @@ export function PublicHome() {
     const request = ++scheduleRequest.current;
     setLoading(true);
     try {
-      const query = new URLSearchParams({ date_from: range.start, date_to: range.end });
-      if (type !== "all") query.set("course_type", type);
-      const result = await apiFetch<{ items: Session[] }>(`/api/public/sessions?${query}`);
+      // 会员端课表目前只展示团课，私教与评估由前台人工安排。
+      const query = new URLSearchParams({ date_from: range.start, date_to: range.end, course_type: "group" });
+      const result = await apiFetch<{ items: Session[] }>(`/api/public/sessions?${query}`, { tokenKind: "member" });
       if (request !== scheduleRequest.current) return;
       setSessions(result.items);
       setLoadedScheduleKey(scheduleKey);
@@ -106,7 +107,7 @@ export function PublicHome() {
     } finally {
       if (request === scheduleRequest.current) setLoading(false);
     }
-  }, [range, scheduleKey, type, t]);
+  }, [range, scheduleKey, t]);
 
   const loadMe = useCallback(async () => {
     if (!getToken("member")) return;
@@ -151,6 +152,11 @@ export function PublicHome() {
     const timer = window.setInterval(() => setCooldown((value) => Math.max(0, value - 1)), 1000);
     return () => window.clearInterval(timer);
   }, [cooldown]);
+  useEffect(() => {
+    // 打开登录弹窗就自动发一次验证码，省去一次点击；换手机号后需要手动重发。
+    if (!loginOpen || codeSent.current === phone || !/^1[0-9]{10}$/.test(phone)) return;
+    void sendCode();
+  }, [loginOpen, phone]);
 
   async function completeBooking(sessionId: number) {
     setBusy(true); setError("");
@@ -164,6 +170,19 @@ export function PublicHome() {
   function requestBooking(session: Session) {
     if (!getToken("member")) { setPendingSession(session.id); setLoginOpen(true); return; }
     void completeBooking(session.id);
+  }
+
+  /** 已约课程直接取消：从我的预约里找到这节课的预约记录，取消后回到“立即预约”。 */
+  async function cancelSessionBooking(session: Session) {
+    const booking = me?.bookings.find((item) => item.session_id === session.id && item.status === "booked");
+    if (!booking) { setError(local("未找到可取消的预约，请刷新后重试", "Booking not found, please refresh")); return; }
+    if (!window.confirm(language === "zh" ? "确认取消这节课的预约？" : "Cancel this booking?")) return;
+    setError(""); setBusy(true);
+    try {
+      await apiFetch(`/api/public/bookings/${booking.id}`, { method: "DELETE", tokenKind: "member" });
+      setMessage(t("cancelledBooking")); setSelected(null); await Promise.all([loadMe(), loadSessions()]);
+    } catch (err) { setError(err instanceof Error ? err.message : t("error")); }
+    finally { setBusy(false); }
   }
 
   async function completeOrder(productId: number) {
@@ -184,7 +203,7 @@ export function PublicHome() {
     setError(""); setBusy(true);
     try {
       const result = await apiFetch<{ dev_code?: string }>("/api/public/auth/send-code", { method: "POST", json: { phone } });
-      setDevCode(result.dev_code ?? ""); if (result.dev_code) setCode(result.dev_code); setCooldown(60);
+      setDevCode(result.dev_code ?? ""); if (result.dev_code) setCode(result.dev_code); setCooldown(60); codeSent.current = phone;
     } catch (err) { setError(err instanceof Error ? err.message : t("error")); }
     finally { setBusy(false); }
   }
@@ -192,9 +211,10 @@ export function PublicHome() {
   async function login(event: FormEvent) {
     event.preventDefault(); setBusy(true); setError("");
     try {
-      const result = await apiFetch<{ access_token: string }>("/api/public/auth/login", { method: "POST", json: { phone, code, name } });
+      const result = await apiFetch<{ access_token: string }>("/api/public/auth/login", { method: "POST", json: { phone, code } });
       localStorage.setItem("wellness_member_token", result.access_token);
-      await loadMe(); setLoginOpen(false);
+      localStorage.setItem(PHONE_KEY, phone);
+      await Promise.all([loadMe(), loadSessions()]); setLoginOpen(false);
       if (pendingSession) { await completeBooking(pendingSession); setPendingSession(null); }
       if (pendingProduct) {
         const product = data?.products.find((item) => item.id === pendingProduct);
@@ -264,10 +284,10 @@ export function PublicHome() {
     return status === "full" ? t("full") : status === "limited" ? local("席位紧张", "Few spots") : local("余位充足", "Available");
   }
   function calendarSession(session: Session, compact = false) {
-    return <button type="button" key={session.id} className={`public-calendar-class capacity-${seatStatus(session)} ${isPast(session) ? "is-past" : ""}`} style={{ "--course-color": session.course.color } as React.CSSProperties} onClick={() => setSelected(session)} aria-label={`${session.start_time} ${local(session.course.name, session.course.name_en)}，${seatText(session)}，${local(`剩余 ${session.available} 席`, `${session.available} spots left`)}`}>
+    return <button type="button" key={session.id} className={`public-calendar-class capacity-${seatStatus(session)} ${isPast(session) ? "is-past" : ""} ${session.booked ? "is-booked" : ""}`} style={{ "--course-color": session.course.color } as React.CSSProperties} onClick={() => setSelected(session)} aria-label={`${session.start_time} ${local(session.course.name, session.course.name_en)}，${seatText(session)}，${local(`剩余 ${session.available} 席`, `${session.available} spots left`)}`}>
       <span className="calendar-class-main"><time>{session.start_time}</time><strong>{local(session.course.name, session.course.name_en)}</strong></span>
       {!compact && <small>{local(session.teacher.name, session.teacher.name_en)}</small>}
-      <span className="calendar-seat">{session.available === 0 ? t("full") : local(`余 ${session.available} 席`, `${session.available} left`)} · {session.booked_count}/{session.capacity}</span>
+      <span className="calendar-seat">{session.booked ? local("已约", "Booked") : session.available === 0 ? t("full") : local(`余 ${session.available} 席`, `${session.available} left`)} · {session.booked_count}/{session.capacity}</span>
     </button>;
   }
 
@@ -292,7 +312,6 @@ export function PublicHome() {
       <section className="schedule-section" id="schedule" {...scheduleSwipe}>
         <div className="section-heading" data-reveal><div><span className="eyebrow">MOVE WITH US</span><h2>{t("schedule")}</h2></div><p>{local("日 / 周 / 月课表 · 实时名额 · 课前可自主取消", "Day, week and month views · Live availability · Cancel before class")}</p></div>
         <div className="filter-bar">
-          <div className="type-tabs" role="tablist" aria-label={local("课程类型", "Class types")}>{types.map((item) => <button key={item} type="button" role="tab" aria-selected={type === item} className={type === item ? "active" : ""} onClick={() => { setScheduleMotion("none"); setType(item); }}>{t(item)}</button>)}</div>
           <div className="schedule-view-switch" role="tablist" aria-label={local("课表视图", "Schedule view")}>{(["day", "week", "month"] as const).map((item) => <button key={item} type="button" role="tab" aria-selected={view === item} className={view === item ? "active" : ""} onClick={() => changeView(item)}>{item === "day" ? local("日", "Day") : item === "week" ? local("周", "Week") : local("月", "Month")}</button>)}</div>
         </div>
         <div className="schedule-navigation">
@@ -311,7 +330,7 @@ export function PublicHome() {
           <div className="class-time"><strong>{session.start_time}</strong><span>{session.end_time}</span></div>
           <button className="class-main" type="button" onClick={() => setSelected(session)}><span className="class-category">{t(session.course.course_type)}</span><h3>{local(session.course.name, session.course.name_en)}</h3><p>{local(session.teacher.name, session.teacher.name_en)} · {local(session.room.name, session.room.name_en)}</p></button>
           <div className="class-capacity"><span className="seat-status"><i/>{seatText(session)}</span><span className="seat-count"><strong>{session.available}</strong> {t("available")}</span><small>{session.booked_count}/{session.capacity} {t("booked")}</small></div>
-          <button className="button button-small" disabled={session.available === 0 || isPast(session) || busy} type="button" onClick={() => requestBooking(session)}>{isPast(session) ? local("已结束", "Ended") : session.available === 0 ? t("full") : t("bookNow")}<Icon name="chevron" size={16}/></button>
+          <button className={`button button-small ${session.booked ? "is-booked" : ""}`} disabled={isPast(session) || busy || (session.available === 0 && !session.booked)} type="button" onClick={() => session.booked ? void cancelSessionBooking(session) : requestBooking(session)}>{isPast(session) ? local("已结束", "Ended") : session.booked ? local("已约", "Booked") : session.available === 0 ? t("full") : t("bookNow")}<Icon name="chevron" size={16}/></button>
         </article>)}</div> : view === "week" ? <div className="public-week-scroll"><div className="public-week-grid">{days.map((day) => {
           const daySessions = sessionsByDate.get(day) ?? [];
           return <article className={`public-week-day ${day === today() ? "today" : ""}`} key={day}><header><button type="button" onClick={() => openDay(day)} aria-label={local(`查看 ${day} 日课表`, `View classes on ${day}`)}><span>{weekday(day, language === "en")}</span><strong>{shortDate(day)}</strong></button><small>{local(`${daySessions.length} 节`, `${daySessions.length}`)}</small></header><div className="public-week-classes">{daySessions.map((session) => calendarSession(session))}{daySessions.length === 0 && <p className="calendar-no-class">{local("暂无课程", "No classes")}</p>}</div></article>;
@@ -326,18 +345,18 @@ export function PublicHome() {
         </div>
       </section>
 
-      <section className="teachers-section" id="teachers"><div className="section-heading" data-reveal><div><span className="eyebrow">PEOPLE MAKE PRACTICE</span><h2>{t("teachers")}</h2></div><p>{local("专业，而不距离感。", "Expertise, without distance.")}</p></div><div className="teacher-grid">{data?.teachers.map((teacher, index) => <article className="teacher-card" key={teacher.id} data-reveal data-reveal-delay={index * 65}><div className="teacher-photo"><img src={teacher.image_url} alt={local(teacher.name, teacher.name_en)} loading="lazy"/><span>0{index + 1}</span></div><h3>{local(teacher.name, teacher.name_en)}</h3><p className="teacher-specialty">{local(teacher.specialties, teacher.specialties_en)}</p><p>{local(teacher.bio, teacher.bio_en)}</p></article>)}</div></section>
+      <section className="teachers-section" id="teachers"><div className="section-heading" data-reveal><div><span className="eyebrow">PEOPLE MAKE PRACTICE</span><h2>{t("teachers")}</h2></div><p>{local("专业，而不距离感。", "Expertise, without distance.")}</p></div><button className={`section-toggle ${guidesOpen ? "is-open" : ""}`} type="button" aria-expanded={guidesOpen} onClick={() => setGuidesOpen((value) => !value)}><span>{local("身心引导者", "Guides")}</span><Icon name={guidesOpen ? "chevron" : "chevron"} size={16}/></button><div className={`teacher-grid ${guidesOpen ? "is-open" : ""}`}>{data?.teachers.map((teacher, index) => <article className="teacher-card" key={teacher.id} data-reveal data-reveal-delay={index * 65}><div className="teacher-photo"><img src={teacher.image_url} alt={local(teacher.name, teacher.name_en)} loading="lazy"/><span>0{index + 1}</span></div><h3>{local(teacher.name, teacher.name_en)}</h3><p className="teacher-specialty">{local(teacher.specialties, teacher.specialties_en)}</p><p>{local(teacher.bio, teacher.bio_en)}</p></article>)}</div></section>
 
-      <section className="membership-section" id="membership"><div className="section-heading" data-reveal><div><span className="eyebrow">YOUR PRACTICE, YOUR PACE</span><h2>{t("membership")}</h2></div><p>{local("次卡、周期卡与私教套餐，按你的节奏选择。", "Class packs, passes and private programs for your own rhythm.")}</p></div><div className="product-grid">{data?.products.filter((product) => product.online_sale).slice(0, 6).map((product, index) => <article className="product-card" key={product.id} data-reveal data-reveal-delay={(index % 3) * 70}><span className="product-type">{product.category.toUpperCase()}</span><h3>{local(product.name, product.name_en)}</h3><div className="product-price"><strong>{money(product.price)}</strong><span>/ {product.total_sessions ? `${product.total_sessions} ${t("sessions")}` : t("unlimited")}</span></div><p>{product.validity_days} {t("validDays")}</p><button className="button button-outline" type="button" disabled={busy} onClick={() => requestOrder(product)}>{t("buy")}<Icon name="arrow" size={17}/></button></article>)}</div></section>
+      <section className="membership-section" id="membership"><div className="section-heading" data-reveal><div><span className="eyebrow">YOUR PRACTICE, YOUR PACE</span><h2>{t("membership")}</h2></div><p>{local("次卡、周期卡与私教套餐，按你的节奏选择。", "Class packs, passes and private programs for your own rhythm.")}</p></div><button className={`section-toggle ${cardsOpen ? "is-open" : ""}`} type="button" aria-expanded={cardsOpen} onClick={() => setCardsOpen((value) => !value)}><span>{local("会员卡课", "Membership cards")}</span><Icon name="chevron" size={16}/></button><div className={`product-grid ${cardsOpen ? "is-open" : ""}`}>{data?.products.filter((product) => product.online_sale).slice(0, 6).map((product, index) => <article className="product-card" key={product.id} data-reveal data-reveal-delay={(index % 3) * 70}><span className="product-type">{product.category.toUpperCase()}</span><h3>{local(product.name, product.name_en)}</h3><div className="product-price"><strong>{money(product.price)}</strong><span>/ {product.total_sessions ? `${product.total_sessions} ${t("sessions")}` : t("unlimited")}</span></div><p>{product.validity_days} {t("validDays")}</p><button className="button button-outline" type="button" disabled={busy} onClick={() => requestOrder(product)}>{t("buy")}<Icon name="arrow" size={17}/></button></article>)}</div></section>
     </main>
 
     <footer className="public-footer"><div><span className="brand footer-brand"><BrandLogo/><strong>{data ? local(data.venue.name, data.venue.name_en) : "音昱 Wellness"}</strong></span><p>{data && local(data.venue.address, data.venue.address_en)}</p></div><div><a href={`tel:${data?.venue.phone}`}><Icon name="phone" size={17}/>{data?.venue.phone}</a><Link to="/admin"><Icon name="user" size={17}/>{t("staff")}</Link></div></footer>
 
     <nav className="mobile-bottom-nav" aria-label="Mobile"><a href="#top"><Icon name="home"/><span>{t("home")}</span></a><a href="#schedule"><Icon name="calendar"/><span>{t("book")}</span></a><button type="button" onClick={() => getToken("member") ? setMeOpen(true) : setLoginOpen(true)}><Icon name="user"/><span>{t("account")}</span></button></nav>
 
-    {selected && <Modal title={t("details")} onClose={() => setSelected(null)}><div className="class-detail"><div className="class-detail-color" style={{ background: selected.course.color }}/><span className="class-category">{t(selected.course.course_type)}</span><h3>{local(selected.course.name, selected.course.name_en)}</h3><p>{local(selected.course.description, selected.course.description_en)}</p><dl><div><dt>{t("teacher")}</dt><dd>{local(selected.teacher.name, selected.teacher.name_en)}</dd></div><div><dt>{t("room")}</dt><dd>{local(selected.room.name, selected.room.name_en)}</dd></div><div><dt><Icon name="calendar" size={17}/></dt><dd>{selected.session_date} · {selected.start_time}–{selected.end_time}</dd></div><div><dt><Icon name="clock" size={17}/></dt><dd>{selected.course.duration_minutes} {t("minutes")}</dd></div></dl><div className="teacher-mini">{selected.teacher.image_url && <img src={selected.teacher.image_url} alt=""/>}<p>{local(selected.teacher.bio, selected.teacher.bio_en)}</p></div><button className="button button-primary button-full" disabled={selected.available === 0 || isPast(selected) || busy} type="button" onClick={() => requestBooking(selected)}>{isPast(selected) ? local("已结束", "Ended") : selected.available === 0 ? t("full") : `${t("bookNow")} · ${selected.available} ${t("available")}`}</button></div></Modal>}
+    {selected && <Modal title={t("details")} onClose={() => setSelected(null)}><div className="class-detail"><div className="class-detail-color" style={{ background: selected.course.color }}/><span className="class-category">{t(selected.course.course_type)}</span><h3>{local(selected.course.name, selected.course.name_en)}</h3><p>{local(selected.course.description, selected.course.description_en)}</p><dl><div><dt>{t("teacher")}</dt><dd>{local(selected.teacher.name, selected.teacher.name_en)}</dd></div><div><dt>{t("room")}</dt><dd>{local(selected.room.name, selected.room.name_en)}</dd></div><div><dt><Icon name="calendar" size={17}/></dt><dd>{selected.session_date} · {selected.start_time}–{selected.end_time}</dd></div><div><dt><Icon name="clock" size={17}/></dt><dd>{selected.course.duration_minutes} {t("minutes")}</dd></div></dl><div className="teacher-mini">{selected.teacher.image_url && <img src={selected.teacher.image_url} alt=""/>}<p>{local(selected.teacher.bio, selected.teacher.bio_en)}</p></div><button className={`button button-primary button-full ${selected.booked ? "is-booked" : ""}`} disabled={isPast(selected) || busy || (selected.available === 0 && !selected.booked)} type="button" onClick={() => selected.booked ? void cancelSessionBooking(selected) : requestBooking(selected)}>{isPast(selected) ? local("已结束", "Ended") : selected.booked ? local("已预约 · 点击取消", "Booked · tap to cancel") : selected.available === 0 ? t("full") : `${t("bookNow")} · ${selected.available} ${t("available")}`}</button></div></Modal>}
 
-    {loginOpen && <Modal title={t("login")} onClose={() => { setLoginOpen(false); setPendingSession(null); setPendingProduct(null); }}><form className="auth-form" onSubmit={login}><p>{local("新会员验证手机号后会自动建立档案。演示会员可使用 13900001001。", "New members are registered automatically after phone verification. Demo member: 13900001001.")}</p><label>{t("phone")}<input required pattern="1[0-9]{10}" inputMode="numeric" value={phone} onChange={(event) => setPhone(event.target.value)}/></label><label>{t("name")}<input value={name} onChange={(event) => setName(event.target.value)} placeholder={local("新会员填写", "For new members")}/></label><label>{t("code")}<div className="code-input"><input required inputMode="numeric" maxLength={6} value={code} onChange={(event) => setCode(event.target.value)}/><button className="button button-outline" type="button" disabled={busy || cooldown > 0} onClick={() => void sendCode()}>{cooldown > 0 ? `${cooldown}s` : t("sendCode")}</button></div></label>{devCode && <p className="dev-code">{t("devCode")}: <strong>{devCode}</strong></p>}<button className="button button-primary button-full" disabled={busy} type="submit">{busy ? t("loading") : t("submit")}</button></form></Modal>}
+    {loginOpen && <Modal title={t("login")} onClose={() => { setLoginOpen(false); setPendingSession(null); setPendingProduct(null); }}><form className="auth-form" onSubmit={login}><p>{local("新会员验证手机号后会自动建立档案，验证码已自动发送。演示会员可使用 13900001001。", "New members are registered automatically after phone verification. The code is sent automatically. Demo member: 13900001001.")}</p><label>{t("phone")}<input required pattern="1[0-9]{10}" inputMode="numeric" value={phone} onChange={(event) => setPhone(event.target.value)}/></label><label>{t("code")}<div className="code-input"><input required inputMode="numeric" maxLength={6} value={code} onChange={(event) => setCode(event.target.value)}/><button className="button button-outline" type="button" disabled={busy || cooldown > 0} onClick={() => void sendCode()}>{cooldown > 0 ? `${cooldown}s` : t("sendCode")}</button></div></label>{devCode && <p className="dev-code">{t("devCode")}: <strong>{devCode}</strong></p>}<button className="button button-primary button-full" disabled={busy} type="submit">{busy ? t("loading") : t("submit")}</button></form></Modal>}
 
     {meOpen && <Modal title={`${local("你好", "Hello")}，${me?.member.name ?? ""}`} wide onClose={() => setMeOpen(false)}><div className="me-tabs"><button className={meTab === "profile" ? "active" : ""} onClick={() => setMeTab("profile")} type="button"><Icon name="user" size={16}/>{local("个人信息", "Profile")}</button><button className={meTab === "bookings" ? "active" : ""} onClick={() => setMeTab("bookings")} type="button">{t("myBookings")}</button><button className={meTab === "cards" ? "active" : ""} onClick={() => setMeTab("cards")} type="button">{t("myCards")}</button><button className={meTab === "orders" ? "active" : ""} onClick={() => setMeTab("orders")} type="button">{t("myOrders")}</button><button className={meTab === "checkin" ? "active" : ""} onClick={() => setMeTab("checkin")} type="button"><Icon name="qr" size={16}/>{local("到店签到", "Check in")}</button><button className="logout-link" type="button" onClick={() => setLogoutOpen(true)}>{t("logout")}</button></div>
       {meTab === "bookings" && <div className="me-list">{!me?.bookings.length ? <Empty>{t("noBookings")}</Empty> : me.bookings.map((booking) => { const session = booking.session; if (!session) return null; return <article key={booking.id} className={booking.status === "cancelled" ? "muted" : ""}><div><span className={`status-dot status-${booking.status}`}/><h3>{local(session.course.name, session.course.name_en)}</h3><p>{session.session_date} · {session.start_time}–{session.end_time}</p><small>{local(session.teacher.name, session.teacher.name_en)} · {local(session.room.name, session.room.name_en)}</small></div><div><span className="booking-status">{statusLabel(booking.status)}</span>{booking.status === "booked" && <><button className="text-button" type="button" onClick={() => void downloadFile(`/api/public/bookings/${booking.id}/calendar.ics`, `booking-${booking.id}.ics`, "member")}>{t("addCalendar")}</button><button className="text-button danger" type="button" onClick={() => void cancelBooking(booking)}>{t("cancel")}</button></>}</div></article>; })}</div>}

@@ -352,6 +352,7 @@ curl -X POST "$API/api/auth/login" \
 - **Query**：`date_from`、`date_to`、`course_type`，均可选；默认从今日起 7 天。
 - **响应**：`{ items: ClassSession[] }`，仅 `scheduled` 课程，不返回预约名单。
 - 结束日期不得早于开始日期，单次最大 31 天，否则 `400`。
+- 带会员令牌（`Authorization: Bearer member:<id>`）访问时，每节课额外返回 `booked` 布尔值，表示该会员是否已有有效预约；匿名访问时该字段恒为 `false`。
 
 ### 4.3 发送会员登录验证码
 

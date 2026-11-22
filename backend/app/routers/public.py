@@ -3,11 +3,12 @@ import uuid
 from datetime import date, datetime
 
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, Response, UploadFile
+from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session, joinedload
 
 from ..booking_service import create_booking, transition_booking
 from ..database import get_db
-from ..deps import get_current_member
+from ..deps import _payload, bearer, get_current_member
 from ..log_util import audit
 from ..membership_service import voucher_dict
 from ..models import AppSettings, Booking, CardProduct, ClassSession, Course, ExperienceVoucher, Member, MemberCard, MemberCardShare, Teacher, Transaction
@@ -18,6 +19,23 @@ from ..upload_service import remove_upload, save_image
 from ..utils import add_days, as_int, clean_payload, session_datetime, today, valid_date, valid_phone
 
 router = APIRouter(prefix="/api/public", tags=["public"])
+
+
+def optional_member(credentials: HTTPAuthorizationCredentials | None = Depends(bearer), db: Session = Depends(get_db)) -> Member | None:
+    """公开接口可选地识别会员令牌：带了会员令牌就回传“已预约”标记，没有也能匿名浏览。"""
+    if credentials is None:
+        return None
+    try:
+        payload = _payload(credentials)
+    except HTTPException:
+        return None
+    subject = str(payload.get("sub", ""))
+    if not subject.startswith("member:"):
+        return None
+    member = db.get(Member, int(subject.split(":", 1)[1]))
+    if not member or not member.active or member.deleted_at is not None:
+        return None
+    return member
 
 
 def _unique_redemption_code(db: Session) -> str:
@@ -44,7 +62,7 @@ def bootstrap(db: Session = Depends(get_db)):
 
 
 @router.get("/sessions")
-def public_sessions(date_from: str = Query(default=""), date_to: str = Query(default=""), course_type: str = Query(default=""), db: Session = Depends(get_db)):
+def public_sessions(date_from: str = Query(default=""), date_to: str = Query(default=""), course_type: str = Query(default=""), db: Session = Depends(get_db), member: Member | None = Depends(optional_member)):
     start = valid_date(date_from or today())
     end = valid_date(date_to or add_days(start, 6))
     if end < start or (datetime.fromisoformat(end) - datetime.fromisoformat(start)).days > 31:
@@ -53,7 +71,10 @@ def public_sessions(date_from: str = Query(default=""), date_to: str = Query(def
     if course_type:
         query = query.join(Course).filter(Course.course_type == course_type)
     rows = query.order_by(ClassSession.session_date, ClassSession.start_time).all()
-    return {"items": [session_dict(row) for row in rows]}
+    booked_ids: set[int] = set()
+    if member is not None:
+        booked_ids = {row[0] for row in db.query(Booking.session_id).filter(Booking.member_id == member.id, Booking.status == "booked", Booking.deleted_at.is_(None)).all()}
+    return {"items": [{**session_dict(row), "booked": row.id in booked_ids} for row in rows]}
 
 
 @router.post("/auth/send-code")

@@ -325,7 +325,7 @@
 <h3 id="4-2-查询会员课表">4.2 查询会员课表<a class="anchor" href="#4-2-查询会员课表" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/public/sessions">
 <h4 id="get-api-public-sessions"><span class="method method-get">GET</span><a href="#get-api-public-sessions" class="route">/api/public/sessions</a></h4>
-<ul><li><strong>权限</strong>：公开。</li><li><strong>Query</strong>：<code>date_from</code>、<code>date_to</code>、<code>course_type</code>，均可选；默认从今日起 7 天。</li><li><strong>响应</strong>：<code>{ items: ClassSession[] }</code>，仅 <code>scheduled</code> 课程，不返回预约名单。</li><li>结束日期不得早于开始日期，单次最大 31 天，否则 <code>400</code>。</li></ul>
+<ul><li><strong>权限</strong>：公开。</li><li><strong>Query</strong>：<code>date_from</code>、<code>date_to</code>、<code>course_type</code>，均可选；默认从今日起 7 天。</li><li><strong>响应</strong>：<code>{ items: ClassSession[] }</code>，仅 <code>scheduled</code> 课程，不返回预约名单。</li><li>结束日期不得早于开始日期，单次最大 31 天，否则 <code>400</code>。</li><li>带会员令牌（<code>Authorization: Bearer member:&lt;id&gt;</code>）访问时，每节课额外返回 <code>booked</code> 布尔值，表示该会员是否已有有效预约；匿名访问时该字段恒为 <code>false</code>。</li></ul>
 </section>
 <h3 id="4-3-发送会员登录验证码">4.3 发送会员登录验证码<a class="anchor" href="#4-3-发送会员登录验证码" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/public/auth/send-code">

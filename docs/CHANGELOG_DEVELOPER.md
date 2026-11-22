@@ -694,3 +694,41 @@
 
 - `npm run build` 通过；`python docs/build_api_docs.py` 重新生成 `public/api-docs.html`（17 章、137 个接口）。
 - 接口实测：`/api/admin/transactions` 全量返回 `total_amount=30064`、`revenue_amount=10064`、`refund_amount=0`；按 `payment_method=wechat,cash` 过滤后一致；`/api/admin/transactions.pdf` 抬头显示四项合计与结账方式。
+
+---
+
+## 二十二、会员端交互改版与手机端教室总览（2026-11-22）
+
+### 1. 会员端登录简化
+
+- `public.py` 的 `member_login` 接受仅 `phone` + `code` 的请求体，姓名为空时自动生成 `会员{后四位}` 显示名（新会员自动建档），前端 `PublicHome` 移除姓名输入框。
+- `src/context/LanguageContext.tsx` 新增 `PHONE_KEY = "wellness_member_phone"`，登录成功后写入手机号，下次打开自动回填。
+- 验证码改为打开登录弹窗即自动发送：`PublicHome` 用 `codeSent` ref 记录已发送的手机号号码，配合 60 秒倒计时避免重复发送；换号后需手动重发。
+
+### 2. “已约”状态与一键取消
+
+- `public.py` 的 `public_sessions` 新增可选依赖 `optional_member`（`Depends(bearer)` 解析 `sub` 前缀为 `member:` 的令牌），命中会员时按 `session_id` 汇总其 `booked` 预约并在返回项上打 `booked` 标记，匿名访问恒为 `false`。
+- `src/types.ts` 的 `Session` 增加可选字段 `booked?: boolean`。
+- 前端课表行与详情弹窗共用同一按钮：`session.booked` 为真时显示「已约」并改为调用 `cancelSessionBooking()`（`DELETE /api/public/bookings/{id}`），取消成功后刷新课表与我的预约。
+
+### 3. 手机端折叠区与大字体适配
+
+- `PublicHome` 的「身心引导者」「会员卡课」在 ≤700px 时改为 `<button class="section-toggle">` 点按展开，桌面端 `.section-toggle` 为 `display: none`，布局保持原样。
+- 日期条改为 `grid-template-columns: repeat(7, minmax(0, 1fr))` + `clamp()` 字号 + `white-space: nowrap`，修复大字体下最后一天被裁切的问题。
+
+### 4. 弹窗内报错可见性（需求 9）
+
+- `styles.css` 新增规则：`.modal-backdrop` 存在时，页面级 `.notice-error`（不含弹窗内部的那条）改为 `position: fixed; z-index: 220` 浮到弹窗之上；若弹窗内部已有 `.notice-error`，则隐藏页面级那一条，避免同一条错误显示两遍。
+- 未引入额外的事件总线，所有后台页面零改动即可生效。
+
+### 5. 手机端教室总览（需求 16）
+
+- `RoomsPage`：教室色块条在手机端改为显示（`.room-scroll-strip` 不再在 ≤700px 隐藏），点击色块跳转到对应分页；新增 `room-compact-list` 紧凑列表，按教室列出当天全部课程与占用，手机端一次看全所有教室。
+- `RoomScheduleBoard`：新增 `compact` 判定（`matchMedia("(max-width: 700px)")`），手机端改用固定格宽（列 132px、行高 46px）并把时间轴与列网格包进 `.room-board-canvas`，通过 `transform: translate() scale()` 实现双指捏合缩放（0.5–3 倍）与单指拖动画布，另加缩放比例、放大、缩小与复位按钮；桌面端布局与铺满逻辑完全不变。
+- `.room-board-action`（全屏排课表）在手机端不再隐藏。
+
+### 6. 验证
+
+- `npm run build` 通过（`tsc -b` 无报错）。
+- CDP 截图核对：手机端教室总览（色块条 5 个、紧凑列表 5 张卡片）、手机端全屏排课表（缩放控件存在、缩放后 `transform: translate(-39px, -73.8px) scale(1.2)`）、弹窗打开时页面级报错 `position: fixed`、`z-index: 220`。
+- `python docs/build_api_docs.py` 重新生成 `public/api-docs.html`（17 章、137 个接口），`docs/API.md` 补充 `/api/public/sessions` 的 `booked` 字段说明。

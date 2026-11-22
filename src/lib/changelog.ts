@@ -12,6 +12,31 @@ export const changelogReleases: ChangelogRelease[] = [
   {
     date: "2026-11-22",
     version: APP_VERSION,
+    title: { zh: "会员端更顺手：登录简化、已约可取消、手机端教室总览", en: "A smoother member app: simpler login, one-tap cancel, mobile room overview" },
+    summary: { zh: "会员端登录只需手机号加验证码，预约后按钮变为“已约”可直接取消；手机端教室总览能看到全部教室并支持缩放拖拽；后台弹窗报错不再需要关掉弹窗才看得见。", en: "Member login now needs only a phone number and code, booked classes can be cancelled with one tap, the mobile room overview shows every room with pinch-to-zoom, and admin errors show on top of open dialogs." },
+    groups: [
+      { title: { zh: "会员端登录与预约", en: "Member login and booking" }, points: [
+        { zh: "登录只保留手机号与验证码，去掉姓名输入框，验证码打开弹窗即自动发送", en: "Login now only asks for a phone number and code; the name field is gone and the code is sent automatically" },
+        { zh: "记住上次登录的手机号，下次打开直接输验证码即可", en: "The phone number is remembered, so the next sign-in only needs the code" },
+        { zh: "预约成功后按钮变为“已约”，点一下就能取消预约，不用再去“我的预约”里找", en: "After booking the button turns into “Booked” and a tap cancels the booking right away" },
+        { zh: "团课预约界面只显示团课，不再混入私教与评估", en: "The group-class booking view only lists group classes" },
+      ] },
+      { title: { zh: "手机端体验", en: "On the phone" }, points: [
+        { zh: "“身心引导者”与“会员卡课”改为点按展开，手机端不再一屏拉得很长", en: "Guides and membership cards now collapse behind a tap on the phone" },
+        { zh: "日期条适配大字体与窄屏，周日等最后一天完整显示不再被裁掉", en: "The date strip fits large font sizes and narrow screens, so the last day is no longer cut off" },
+        { zh: "教室总览新增全部教室色块条与紧凑列表，手机上一次就能看到所有教室的安排", en: "The room overview gains a chip bar and a compact list so every room is visible on a phone" },
+        { zh: "手机端新增全屏排课表入口，双指缩放、单指拖动，大屏布局保持不变", en: "The full-screen schedule is now available on phones with pinch-to-zoom and drag; the big-screen layout is unchanged" },
+      ] },
+      { title: { zh: "后台可见性", en: "Admin visibility" }, points: [
+        { zh: "弹窗里的操作失败时，报错直接浮在弹窗上方，不用关掉弹窗才发现没成功", en: "When an action inside a dialog fails, the error appears on top of the dialog instead of behind it" },
+        { zh: "会员端年卡类目改为中文：体测评估 / 团课 / 私教 / 工作坊", en: "Annual card categories read 体测评估 / 团课 / 私教 / 工作坊" },
+        { zh: "会员端“申请购卡”改为“线下购买”", en: "“Request card” is now “Buy at studio”" },
+      ] },
+    ],
+  },
+  {
+    date: "2026-11-22",
+    version: APP_VERSION,
     title: { zh: "财务入账：按结账方式查账，合计口径更清楚", en: "Finance ledger: filter by payment method with clearer totals" },
     summary: { zh: "财务入账新增结账方式多选筛选，合计金额改名为流水总额、营收总额与退款总额，报表中心也能按结账方式筛选。", en: "The finance ledger gains a multi-select payment-method filter; totals are renamed to ledger, revenue and refund totals, and the report centre can filter by payment method too." },
     groups: [
