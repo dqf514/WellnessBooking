@@ -832,3 +832,37 @@
 
 - `npm run build` 通过。
 - `public/help.html` 标签配平校验通过（details / div / article / ul / ol / li / p / h3 无失衡），新增 4 个小节渲染正常（CDP 截图核对 1440×1000）。
+
+---
+
+## 二十七、照片上传增加裁剪窗口（2026-11-23）
+
+### 1. 新增 `src/components/PhotoCropper.tsx`
+
+- 通用裁剪弹窗：入参 `file` / `aspect` / `allowOriginal`，回调 `onConfirm(file)` 与 `onCancel()`。
+- 预览用 `<canvas>` 绘制，与导出共用同一套换算，保证“所见即所得”；导出为 640 × 640 的 JPEG（q0.9，白底）。
+- 交互：指针拖动平移（Pointer Events，兼容触屏）、滑块缩放 1×–3×、滚轮缩放、重置；偏移量按 cover 比例夹取，不会拖出空白。
+- 不引入任何第三方依赖，手写 CSS 放在 `src/styles.css`（`.photo-cropper` / `.photo-crop-frame` / `.photo-crop-zoom` / `.photo-crop-actions`）。
+
+### 2. 接入点
+
+| 位置 | 文件 | 比例 | 说明 |
+| --- | --- | --- | --- |
+| 会员端“我的 → 个人信息 → 会员照片” | `src/components/MemberProfilePanel.tsx` | 1:1 | 选图后先裁剪，确认才上传 |
+| 后台会员档案“上传照片” | `src/components/MemberProfileDrawer.tsx` | 1:1 | 前台可代会员调整取景 |
+| 后台教练管理“教练照片” | `src/pages/admin/settings/CatalogSettings.tsx` | 120:140 | 竖版取景，与列表展示框一致 |
+| 后台课程库“课程图片” | `src/pages/admin/CoursesPage.tsx` | 1:1 | 另提供“使用原图”跳过裁剪 |
+
+- 上传接口未变（`POST /api/admin/members/{id}/photo`、`POST /api/public/me/photo`、`/api/admin/teachers/{id}/photo`、`/api/admin/courses/{id}/image`），仍接收 PNG / JPG / WebP；裁剪后前端统一提交 JPEG。
+- 文件输入框在选择后清空 `value`，可重复选择同一张图片。
+
+### 3. 文档同步
+
+- `public/help.html`：会员端新增「6. 上传本人照片」，会员档案新增「裁剪成头像的样子」步骤，课程与教室排期新增图片裁剪说明，并扩充相关 `data-search` 关键词。
+- `public/changelog-details.html`：新增 BATCH 15 章节与概览卡片，目录置顶；原 63 张截图整体后移 4 位（编号 01–63 → 05–67），新增 4 张裁剪窗口截图，题注重新连续编号（图 1 – 图 67）。
+- `docs/CHANGELOG_CLIENT.md`、`src/lib/changelog.ts`（后台“系统设置 → 更新日志”）同步新增本次条目。
+
+### 4. 验证
+
+- `npm run build` 通过（`tsc -b` 无报错）。
+- CDP 实测：会员端（390×844）上传照片 → 裁剪窗口弹出 → 确认裁剪 → 提示“照片已更新”，保存结果为 640 × 640；后台会员档案同样流程通过；教练照片裁剪框为 300 × 350（竖版），课程图片裁剪框为 300 × 300 且带“使用原图”按钮。

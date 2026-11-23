@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { PhotoCropper } from "@/components/PhotoCropper";
 import { Icon } from "@/components/UI";
 import { useLanguage } from "@/context/LanguageContext";
 import { apiFetch } from "@/lib/api";
@@ -20,6 +21,7 @@ export function MemberProfilePanel({ member, onUpdated }: { member: Member; onUp
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [cropFile, setCropFile] = useState<File | null>(null);
 
   useEffect(() => { setName(member.name); setBirthDate(member.birth_date || ""); }, [member.id]);
   useEffect(() => {
@@ -87,11 +89,11 @@ export function MemberProfilePanel({ member, onUpdated }: { member: Member; onUp
     </section>
     <section className="profile-block">
       <h3>{local("会员照片", "Profile photo")}</h3>
-      <p className="form-help">{local("上传一张本人照片，前台签到、员工查询会员时都能更快认出你。", "Upload a photo of yourself so staff can recognise you at check-in.")}</p>
+      <p className="form-help">{local("上传一张本人照片，前台签到、员工查询会员时都能更快认出你。上传后可以拖动调整取景，照片会按头像的样子裁剪显示。", "Upload a photo of yourself so staff can recognise you at check-in. You can drag it to choose the framing before it is saved as a square avatar.")}</p>
       <div className="photo-editor">
         {member.photo_url ? <img className="photo-preview" src={member.photo_url} alt={member.name}/> : <span className="photo-preview photo-preview-empty">{local("暂无照片", "No photo")}</span>}
         <div>
-          <label className="profile-upload"><Icon name="user" size={16}/><span>{local("拍照或选择图片", "Take a photo or choose an image")}</span><input type="file" accept="image/png,image/jpeg,image/webp" capture="user" onChange={(event) => void uploadPhoto(event.target.files?.[0] ?? null)}/></label>
+          <label className="profile-upload"><Icon name="user" size={16}/><span>{local("拍照或选择图片", "Take a photo or choose an image")}</span><input type="file" accept="image/png,image/jpeg,image/webp" capture="user" onChange={(event) => { const file = event.target.files?.[0] ?? null; event.target.value = ""; if (file) setCropFile(file); }}/></label>
           {member.photo_url && <button className="text-button danger" type="button" disabled={busy} onClick={() => void removePhoto()}>{local("删除照片", "Remove photo")}</button>}
         </div>
       </div>
@@ -108,5 +110,6 @@ export function MemberProfilePanel({ member, onUpdated }: { member: Member; onUp
         <button className="button button-primary button-full" disabled={busy} type="button" onClick={() => void savePhone()}><Icon name="phone" size={17}/>{busy ? local("提交中…", "Submitting…") : local("保存新手机号", "Save new number")}</button>
       </div>
     </section>
+    {cropFile && <PhotoCropper file={cropFile} onConfirm={(file) => { setCropFile(null); void uploadPhoto(file); }} onCancel={() => setCropFile(null)}/>}
   </div>;
 }

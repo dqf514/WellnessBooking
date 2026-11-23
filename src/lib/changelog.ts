@@ -12,6 +12,25 @@ export const changelogReleases: ChangelogRelease[] = [
   {
     date: "2026-11-23",
     version: APP_VERSION,
+    title: { zh: "照片上传可裁剪，头像按页面显示取景", en: "Crop photos before upload so avatars match the page" },
+    summary: { zh: "选好照片后先弹出裁剪窗口：拖动照片调整位置、滑块放大缩小，方框里看到的就是保存后头像的样子。会员端自传、后台代传、教练照片与课程图片共用同一个裁剪窗口。", en: "Picking a photo now opens a crop window: drag to reposition, zoom with the slider, and the frame shows exactly how the avatar will look. Member self-service, staff uploads, instructor portraits and class images all share it." },
+    groups: [
+      { title: { zh: "裁剪窗口", en: "The crop window" }, points: [
+        { zh: "拖动照片移动位置，滑块缩放，框内即最终取景", en: "Drag to reposition, zoom with the slider; the frame is the final framing" },
+        { zh: "提供“重置 / 取消 / 确认裁剪”，取消不保存任何内容", en: "Reset, cancel or apply — cancelling changes nothing" },
+        { zh: "会员照片按方形保存（640 × 640），头像、会员清单与签到名单显示一致", en: "Member photos are saved square (640 × 640), so the avatar, member list and check-in roster match" },
+      ] },
+      { title: { zh: "覆盖范围", en: "Where it applies" }, points: [
+        { zh: "会员端“我的 → 个人信息 → 会员照片”，手机可直接拍照", en: "Member site: “Me → Profile → Profile photo”, with the phone camera on mobile" },
+        { zh: "后台会员档案“上传照片”，前台可代会员调整取景", en: "Admin member profile: staff can set the framing for the member" },
+        { zh: "教练照片按竖版比例（120 : 140）裁剪，课程图片按方形裁剪", en: "Instructor portraits crop to a portrait frame (120 : 140), class images to a square" },
+        { zh: "课程图片可点“使用原图”保留原始文件", en: "Class images can keep the original file with “Use original”" },
+      ] },
+    ],
+  },
+  {
+    date: "2026-11-23",
+    version: APP_VERSION,
     title: { zh: "会员端手机改成多页：底部按钮切换", en: "The member app on phones becomes multi-page with a bottom tab bar" },
     summary: { zh: "手机端不再是一整页从上拉到底，底部新增首页、预约、引导者、卡课、我的五个按钮，点哪个显示哪个页面；“我的”成为独立页面。电脑端保持原来的整页滚动样式不变。", en: "Phones no longer scroll through one long page: a bottom bar switches between Home, Book, Guides, Cards and Me, and “Me” is now a page of its own. The desktop layout is unchanged." },
     groups: [
