@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.requests import Request
+from starlette.responses import RedirectResponse
 from starlette.types import Scope
 
 from .api_key_service import record_api_key_usage
@@ -56,6 +57,12 @@ for router in (auth.router, public.router, checkin.router, admin_core.router, ad
 @app.get("/api/health")
 def health():
     return {"ok": True, "service": "wellness-booking"}
+
+
+@app.get("/changelog-2026-11-18.html", include_in_schema=False)
+def changelog_legacy_redirect():
+    """旧版图文更新说明地址（文件名带日期）已并入 changelog-details.html，这里做一次跳转。"""
+    return RedirectResponse("/changelog-details.html", status_code=301)
 
 
 class SPAStaticFiles(StaticFiles):

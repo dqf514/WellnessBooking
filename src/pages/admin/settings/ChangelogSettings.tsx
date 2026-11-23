@@ -9,7 +9,7 @@ export function ChangelogSettings() {
       <div><small>{a("当前版本")}</small><strong>v{APP_VERSION}</strong><span>{local(`发布于 ${APP_RELEASE_DATE}`, `Released on ${APP_RELEASE_DATE}`)}</span></div>
       <div><small>{a("接口版本")}</small><strong>{API_VERSION}</strong><span>{local(`${API_ENDPOINT_COUNT} 个后台接口`, `${API_ENDPOINT_COUNT} admin endpoints`)}</span></div>
       <div><small>{a("更新批次")}</small><strong>{changelogReleases.length}</strong><span>{a("按日期分界，列出每次更新的主要内容")}</span></div>
-      <a className="button button-primary" href="/changelog-2026-11-18.html" target="_blank" rel="noreferrer">{a("查看完整图文更新说明")}</a>
+      <a className="button button-primary" href="/changelog-details.html" target="_blank" rel="noreferrer">{a("查看完整图文更新说明")}</a>
     </div>
     <ol className="changelog-timeline">
       {changelogReleases.map((release) => <li key={`${release.date}-${release.version}-${release.title.zh}`}>

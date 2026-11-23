@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#173f35">
-  <meta name="description" content="音昱 Wellness 更新说明（2026-11-17 ~ 2026-11-18）：1117 财务与运营需求落地、后台导航重构、课程库独立成页与角色能力矩阵，附全部界面截图说明。">
+  <meta name="description" content="音昱 Wellness 更新说明（2026-11-17 ~ 2026-11-23）：1117 财务与运营需求落地、后台导航重构与角色能力矩阵、会员照片与名单导出、会员卡操作与开卡日期待定、报表中心与 Excel 导出、财务结账方式筛选、会员端交互改版与手机多页导航，附全部界面截图说明。">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Crect width='36' height='36' rx='18' fill='%23173f35'/%3E%3Cpath d='M28 6C15 7 8 13 8 23c7 1 15-2 20-17ZM8 29c3-8 8-12 16-17' fill='none' stroke='%23e9efe7' stroke-width='1.5'/%3E%3C/svg%3E">
   <title>更新说明 · 音昱 Wellness</title>
   <style>
@@ -60,29 +60,35 @@
           <li><a href="#batch-1118f">2026-11-18 · 经营概览与大屏细节</a></li>
           <li><a href="#batch-1118g">2026-11-18 · 教室总览布局收紧</a></li>
           <li><a href="#batch-1118h">2026-11-18 · 大屏深色模式</a></li>
+          <li><a href="#batch-1122a">2026-11-22 · 会员照片与会员卡操作</a></li>
+          <li><a href="#batch-1122b">2026-11-22 · 报表中心与 Excel 导出</a></li>
+          <li><a href="#batch-1122c">2026-11-22 · 财务结账方式与合计口径</a></li>
+          <li><a href="#batch-1122d">2026-11-22 · 会员端交互改版与手机教室总览</a></li>
+          <li><a href="#batch-1123">2026-11-23 · 会员端手机多页模式</a></li>
           <li><a href="#matrix">角色能力矩阵</a></li>
           <li><a href="#fixes">本次修复与加固</a></li>
           <li><a href="#api">接口与文档变化</a></li>
           <li><a href="#member-site">会员端</a></li>
         </ul>
       </nav>
-      <p class="sidebar-note">本文所有界面截图均取自实际运行版本（2026-11-18），按“需求 → 实现 → 画面”逐条对照，便于业务方核对。</p>
+      <p class="sidebar-note">本文所有界面截图均取自实际运行版本（2026-11-23），按“需求 → 实现 → 画面”逐条对照，便于业务方核对。本页文件名固定为 <span class="code">changelog-details.html</span>，后续每次更新都在这一页上追加，不另建新文件。</p>
     </aside>
 
     <main>
       <section class="hero">
-        <p class="hero-eyebrow">CHANGELOG · 2026-11-17 → 2026-11-18</p>
-        <h1>财务口径落地，<br>权限体系重构</h1>
+        <p class="hero-eyebrow">CHANGELOG · 2026-11-17 → 2026-11-23</p>
+        <h1>财务口径落地，权限体系重构，<br>会员端全面改版</h1>
         <p class="hero-description">本次更新分批推进：11 月 17 日按《MODIFY1117》需求完成财务与运营侧改造，把“流水”和“营收”彻底分开，并补齐导出与小票；11 月 18 日重构后台导航，把课程库提升为独立页面，并建立角色能力矩阵——菜单可见性、页面可达性与操作权限统一由服务端下发的能力清单决定；同日再补一批会员自助能力，姓名与生日开放自助维护，换手机号需原号与新号双验证，后台获客来源统一为下拉选项；同日再补一批教室总览的浏览体验：表格顶部增加左右滚动按键与按排课着色的教室色块，教室列宽压缩，一屏可见更多教室，横向滚动时左侧时间轴保持可见；同日再收一遍会员档案的头部：姓名中英文并排一行，个人信息改为一行铺满，备注直接显示在头部，整体压低高度，把下面的会员卡与记录表空间让出来；同日再推出全屏大屏排课表，所有教室一次铺开、日期与实时时钟居中、浏览器一并全屏隐藏工具栏，左右键换日期、Esc 退出、Ctrl+P 直接打印，排课块高度覆盖所在时间段；同日再把经营概览改为“今日安排”，教室占用一并列出，“完整课表”直接打开教室大屏。同日再把教室总览的日期选择并入左上角（两侧加上一日/下一日箭头），全屏按钮移到右上角按钮区，中间那一行整行移除，表格行高压缩到 44px，同屏可见的时段明显增多。同日再给全屏排课表加了深色模式，标题栏右上角一键切换，晚上投屏不刺眼。</p>
-        <p class="hero-note">共 14 项 1117 需求全部落地 · 19 项角色能力 · 后台接口总数 128 个 · 9 个交付批次</p>
+        <p class="hero-description">11 月 22 日与 23 日又推进五个批次：会员新增照片字段（会员端自己拍照上传，后台也能代为更换）并支持名单导出 Excel；会员卡新增编辑、续卡、请假停卡与跨类目升卡，购卡可选择“开卡日期待定”，营收口径收归系统设置由管理员统一选择；报表页升级为报表中心，销售、财务、管理、总经理各有预设，维度与指标可自由组合，全部改为导出 Excel；财务入账新增结账方式多选筛选，合计金额改名为流水总额、营收总额与退款总额；会员端登录简化为手机号加验证码、预约后按钮变“已约”可直接取消、手机端教室总览一次看全所有教室；11 月 23 日会员端在手机上改为多页模式，底部五个按钮切换首页、预约、引导者、卡课与我的，电脑端保持整页滚动不变。</p>
+        <p class="hero-note">共 14 项 1117 需求全部落地 · 19 项角色能力 · 后台接口总数 137 个 · 14 个交付批次</p>
       </section>
 
       <section id="overview">
         <div class="stats">
           <div class="stat"><small>REQUIREMENTS</small><strong>14 / 14</strong><span>《MODIFY1117》全部 14 条需求已落地并逐条对照</span></div>
           <div class="stat"><small>CAPABILITIES</small><strong>19</strong><span>角色能力项，覆盖 5 种员工角色</span></div>
-          <div class="stat"><small>ENDPOINTS</small><strong>128</strong><span>后台接口总数，本批新增与调整 9 个</span></div>
-          <div class="stat"><small>FIXES</small><strong>7</strong><span>数据一致性、并发、权限与显示对齐缺陷修复</span></div>
+          <div class="stat"><small>ENDPOINTS</small><strong>137</strong><span>后台接口总数，11-22 起新增 10 个、调整多项</span></div>
+          <div class="stat"><small>FIXES</small><strong>13</strong><span>数据一致性、并发、权限与显示对齐缺陷修复</span></div>
         </div>
         <div class="batch">
           <small>BATCH 01 · 2026-11-17</small>
@@ -129,6 +135,31 @@
           <h2>全屏排课表新增深色模式</h2>
           <p>公共区域的显示屏白天用浅色，晚上灯光一暗浅色底就刺眼。现在全屏排课表支持浅色 / 深色两种模式，标题栏右上角新增一个切换按钮（月亮 ⇄ 太阳），点一下立刻切换；选择会被记住，下次打开沿用上次的模式。深色下背景为墨绿黑，课程色块保留各自颜色并降低亮度，网格线与文字重新调过对比度，远处也看得清；打印时无论当前是哪种模式，都输出浅色版本，保证白纸上可读。</p>
         </div>
+        <div class="batch">
+          <small>BATCH 10 · 2026-11-22</small>
+          <h2>会员照片、名单导出、会员卡操作与开卡日期待定</h2>
+          <p>会员新增照片字段：会员端可自己拍照上传，后台也能代为更换或移除，不再需要贴图片网址。会员列表按名称、手机号、卡状态与来源筛选，筛选结果可导出 Excel 名单（含照片内嵌）。会员卡操作重新整理为编辑、续卡、请假停卡与跨类目升卡四类，续卡即重新购卡并保留原卡记录，请假停卡增加冻结开始日期且只冻结区间内的权益。购卡时可选择“开卡日期待定”，卡片立即可用、首次签到当天自动开卡。营收确认口径移入系统设置，由管理员在“按卡种自动 / 购卡即全额确认 / 按有效期每日均摊”之间选择。</p>
+        </div>
+        <div class="batch">
+          <small>BATCH 11 · 2026-11-22</small>
+          <h2>报表中心：多维度报表与 Excel 导出</h2>
+          <p>报表页升级为报表中心：销售业绩、财务流水、教学管理与总经理经营各有预设数据源与指标，维度（月份、顾问、产品、教练、教室、类别…）与指标可自由勾选组合，切换后立即重算并给出合计行，另提供自定义报表。报表一律导出 Excel，原“导出报表 PDF”取消；经营总览导出为多页签 Excel（总览、分类汇总、课程、教练与教室使用率各一页）。</p>
+        </div>
+        <div class="batch">
+          <small>BATCH 12 · 2026-11-22</small>
+          <h2>财务入账支持按结账方式筛选，合计口径改为三项</h2>
+          <p>财务入账新增结账方式多选筛选（现金、微信、有赞、大众点评等可同时勾选），导出的流水沿用当前筛选并在抬头注明类别与结账方式；报表中心选择财务流水数据源时同样可先按结账方式筛选再分组统计。合计金额的称呼改为“流水总额（扣除了退款的金额）”“营收总额（扣除了退款的金额）”“退款总额”三项，三项金额都跟随筛选条件同步变化。</p>
+        </div>
+        <div class="batch">
+          <small>BATCH 13 · 2026-11-22</small>
+          <h2>会员端交互改版、手机端教室总览与弹窗报错可见性</h2>
+          <p>会员端登录去掉姓名栏，只保留手机号与验证码，打开弹窗即自动发码并记住上次手机号，首次登录验证通过后自动建档；预约成功后按钮变为“已约”，再点一次直接取消；团课预约界面只显示团课。手机端教室总览新增教室色块条与紧凑列表，所有教室一次看全，并可打开全屏排课表双指缩放、单指拖动。后台弹窗内的报错改为浮在弹窗之上，不再需要关掉弹窗才发现没成功。</p>
+        </div>
+        <div class="batch">
+          <small>BATCH 14 · 2026-11-23</small>
+          <h2>会员端手机多页模式：底部按钮切换</h2>
+          <p>会员端在手机上由一整页改为多页：底部五个按钮切换首页、预约、引导者、卡课与我的，“我的”是独立页面，含个人信息、我的预约、我的会员卡、购卡记录、到店签到与退出登录，未登录时点开直接是登录窗口。电脑端完全不变，仍是整页滚动、不显示底部导航，点右上角头像弹出“我的”窗口，两边内容一致。</p>
+        </div>
       </section>
 
       <section id="batch-1117" class="section">
@@ -145,7 +176,7 @@
             <li>教室使用统计的口径同步改为“每日 07:00–20:00”，与界面显示一致。</li>
           </ul>
           <figure>
-            <img src="changelog-2026-11-18/20-rooms-overview.png" alt="教室总览页面" loading="lazy">
+            <img src="changelog-images/20-rooms-overview.png" alt="教室总览页面" loading="lazy">
             <figcaption><b>图 1 · 教室总览。</b>左侧为独立的时间轴列，表头“时间”单独一行；刻度自 07:00 起排列。右上角“导出安排 PDF”可导出当天全部课程与占用安排。</figcaption>
           </figure>
         </article>
@@ -159,7 +190,7 @@
             <li>常用色选中后即时回显色块，选中项带对勾标识，不需要再手动拖动调色盘。</li>
           </ul>
           <figure>
-            <img src="changelog-2026-11-18/07-course-create.png" alt="新建课程弹窗" loading="lazy">
+            <img src="changelog-images/07-course-create.png" alt="新建课程弹窗" loading="lazy">
             <figcaption><b>图 2 · 新建课程弹窗。</b>“课程颜色”区先列一排常用色（当前选中项带对勾），下方“更多颜色”可展开完整调色盘或手动输入色值。</figcaption>
           </figure>
         </article>
@@ -173,7 +204,7 @@
             <li>已上传课程图片可一键“移除图片”，同时清理服务器上的旧文件；课程卡片与会员端同步显示图片。</li>
           </ul>
           <figure>
-            <img src="changelog-2026-11-18/05-courses-cards.png" alt="课程库卡片视图" loading="lazy">
+            <img src="changelog-images/05-courses-cards.png" alt="课程库卡片视图" loading="lazy">
             <figcaption><b>图 3 · 课程库独立页面。</b>课程卡片直接显示上传的课程图片；下方为课程名称、类别、时长与单节价格，支持卡片 / 列表视图切换。</figcaption>
           </figure>
         </article>
@@ -187,7 +218,7 @@
             <li>该选择器在排课与私教预约中统一复用。</li>
           </ul>
           <figure>
-            <img src="changelog-2026-11-18/19-course-search.png" alt="新建排课弹窗" loading="lazy">
+            <img src="changelog-images/19-course-search.png" alt="新建排课弹窗" loading="lazy">
             <figcaption><b>图 4 · 新建排课弹窗。</b>“课程 / 服务”为可搜索选择器，与下方“授课老师”字段之间有独立边框分隔。</figcaption>
           </figure>
         </article>
@@ -202,7 +233,7 @@
             <li>本次连带把整个员工后台的正文字号放大 1–2 号，并优化了操作按钮的尺寸与间距（不依赖浏览器缩放，390px 手机端同样可用）。</li>
           </ul>
           <figure>
-            <img src="changelog-2026-11-18/18-member-profile.png" alt="会员档案抽屉" loading="lazy">
+            <img src="changelog-images/18-member-profile.png" alt="会员档案抽屉" loading="lazy">
             <figcaption><b>图 5 · 会员档案。</b>抬头区字段名与内容分列、字号加大；下方标签行把“体测 / Assessment”“合同与资料”与预约、消费记录并排成一行。</figcaption>
           </figure>
         </article>
@@ -235,7 +266,7 @@
             <li>卡片视图与列表视图的类别标签同样使用中文名，不再出现 group / private / annual 等英文值。</li>
           </ul>
           <figure>
-            <img src="changelog-2026-11-18/21-products.jpg" alt="卡课产品页面" loading="lazy">
+            <img src="changelog-images/21-products.jpg" alt="卡课产品页面" loading="lazy">
             <figcaption><b>图 6 · 卡课产品。</b>“产品类别”筛选下拉与列表的“类别”列均为中文，与财务入账的类目口径一致。</figcaption>
           </figure>
         </article>
@@ -252,20 +283,20 @@
           </ul>
           <div class="figure-pair">
             <figure>
-              <img src="changelog-2026-11-18/15-finance-manual-entry.png" alt="手动入账弹窗" loading="lazy">
+              <img src="changelog-images/15-finance-manual-entry.png" alt="手动入账弹窗" loading="lazy">
               <figcaption><b>图 7 · 手动入账。</b>确认按钮上方即“入流水 / 入营收 / 营收每日均摊”三选项，默认按类别带出。</figcaption>
             </figure>
             <figure>
-              <img src="changelog-2026-11-18/16-private-revenue.png" alt="私教消课营收入账" loading="lazy">
+              <img src="changelog-images/16-private-revenue.png" alt="私教消课营收入账" loading="lazy">
               <figcaption><b>图 8 · 私教/评估消课营收入账。</b>签到后单独确认本节课营收，金额默认按购卡金额÷总次数计算，结账方式含“健身会员”。</figcaption>
             </figure>
           </div>
           <figure>
-            <img src="changelog-2026-11-18/09-finance-ledger.png" alt="财务流水页面" loading="lazy">
+            <img src="changelog-images/09-finance-ledger.png" alt="财务流水页面" loading="lazy">
             <figcaption><b>图 9 · 财务入账。</b>每条流水的“入账类型”标签标明该笔是流水、营收还是流水+营收；顶部汇总区分现金实收与即时营收。</figcaption>
           </figure>
           <figure>
-            <img src="changelog-2026-11-18/22-reports.jpg" alt="报表分析页面" loading="lazy">
+            <img src="changelog-images/22-reports.jpg" alt="报表分析页面" loading="lazy">
             <figcaption><b>图 10 · 报表分析。</b>“流水与营收分类汇总”把现金实收与确认营收分列，并给出年卡均摊营收、私教消课营收与课程/教练/教室经营数据。</figcaption>
           </figure>
         </article>
@@ -289,7 +320,7 @@
           </ul>
           <div class="receipt-wrap">
             <figure>
-              <img src="changelog-2026-11-18/17-receipt.png" alt="账单小票" loading="lazy">
+              <img src="changelog-images/17-receipt.png" alt="账单小票" loading="lazy">
               <figcaption><b>图 11 · 账单小票。</b>电子小票实样，可直接上传财务或按 14.5×7.5cm 打印。</figcaption>
             </figure>
             <ul>
@@ -320,7 +351,7 @@
             <li>旧地址 <span class="code">/admin/schedule/private</span> 自动跳转到私教预约页，不会出现“页面不存在”。</li>
           </ul>
           <figure>
-            <img src="changelog-2026-11-18/01-nav-admin.png" alt="后台导航" loading="lazy">
+            <img src="changelog-images/01-nav-admin.png" alt="后台导航" loading="lazy">
             <figcaption><b>图 12 · 后台左侧导航（管理员视角）。</b>“排课与场地”下只有团课排课、工作坊排课与教室总览，没有“私教排课”。</figcaption>
           </figure>
         </article>
@@ -351,24 +382,24 @@
           </ul>
           <div class="figure-pair">
             <figure>
-              <img src="changelog-2026-11-18/02-nav-teacher.png" alt="教练视角导航" loading="lazy">
+              <img src="changelog-images/02-nav-teacher.png" alt="教练视角导航" loading="lazy">
               <figcaption><b>图 13 · 教练账号。</b>只有概览、预约与签到、排课与场地、会员管理、课程库；没有财务与报表、系统设置。</figcaption>
             </figure>
             <figure>
-              <img src="changelog-2026-11-18/04-nav-frontdesk.png" alt="前台账号导航" loading="lazy">
+              <img src="changelog-images/04-nav-frontdesk.png" alt="前台账号导航" loading="lazy">
               <figcaption><b>图 14 · 前台账号。</b>可以排课与维护会员，但没有“系统设置”；底部三个图标按钮为语言、操作指南与会员预约端。</figcaption>
             </figure>
           </div>
           <figure>
-            <img src="changelog-2026-11-18/03-nav-viewer.png" alt="只读账号导航" loading="lazy">
+            <img src="changelog-images/03-nav-viewer.png" alt="只读账号导航" loading="lazy">
             <figcaption><b>图 15 · 只读账号。</b>保留查看类入口（财务流水、报表可看），但没有任何可写的资源入口。</figcaption>
           </figure>
           <figure>
-            <img src="changelog-2026-11-18/25-sidebar-quick.png" alt="侧边栏底部快捷按钮" loading="lazy">
+            <img src="changelog-images/25-sidebar-quick.png" alt="侧边栏底部快捷按钮" loading="lazy">
             <figcaption><b>图 16 · 侧边栏底部快捷操作。</b>原来的“English / 操作指南 / 会员预约端”三项收起为横向排列的三个精简图标按钮（语言、操作指南、会员预约端），手机端同样适用，底部不再堆叠长文字。</figcaption>
           </figure>
           <figure>
-            <img src="changelog-2026-11-18/26-nav-finance.png" alt="财务账号导航" loading="lazy">
+            <img src="changelog-images/26-nav-finance.png" alt="财务账号导航" loading="lazy">
             <figcaption><b>图 17 · 财务账号。</b>可以进入财务入账、报表分析与卡课产品维护，但没有“排课与场地”“会员管理”和“系统设置”。</figcaption>
           </figure>
         </article>
@@ -382,7 +413,7 @@
             <li>课程类别按 1117 统一的中文类目显示。</li>
           </ul>
           <figure>
-            <img src="changelog-2026-11-18/06-courses-list.png" alt="课程库列表视图" loading="lazy">
+            <img src="changelog-images/06-courses-list.png" alt="课程库列表视图" loading="lazy">
             <figcaption><b>图 18 · 课程库列表视图。</b>支持类别、状态与名称筛选，行内可直接编辑、删除（移入回收站）。</figcaption>
           </figure>
         </article>
@@ -397,11 +428,11 @@
             <li>CSV 导出改为按数据类型判定权限：会员与预约名单按各自读取能力，财务流水只有财务角色可导出。</li>
           </ul>
           <figure>
-            <img src="changelog-2026-11-18/08-permission-matrix.jpg" alt="账号权限矩阵" loading="lazy">
+            <img src="changelog-images/08-permission-matrix.jpg" alt="账号权限矩阵" loading="lazy">
             <figcaption><b>图 21 · 账号权限矩阵。</b>19 项能力 × 5 种角色，✓ 即为允许；页面上方同时列出员工账号并可直接调整。</figcaption>
           </figure>
           <figure>
-            <img src="changelog-2026-11-18/10-finance-redemption.png" alt="前台视角的财务页" loading="lazy">
+            <img src="changelog-images/10-finance-redemption.png" alt="前台视角的财务页" loading="lazy">
             <figcaption><b>图 22 · 前台看到的“收款与核销”。</b>不显示收支流水，只保留电子码核销，完整账目交由财务与管理员查看。</figcaption>
           </figure>
         </article>
@@ -415,7 +446,7 @@
             <li>教练照片改为直接上传，去掉多余的“图片网址”输入框，并支持一键移除照片。</li>
           </ul>
           <figure>
-            <img src="changelog-2026-11-18/11-teacher-edit.png" alt="编辑教练弹窗" loading="lazy">
+            <img src="changelog-images/11-teacher-edit.png" alt="编辑教练弹窗" loading="lazy">
             <figcaption><b>图 23 · 编辑教练。</b>新增“关联员工账号”下拉（图中已关联“程天澜”账号），照片区只有上传与移除，没有图片网址输入框。</figcaption>
           </figure>
         </article>
@@ -428,7 +459,7 @@
             <li>登录名、角色与账号启停仍由管理员统一管理，避免越权；停用账号前增加二次确认。</li>
           </ul>
           <figure>
-            <img src="changelog-2026-11-18/12-profile-panel.png" alt="个人中心面板" loading="lazy">
+            <img src="changelog-images/12-profile-panel.png" alt="个人中心面板" loading="lazy">
             <figcaption><b>图 24 · 个人中心。</b>可改姓名与手机号（登录名与角色为只读），下方为修改密码区。</figcaption>
           </figure>
         </article>
@@ -440,11 +471,11 @@
             <li>回收站的查看、恢复与彻底删除仍只有管理员可以操作；回收站按数据种类校验删除权限。</li>
           </ul>
           <figure>
-            <img src="changelog-2026-11-18/13-schedule-viewer.png" alt="只读账号的排课页" loading="lazy">
+            <img src="changelog-images/13-schedule-viewer.png" alt="只读账号的排课页" loading="lazy">
             <figcaption><b>图 25 · 只读账号的排课页。</b>没有新建排课与编辑按钮，页面仅供查看。</figcaption>
           </figure>
           <figure>
-            <img src="changelog-2026-11-18/14-recycle-bin.png" alt="回收站" loading="lazy">
+            <img src="changelog-images/14-recycle-bin.png" alt="回收站" loading="lazy">
             <figcaption><b>图 26 · 回收站。</b>按资源类型分组展示已删除数据，可恢复或彻底删除（保留 180 天）。</figcaption>
           </figure>
         </article>
@@ -458,7 +489,7 @@
             <li>中英双语，英文界面显示对应英文条目。</li>
           </ul>
           <figure>
-            <img src="changelog-2026-11-18/27-changelog-tab.jpg" alt="更新日志页" loading="lazy">
+            <img src="changelog-images/27-changelog-tab.jpg" alt="更新日志页" loading="lazy">
             <figcaption><b>图 27 · 更新日志。</b>顶部为版本卡片（当前版本 / 接口版本 / 更新批次），下方按日期分界的时间线列出各批次主要内容。</figcaption>
           </figure>
         </article>
@@ -477,7 +508,7 @@
             <li>保存后立即同步到后台会员档案，前台无需再代为修改，减少来回确认。</li>
           </ul>
           <figure>
-            <img src="changelog-2026-11-18/28-member-profile.jpg" alt="会员端个人信息" loading="lazy">
+            <img src="changelog-images/28-member-profile.jpg" alt="会员端个人信息" loading="lazy">
             <figcaption><b>图 19 · 会员端“个人信息”。</b>上方为会员编号、入会时间与掩码手机号，下方为姓名、生日与换手机号入口。</figcaption>
           </figure>
         </article>
@@ -501,7 +532,7 @@
             <li>选项清单由服务端统一下发（会员与后台共用一份），后续新增渠道只需改一处。</li>
           </ul>
           <figure>
-            <img src="changelog-2026-11-18/29-member-source.jpg" alt="后台会员编辑获客来源" loading="lazy">
+            <img src="changelog-images/29-member-source.jpg" alt="后台会员编辑获客来源" loading="lazy">
             <figcaption><b>图 20 · 后台编辑会员资料。</b>“获客来源”改为下拉选择，历史自定义写法以“历史记录”选项保留。</figcaption>
           </figure>
         </article>
@@ -521,7 +552,7 @@
             <li>操作带上的色块条与表格滚动位置联动，表格移到哪儿，色块条就跟到哪儿，可当滚动条使用。</li>
           </ul>
           <figure>
-            <img src="changelog-2026-11-18/30-rooms-scroll.jpg" alt="教室总览顶部滚动按键" loading="lazy">
+            <img src="changelog-images/30-rooms-scroll.jpg" alt="教室总览顶部滚动按键" loading="lazy">
             <figcaption><b>图 30 · 教室总览顶部操作带。</b>最左与最右为左右滚动按键，中间是按排课着色的教室色块条，下方表格可左右平移。</figcaption>
           </figure>
         </article>
@@ -558,7 +589,7 @@
             <li>头像由竖长的圆角块改为紧凑的方形小头像，头部整体高度明显下降。</li>
           </ul>
           <figure>
-            <img src="changelog-2026-11-18/31-member-drawer.jpg" alt="会员档案头部重排" loading="lazy">
+            <img src="changelog-images/31-member-drawer.jpg" alt="会员档案头部重排" loading="lazy">
             <figcaption><b>图 31 · 会员档案头部重排。</b>第一行是头像与中英文姓名，第二行个人信息铺满整行宽度，第三行是会员备注。</figcaption>
           </figure>
         </article>
@@ -590,7 +621,7 @@
             <li>打印按 A3 横向排版，07:00–22:00 的完整安排正好一页纸，可直接贴在前台或留档。</li>
           </ul>
           <figure>
-            <img src="changelog-2026-11-18/32-room-board.jpg" alt="全屏排课表" loading="lazy">
+            <img src="changelog-images/32-room-board.jpg" alt="全屏排课表" loading="lazy">
             <figcaption><b>图 32 · 全屏排课表。</b>日期与逐秒走动的时钟居中，所有教室同时铺开，浏览器工具栏已隐藏。</figcaption>
           </figure>
         </article>
@@ -604,7 +635,7 @@
             <li>全屏大屏沿用同样规则，视图一致。</li>
           </ul>
           <figure>
-            <img src="changelog-2026-11-18/33-rooms-blocks.jpg" alt="教室总览排课块" loading="lazy">
+            <img src="changelog-images/33-rooms-blocks.jpg" alt="教室总览排课块" loading="lazy">
             <figcaption><b>图 33 · 教室总览的新布局。</b>日期下拉两侧为前后日箭头，全屏按钮移到右上角按钮区，色块高度覆盖各自的时间区间，表格行高压缩后可看到 07:00–20:00。</figcaption>
           </figure>
         </article>
@@ -623,7 +654,7 @@
             <li>课程条目点击仍跳到预约页面；教室占用为只读条目，避免误触改动。</li>
           </ul>
           <figure>
-            <img src="changelog-2026-11-18/34-dashboard-schedule.jpg" alt="经营概览今日安排" loading="lazy">
+            <img src="changelog-images/34-dashboard-schedule.jpg" alt="经营概览今日安排" loading="lazy">
             <figcaption><b>图 34 · 经营概览的“今日安排”。</b>课程与教室占用混排显示，右侧标签区分类型。</figcaption>
           </figure>
         </article>
@@ -686,8 +717,325 @@
             <li>打印（Ctrl+P）时无论当前是哪种模式，都输出浅色版本，保证白纸上打印出来可读。</li>
           </ul>
           <figure>
-            <img src="changelog-2026-11-18/35-board-dark.jpg" alt="全屏排课表深色模式" loading="lazy">
+            <img src="changelog-images/35-board-dark.jpg" alt="全屏排课表深色模式" loading="lazy">
             <figcaption><b>图 35 · 全屏排课表深色模式。</b>右上角为模式切换按钮，课程色块在深色底上依旧清晰可辨。</figcaption>
+          </figure>
+        </article>
+      </section>
+
+      <section id="batch-1122a" class="section">
+        <span class="section-kicker">BATCH 10</span>
+        <h2>2026-11-22 · 会员照片、名单导出、会员卡操作与开卡日期待定</h2>
+        <p class="section-intro">这一批把会员这条线补齐：会员有照片、名单能导出、会员卡能改能续能停能升，购卡可以先不定开卡日期，营收口径交给管理员在系统设置里统一选择。</p>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">M1</span><h3>会员新增照片字段：自己拍照上传，后台也能代为更换</h3><span class="change-tag">已完成</span></div>
+          <blockquote>“会员需要增加照片字段（如果当前没有），允许用户端自己拍照上传也可后端编辑，不要用 url 这种蠢方法。”</blockquote>
+          <ul>
+            <li>会员端“我的 → 个人信息”新增照片位，可直接调起相机或相册拍照上传，也可重新选择本地图片。</li>
+            <li>后台会员档案同样支持上传、替换与移除照片，两边看到的是同一张图。</li>
+            <li>照片存为文件实体（不再是外链网址），导出名单时可直接内嵌到 Excel 中。</li>
+          </ul>
+          <figure>
+            <img src="changelog-images/43-member-photo.jpg" alt="会员档案与照片" loading="lazy">
+            <figcaption><b>图 36 · 会员照片。</b>会员端与后台维护的是同一张照片，后台可代为上传、替换或移除。</figcaption>
+          </figure>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">M2</span><h3>会员列表改成管理层格式，并可导出 Excel 名单</h3><span class="change-tag">已完成</span></div>
+          <blockquote>“会员列表改管理层格式 + 导出 Excel，并增加『当月未续会』『当月新进』衍生报表。”</blockquote>
+          <ul>
+            <li>会员列表改为管理层常用的表格格式：字段更规整、每行一卡，信息一眼扫得完。</li>
+            <li>筛选条件包括：名称、手机号、卡种（私教卡 / 评估卡 / 套餐 / 全部卡种）、卡状态（未开卡 / 使用中 / 已过期）、办卡来源等。</li>
+            <li>“全部卡种”只显示真正买过卡、且在有效期内的会员；卡种支持多选。</li>
+            <li>导出为真正的 .xlsx，可选择是否内嵌会员照片；导出内容跟随当前筛选结果。</li>
+            <li>衍生报表「当月未续会」「当月新进」随名单一起提供，便于月初复盘。</li>
+          </ul>
+          <div class="figure-pair">
+            <figure>
+              <img src="changelog-images/40-members-list.jpg" alt="会员列表" loading="lazy">
+              <figcaption><b>图 37 · 会员列表。</b>改为管理层表格格式，一行一位会员。</figcaption>
+            </figure>
+            <figure>
+              <img src="changelog-images/41-members-filter.jpg" alt="会员筛选条件" loading="lazy">
+              <figcaption><b>图 38 · 会员筛选。</b>卡种与卡状态可多选，“全部卡种”只显示真买过卡且在有效期内的会员。</figcaption>
+            </figure>
+          </div>
+          <figure>
+            <img src="changelog-images/42-members-export.jpg" alt="会员名单导出" loading="lazy">
+            <figcaption><b>图 39 · 导出 Excel 名单。</b>导出内容跟随当前筛选，可选择内嵌会员照片。</figcaption>
+          </figure>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">M3</span><h3>会员卡操作：编辑、续卡、请假停卡与跨类目升卡</h3><span class="change-tag">已完成</span></div>
+          <blockquote>“卡操作加『编辑』（放在『续卡/延期』上面）、『续卡/延期』改名『续卡』，请假停卡加冻结开始日期。”</blockquote>
+          <ul>
+            <li>卡片上的操作重新排序为：编辑 → 续卡 → 请假停卡 → 升卡 → 更多。</li>
+            <li>「编辑」可修改卡的名称、备注、有效期等基础信息，放在最上方、最常用。</li>
+            <li>「续卡」即重新购卡：保留原卡记录，另生成一笔新的购卡流水与新卡。</li>
+            <li>「请假停卡」新增冻结开始日期，只冻结区间内的权益，区间之外照常可用。</li>
+            <li>「升卡」支持跨类目升级，自动结转原卡剩余次数与有效期并生成升卡流水。</li>
+            <li>延期不再单列入口，需要改有效期直接在「编辑」里改。</li>
+          </ul>
+          <div class="figure-pair">
+            <figure>
+              <img src="changelog-images/37-card-actions.jpg" alt="会员卡操作菜单" loading="lazy">
+              <figcaption><b>图 40 · 会员卡操作。</b>编辑、续卡、请假停卡、升卡依次排列。</figcaption>
+            </figure>
+            <figure>
+              <img src="changelog-images/38-card-renew.jpg" alt="会员卡续卡与升卡" loading="lazy">
+              <figcaption><b>图 41 · 续卡与升卡。</b>续卡生成新卡并保留原卡，升卡自动结转剩余权益。</figcaption>
+            </figure>
+          </div>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">M4</span><h3>开卡日期待定：先买卡，首签到当天才真正开始</h3><span class="change-tag">已完成</span></div>
+          <blockquote>“增加『开卡日期待定』。”</blockquote>
+          <ul>
+            <li>购卡确认时多一个选项：是否「开卡日期待定」。</li>
+            <li>选待定：卡片立即可用（不占用已过期的权益），首次签到当天自动开卡，并按产品有效期顺延到期日。</li>
+            <li>撤销那次首次签到时，卡片会退回「开卡日期待定」状态，均摊起始日一并清空。</li>
+          </ul>
+          <figure>
+            <img src="changelog-images/36-card-purchase.jpg" alt="购卡与开卡日期待定" loading="lazy">
+            <figcaption><b>图 42 · 购卡时选择开卡日期待定。</b>卡片先可用，首签到当天自动起算有效期。</figcaption>
+          </figure>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">M5</span><h3>营收确认口径收归系统设置，由管理员选择</h3><span class="change-tag">已完成</span></div>
+          <blockquote>“何种口径放在系统设置里做选项，选择权交给管理员前端设置。”</blockquote>
+          <ul>
+            <li>系统设置新增营收口径选项：按卡种自动 / 购卡即全额确认 / 按有效期每日均摊。</li>
+            <li>私教与评估类始终不入营收，实际消课后单独确认，不受全局设置影响。</li>
+            <li>口径变更后对新发生的流水生效，历史流水不被改写。</li>
+          </ul>
+          <figure>
+            <img src="changelog-images/39-settings-revenue.jpg" alt="系统设置中的营收口径" loading="lazy">
+            <figcaption><b>图 43 · 系统设置中的营收口径。</b>管理员在这里选择确认方式，全馆统一生效。</figcaption>
+          </figure>
+        </article>
+      </section>
+
+      <section id="batch-1122b" class="section">
+        <span class="section-kicker">BATCH 11</span>
+        <h2>2026-11-22 · 报表中心：多维度报表与 Excel 导出</h2>
+        <p class="section-intro">报表从“一张表”变成“报表中心”：销售看业绩、财务看流水、管理看教学、总经理看全局，每种都能自己换维度、换指标，最后导出 Excel。</p>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">R1</span><h3>四类预设报表 + 自定义报表</h3><span class="change-tag">已完成</span></div>
+          <blockquote>“当前的报表太简单，可以做成多种维度，可以让用户自定义不同方式/不同维度的报表选择……前面常见维度作为预设的不同类型报表，报表可能会需要给销售/财务/管理/总经理，所以各种维度都做好预设；加上一个自定义，让用户自己选择。”</blockquote>
+          <ul>
+            <li><b>销售业绩报表</b>：按顾问与产品看合同金额、笔数与客单价。</li>
+            <li><b>财务报表</b>：按月份与类别看现金实收、确认营收、退款与流水笔数。</li>
+            <li><b>教学管理报表</b>：按教练看排课数、取消数、上课人次、课时与出席率。</li>
+            <li><b>总经理经营报表</b>与<b>会员经营报表</b>：月度趋势、会员规模与到期情况。</li>
+            <li><b>自定义报表</b>：数据源、分组维度与统计指标自行勾选，切换后立即重算并给出合计行。</li>
+          </ul>
+          <div class="figure-pair">
+            <figure>
+              <img src="changelog-images/44-reports-overview.jpg" alt="报表中心总览" loading="lazy">
+              <figcaption><b>图 44 · 报表中心。</b>左侧选报表类型与数据源，右侧是分组维度与统计指标。</figcaption>
+            </figure>
+            <figure>
+              <img src="changelog-images/45-reports-sales.jpg" alt="销售业绩报表" loading="lazy">
+              <figcaption><b>图 45 · 销售业绩报表。</b>按顾问与产品看合同金额、笔数与客单价。</figcaption>
+            </figure>
+          </div>
+          <div class="figure-pair">
+            <figure>
+              <img src="changelog-images/46-reports-finance.jpg" alt="财务报表" loading="lazy">
+              <figcaption><b>图 46 · 财务报表。</b>按月份与类别拆分现金实收、确认营收与退款。</figcaption>
+            </figure>
+            <figure>
+              <img src="changelog-images/47-reports-management.jpg" alt="教学管理报表" loading="lazy">
+              <figcaption><b>图 47 · 教学管理报表。</b>按教练看排课、取消、上课人次与出席率。</figcaption>
+            </figure>
+          </div>
+          <figure>
+            <img src="changelog-images/48-reports-custom.jpg" alt="自定义报表" loading="lazy">
+            <figcaption><b>图 48 · 自定义报表。</b>自己挑数据源、维度和指标，结果实时重算并给出合计行。</figcaption>
+          </figure>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">R2</span><h3>报表一律导出 Excel，经营总览为多页签</h3><span class="change-tag">已完成</span></div>
+          <blockquote>“不要 pdf 了，制作 excel 导出。”</blockquote>
+          <ul>
+            <li>所有报表的导出按钮统一为 Excel，报表 PDF 入口取消。</li>
+            <li>经营总览导出为多页签 Excel：总览、分类汇总、课程、教练与教室使用率各一页。</li>
+            <li>财务流水明细与账单小票的 PDF 保持不变——小票仍按 14.5cm × 7.5cm 打印。</li>
+          </ul>
+        </article>
+      </section>
+
+      <section id="batch-1122c" class="section">
+        <span class="section-kicker">BATCH 12</span>
+        <h2>2026-11-22 · 财务入账支持按结账方式筛选，合计口径改为三项</h2>
+        <p class="section-intro">对账时最常问的一句话是“这个数是哪个结账方式来的”。现在财务入账可以直接按结账方式筛，合计也换成三个说得清的名字。</p>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">F1</span><h3>财务入账新增结账方式多选筛选</h3><span class="change-tag">已完成</span></div>
+          <blockquote>“财务类报表加结账方式筛选。”</blockquote>
+          <ul>
+            <li>财务入账列表顶部新增结账方式多选：现金、微信、有赞、大众点评等可同时勾选。</li>
+            <li>导出的流水沿用当前筛选，并在抬头注明类别与所选结账方式。</li>
+            <li>报表中心选择财务流水数据源时，也可先按结账方式筛选再分组统计。</li>
+          </ul>
+          <figure>
+            <img src="changelog-images/50-finance-payment-filter.jpg" alt="财务入账结账方式筛选" loading="lazy">
+            <figcaption><b>图 49 · 财务入账的结账方式筛选。</b>可同时勾选多个结账方式，导出时沿用。</figcaption>
+          </figure>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">F2</span><h3>合计改为流水总额、营收总额与退款总额</h3><span class="change-tag">已完成</span></div>
+          <blockquote>“合计改『流水总额（扣除了退款的金额）』『营收总额（扣除了退款的金额）』『退款总额』。”</blockquote>
+          <ul>
+            <li>原来含糊的“合计金额”拆成三项：流水总额（扣除了退款的金额）、营收总额（扣除了退款的金额）、退款总额。</li>
+            <li>三项金额都跟随当前筛选条件同步变化。</li>
+            <li>报表中心选择财务流水数据源并按结账方式分组时，也能看到同样的三项口径。</li>
+          </ul>
+          <figure>
+            <img src="changelog-images/49-reports-payment.jpg" alt="报表按结账方式分组" loading="lazy">
+            <figcaption><b>图 50 · 报表按结账方式分组。</b>同一份口径，报表与流水列表保持一致。</figcaption>
+          </figure>
+        </article>
+      </section>
+
+      <section id="batch-1122d" class="section">
+        <span class="section-kicker">BATCH 13</span>
+        <h2>2026-11-22 · 会员端交互改版、手机端教室总览与弹窗报错可见性</h2>
+        <p class="section-intro">这一批面向会员：登录更简单、预约更顺手、手机上看得全；后台也补了一条“弹窗里出错要看得见”的体验修复。</p>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">P1</span><h3>登录只要手机号和验证码，验证码自动发送</h3><span class="change-tag">已完成</span></div>
+          <blockquote>“登录只需要手机号，和发送给验证码，不要姓名栏。”</blockquote>
+          <ul>
+            <li>登录弹窗去掉姓名输入框，只保留手机号 + 验证码。</li>
+            <li>打开弹窗即自动发送验证码，不用再点一次“发送验证码”；换号才需手动重发（60 秒倒计时）。</li>
+            <li>系统记住上次登录的手机号，下次打开直接填验证码；首次登录验证通过后自动建立档案。</li>
+          </ul>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">P2</span><h3>预约后按钮变成“已约”，点一下就能取消</h3><span class="change-tag">已完成</span></div>
+          <blockquote>“预约后『立即预约』应变成『已约』并可直接取消。”</blockquote>
+          <ul>
+            <li>成功预约后，课表按钮由“立即预约”变为“已约”，颜色加深方便识别。</li>
+            <li>再点一次该按钮即可直接取消这节课的预约，不必再去“我的预约”里逐条找。</li>
+            <li>课程详情弹窗里的按钮同样变为“已预约 · 点击取消”。</li>
+            <li>团课预约界面只显示团课，不再混入私教与评估课程。</li>
+          </ul>
+          <figure>
+            <img src="changelog-images/51-public-mobile-booked.jpg" alt="手机端已约按钮" loading="lazy">
+            <figcaption><b>图 51 · 手机端已约按钮。</b>点一下即取消这节课的预约。</figcaption>
+          </figure>
+          <figure>
+            <img src="changelog-images/52-public-largefont.jpg" alt="大字体下的日期条" loading="lazy">
+            <figcaption><b>图 52 · 大字体下的日期条。</b>七天全部完整显示，周日等最后一天不再被裁掉。</figcaption>
+          </figure>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">P3</span><h3>手机端教室总览：所有教室一次看全</h3><span class="change-tag">已完成</span></div>
+          <blockquote>“手机端教室总览要能看到所有教室（建议全屏排课表可放大拖动）。”</blockquote>
+          <ul>
+            <li>教室色块条在手机端保留并可点击跳转（绿=有排课、橙=仅占用、灰=空闲）。</li>
+            <li>新增教室紧凑列表，按教室列出当天的每节课与占用，所有教室都看得到，点击可进编辑。</li>
+            <li>手机端新增“全屏排课表”入口，打开后双指缩放、单指拖动，并提供缩放比例、放大、缩小与复位按钮。</li>
+            <li>桌面端大屏排课表保持原样。</li>
+          </ul>
+          <figure>
+            <img src="changelog-images/53-rooms-mobile-list.jpg" alt="手机端教室紧凑列表" loading="lazy">
+            <figcaption><b>图 53 · 手机端教室紧凑列表。</b>所有教室的当天安排一次列完。</figcaption>
+          </figure>
+          <div class="figure-pair">
+            <figure>
+              <img src="changelog-images/54-board-mobile.jpg" alt="手机端全屏排课表" loading="lazy">
+              <figcaption><b>图 54 · 手机端全屏排课表。</b>固定格宽铺开，右上角有缩放控件。</figcaption>
+            </figure>
+            <figure>
+              <img src="changelog-images/55-board-mobile-zoom.jpg" alt="双指缩放后的排课表" loading="lazy">
+              <figcaption><b>图 55 · 双指缩放后。</b>放大到 1.2 倍，单指拖动查看其它教室。</figcaption>
+            </figure>
+          </div>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">P4</span><h3>后台弹窗里的报错直接浮在弹窗之上</h3><span class="change-tag">已完成</span></div>
+          <blockquote>“弹窗内看不到报错。”</blockquote>
+          <ul>
+            <li>弹窗打开时，页面级的报错提示改为浮层显示，盖在弹窗上方并可读，不再需要关掉弹窗才发现操作失败。</li>
+            <li>弹窗内部已有报错时，页面级那一条自动隐藏，避免同一条错误显示两遍。</li>
+            <li>该规则为全局样式，所有后台页面的弹窗都自动生效。</li>
+          </ul>
+          <figure>
+            <img src="changelog-images/56-modal-error.jpg" alt="弹窗内报错浮层" loading="lazy">
+            <figcaption><b>图 56 · 弹窗里的报错。</b>浮在遮罩之上，一眼就能看到没成功的原因。</figcaption>
+          </figure>
+        </article>
+      </section>
+
+      <section id="batch-1123" class="section">
+        <span class="section-kicker">BATCH 14</span>
+        <h2>2026-11-23 · 会员端手机多页模式：底部按钮切换</h2>
+        <p class="section-intro">会员端原来在手机上是一整页，从上往下一路拉到底。现在改成多页：底部五个按钮切换首页、预约、引导者、卡课与我的。电脑端完全不动。</p>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">U1</span><h3>手机端底部导航：首页 / 预约 / 引导者 / 卡课 / 我的</h3><span class="change-tag">已完成</span></div>
+          <blockquote>“首页/用户页目前是单页，改成多页模式，适配手机的时候就是底部多几个按钮，通过按钮切换，电脑版目前的样式够用。”</blockquote>
+          <ul>
+            <li>底部导航由 3 个入口改为 5 个按钮，每个按钮负责一页内容。</li>
+            <li>当前所在的按钮加深加粗，随时知道自己在哪一页。</li>
+            <li>切换页面自动回到顶部，不会停在上一段的滚动位置。</li>
+            <li>未登录点“我的”直接弹出登录窗口；登录成功后自动进入“我的”。</li>
+          </ul>
+          <div class="figure-pair">
+            <figure>
+              <img src="changelog-images/57-mobile-home.jpg" alt="手机端首页" loading="lazy">
+              <figcaption><b>图 57 · 手机端首页。</b>品牌介绍单独成页。</figcaption>
+            </figure>
+            <figure>
+              <img src="changelog-images/58-mobile-schedule.jpg" alt="手机端预约页" loading="lazy">
+              <figcaption><b>图 58 · 手机端预约页。</b>课表独立成页，日 / 周 / 月切换照旧。</figcaption>
+            </figure>
+          </div>
+          <div class="figure-pair">
+            <figure>
+              <img src="changelog-images/59-mobile-guides.jpg" alt="手机端引导者页" loading="lazy">
+              <figcaption><b>图 59 · 手机端引导者页。</b>身心引导者独立成页，不用再展开折叠区。</figcaption>
+            </figure>
+            <figure>
+              <img src="changelog-images/60-mobile-cards.jpg" alt="手机端卡课页" loading="lazy">
+              <figcaption><b>图 60 · 手机端卡课页。</b>可购买的卡单独成页，直接“线下购买”。</figcaption>
+            </figure>
+          </div>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">U2</span><h3>“我的”成为独立页面，电脑端仍是弹窗</h3><span class="change-tag">已完成</span></div>
+          <ul>
+            <li>“我的”页含个人信息、我的预约、我的会员卡、购卡记录、到店签到与退出登录六个标签。</li>
+            <li>手机端渲染为独立页面；电脑端依旧点右上角头像弹出窗口，两边内容完全一致。</li>
+            <li>上一版的“点标题展开”折叠区被多页导航取代——引导者与卡课现在各自独立成页。</li>
+          </ul>
+          <div class="figure-pair">
+            <figure>
+              <img src="changelog-images/61-mobile-me.jpg" alt="手机端我的页面" loading="lazy">
+              <figcaption><b>图 61 · 手机端“我的”。</b>六个标签与电脑端弹窗一一对应。</figcaption>
+            </figure>
+            <figure>
+              <img src="changelog-images/62-mobile-me-bookings.jpg" alt="手机端我的预约" loading="lazy">
+              <figcaption><b>图 62 · 手机端“我的预约”。</b>可加日历、可取消。</figcaption>
+            </figure>
+          </div>
+          <figure>
+            <img src="changelog-images/63-desktop-me.jpg" alt="电脑端我的弹窗" loading="lazy">
+            <figcaption><b>图 63 · 电脑端“我的”。</b>桌面端仍是整页滚动，头像点击弹出窗口，样式不变。</figcaption>
           </figure>
         </article>
       </section>
@@ -734,16 +1082,30 @@
           <div><span>输入校验</span><div>价格、次数、有效天数等数字字段增加范围校验，填错时给出明确提示；会籍归属与所属教练会校验编号是否存在。</div></div>
           <div><span>接口鉴权</span><div>修复使用系统对接凭证时无法修改会员记录的问题；CSV 导出改为按数据类型判定角色能力。</div></div>
           <div><span>时间刻度错位</span><div>修复教室总览左侧时间刻度整体上移一格的问题：刻度标签原先相对表头定位，与网格线、课程块相差一小时，现已改为与网格线严格对齐。</div></div>
+          <div><span>零价产品删不掉</span><div>修复售价为 0 的卡课产品无法移入回收站的问题——此前会因金额校验被拦下，现按零价商品正常处理。</div></div>
+          <div><span>弹窗报错看不见</span><div>修复后台弹窗内操作失败时，报错提示被遮罩挡住、必须关掉弹窗才能看到的问题。</div></div>
+          <div><span>大字体裁切</span><div>修复会员端日期条在放大字体或窄屏下把最后一天（周日）裁掉的问题。</div></div>
+          <div><span>团课界面混入其它课</span><div>修复团课预约界面混入私教、评估等课程，导致会员点错课程类型的问题。</div></div>
+          <div><span>登录慢</span><div>会员端登录改为打开弹窗即自动发送验证码并记住手机号，省去一次点击与一次输入。</div></div>
         </div>
       </section>
 
       <section id="api" class="section">
         <span class="section-kicker">API &amp; DOCS</span>
         <h2>接口与文档变化</h2>
-        <p class="section-intro">后台接口总数由 123 个增加到 128 个，接口文档与可视化页面已同步重新生成。</p>
+        <p class="section-intro">后台接口总数由 123 个增加到 137 个，接口文档与可视化页面已同步重新生成。</p>
         <table>
           <thead><tr><th>接口</th><th>说明</th><th>批次</th></tr></thead>
           <tbody>
+            <tr><td class="code">POST / DELETE /api/public/me/photo</td><td>会员端上传或移除自己的照片</td><td>2026-11-22</td></tr>
+            <tr><td class="code">POST / DELETE /api/admin/members/{id}/photo</td><td>后台代会员上传、替换或移除照片</td><td>2026-11-22</td></tr>
+            <tr><td class="code">GET /api/admin/export/members.xlsx</td><td>会员名单导出 Excel（可内嵌照片，随筛选）</td><td>2026-11-22</td></tr>
+            <tr><td class="code">GET /api/admin/revenue-policy</td><td>营收确认口径（系统设置内读取与保存）</td><td>2026-11-22</td></tr>
+            <tr><td class="code">GET /api/admin/reports/options</td><td>报表中心可选的数据源、维度与指标</td><td>2026-11-22</td></tr>
+            <tr><td class="code">GET /api/admin/reports/table</td><td>报表中心表格数据，按维度分组并给出合计</td><td>2026-11-22</td></tr>
+            <tr><td class="code">GET /api/admin/reports/table.xlsx</td><td>当前报表导出 Excel</td><td>2026-11-22</td></tr>
+            <tr><td class="code">GET /api/admin/reports.xlsx</td><td>经营总览导出多页签 Excel</td><td>2026-11-22</td></tr>
+            <tr><td class="code">GET /api/public/sessions</td><td>课表返回项增加 booked 标记（已预约可直接取消）</td><td>2026-11-22</td></tr>
             <tr><td class="code">PATCH /api/public/me/profile</td><td>会员自助修改姓名与生日</td><td>2026-11-18</td></tr>
             <tr><td class="code">POST /api/public/me/phone/code</td><td>发送换号验证码（原号 / 新号两个用途）</td><td>2026-11-18</td></tr>
             <tr><td class="code">POST /api/public/me/phone</td><td>双验证码校验通过后更换绑定手机号</td><td>2026-11-18</td></tr>
@@ -754,36 +1116,37 @@
             <tr><td class="code">POST /api/admin/bookings/{id}/revenue</td><td>私教 / 评估消课营收确认（仅入营收，可选健身会员结账）</td><td>2026-11-17</td></tr>
             <tr><td class="code">GET /api/admin/transactions/{id}/receipt.pdf</td><td>品牌账单小票（14.5cm × 7.5cm）</td><td>2026-11-17</td></tr>
             <tr><td class="code">GET /api/admin/rooms/overview.pdf</td><td>教室安排总览导出（次日排课表）</td><td>2026-11-17</td></tr>
-            <tr><td class="code">GET /api/admin/transactions.pdf / reports.pdf</td><td>财务流水明细与经营分析报表导出</td><td>2026-11-17</td></tr>
+            <tr><td class="code">GET /api/admin/transactions.pdf / reports.pdf</td><td>财务流水明细导出（报表 PDF 已改为 Excel）</td><td>2026-11-17</td></tr>
           </tbody>
         </table>
-        <div class="callout">同步更新的文档：<span class="code">docs/API.md</span>（接口唯一来源）、<span class="code">public/api-docs.html</span>（可视化接口文档）、<span class="code">docs/CHANGELOG_CLIENT.md</span>、<span class="code">docs/CHANGELOG_DEVELOPER.md</span>、<span class="code">public/help.html</span>（员工操作指南）。</div>
+        <div class="callout">同步更新的文档：<span class="code">docs/API.md</span>（接口唯一来源）、<span class="code">public/api-docs.html</span>（可视化接口文档）、<span class="code">docs/CHANGELOG_CLIENT.md</span>、<span class="code">docs/CHANGELOG_DEVELOPER.md</span>、<span class="code">public/help.html</span>（员工操作指南）、<span class="code">public/changelog-details.html</span>（本文，文件名固定，后续更新都在此页追加）。</div>
       </section>
 
       <section id="member-site" class="section">
         <span class="section-kicker">MEMBER SITE</span>
         <h2>会员端同步</h2>
-        <p class="section-intro">会员预约端保持原有的预约、购卡与扫码签到流程，本次随批次调整了课程类目与字号，并新增“个人信息”标签页（资料查看与自助维护），移动端布局同步复核。</p>
+        <p class="section-intro">会员预约端保留原有的预约、购卡与扫码签到流程，这一轮依次做了三件事：登录与预约交互简化（手机号 + 验证码、已约可取消、团课只看团课）、手机端教室总览看得全、11 月 23 日起在手机上改为多页模式（底部按钮切换首页 / 预约 / 引导者 / 卡课 / 我的）；电脑端仍是一整页滚动，样式不变。</p>
         <div class="figure-pair">
           <figure>
-            <img src="changelog-2026-11-18/23-public-home.jpg" alt="会员预约端首页" loading="lazy">
+            <img src="changelog-images/23-public-home.jpg" alt="会员预约端首页" loading="lazy">
             <figcaption><b>图 28 · 会员预约端首页。</b>课程类别按新的中文类目显示。</figcaption>
           </figure>
           <figure>
-            <img src="changelog-2026-11-18/24-public-mobile.png" alt="会员端手机视图" loading="lazy">
+            <img src="changelog-images/24-public-mobile.png" alt="会员端手机视图" loading="lazy">
             <figcaption><b>图 29 · 会员端手机视图（390×844）。</b>课程卡片与课表在窄屏下仍可完整操作。</figcaption>
           </figure>
         </div>
+        <div class="callout">手机端多页模式的逐页截图见上方 <a href="#batch-1123" style="color:var(--pine-700);font-weight:600">2026-11-23 · 会员端手机多页模式</a> 一节（图 57 – 图 63）。</div>
       </section>
 
       <section class="closing">
         <h2>本次更新的业务闭环</h2>
-        <p>课程与资源维护 → 会员购卡与入账（流水 / 营收可选） → 课程预约 → 双向扫码签到 → 自动消课 → 私教消课单独确认营收 → 财务流水与营收分列报表 → 账单小票与次日排课导出 → 数据备份与恢复。</p>
+        <p>课程与资源维护 → 会员购卡（可选开卡日期待定）与入账（流水 / 营收口径由管理员设定） → 课程预约 → 双向扫码签到 → 自动消课 → 私教消课单独确认营收 → 财务流水按结账方式筛选与三项合计 → 报表中心多维度分析与 Excel 导出 → 账单小票与次日排课导出 → 数据备份与恢复。</p>
       </section>
 
       <footer class="footer">
-        <span>音昱 Wellness · 系统更新说明 · 2026-11-17 ~ 2026-11-18</span>
-        <span>截图取自实际运行版本 · 共 35 张界面示例</span>
+        <span>音昱 Wellness · 系统更新说明 · 2026-11-17 ~ 2026-11-23</span>
+        <span>截图取自实际运行版本 · 共 63 张界面示例 · 后续更新在本页追加</span>
       </footer>
     </main>
   </div>

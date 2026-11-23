@@ -344,8 +344,8 @@
 
 ### 1. 图文更新说明页面
 
-- 新增 `public/changelog-2026-11-18.html`：独立静态页面（无构建依赖，直接由 `SPAStaticFiles` 伺服），按“需求 → 实现 → 画面”逐条对照 2026-11-17 的 14 条需求与 2026-11-18 的 6 组改动，并附 26 张界面截图与图注。
-- 截图资源置于 `public/changelog-2026-11-18/`，统一压缩到宽 1500px 以内，四张大图转 JPEG 控制体积（合计约 5MB）。
+- 新增 `public/changelog-2026-11-18.html`（该文件已于 2026-11-23 更名为 `public/changelog-details.html`）：独立静态页面（无构建依赖，直接由 `SPAStaticFiles` 伺服），按“需求 → 实现 → 画面”逐条对照 2026-11-17 的 14 条需求与 2026-11-18 的 6 组改动，并附 26 张界面截图与图注。
+- 截图资源置于 `public/changelog-2026-11-18/`（现已更名为 `public/changelog-images/`），统一压缩到宽 1500px 以内，四张大图转 JPEG 控制体积（合计约 5MB）。
 - 页面复用 `public/help.html` 的 pine/sage 设计变量，含目录锚点、打印样式（可直接“打印 / 保存 PDF”）、响应式布局与移动端适配。
 - 权限矩阵表直接取自 `backend/app/permissions.py` 的 `CAPABILITY_GROUPS` 与 `ROLE_CAPABILITIES`（19 项能力 × 5 种角色）。
 
@@ -364,7 +364,7 @@
 ### 1. 数据与组件
 
 - 新增 `src/lib/changelog.ts`：版本常量（`APP_VERSION` / `APP_RELEASE_DATE` / `API_VERSION` / `API_ENDPOINT_COUNT`）与结构化更新日志（`changelogReleases`，按日期为分界，每条含版本号、概述与分组要点，中英双语）。
-- 新增 `src/pages/admin/settings/ChangelogSettings.tsx`：版本卡片 + 按日期分界的时间线，右上角链接到完整图文说明页 `/changelog-2026-11-18.html`。
+- 新增 `src/pages/admin/settings/ChangelogSettings.tsx`：版本卡片 + 按日期分界的时间线，右上角链接到完整图文说明页 `/changelog-2026-11-18.html`（现为 `/changelog-details.html`）。
 - `SettingsPage.tsx` 新增 `changelog` 标签页（“更新日志”），位于“操作日志”之后。
 - `src/styles.css` 新增 `.changelog-version` / `.changelog-timeline` / `.changelog-release` / `.changelog-group` 样式，窄屏下时间线转为单列。
 - `src/lib/adminTranslations.ts` 补入“更新日志 / 当前版本 / 接口版本 / 更新批次 / 查看完整图文更新说明”等后台文案的中英映射。
@@ -526,7 +526,7 @@
 
 - `npm run build` 通过。
 - CDP 核对：经营概览渲染 12 行，其中 4 行为教室占用，徽标分别为“内部使用 / 公司活动 / 企业活动”；点击“完整课表”后大屏打开，含 17 间教室、68 个排课块。
-- 截图：`public/changelog-2026-11-18/32-room-board.jpg`、`33-rooms-blocks.jpg`、`34-dashboard-schedule.jpg`。
+- 截图：`public/changelog-images/32-room-board.jpg`、`33-rooms-blocks.jpg`、`34-dashboard-schedule.jpg`。
 
 ---
 
@@ -569,7 +569,7 @@
 ## 十七、对外页面的员工入口直达后台（2026-11-18）
 
 - 会员端页脚的“员工后台”链接由 `/login` 改为 `/admin`：`/admin` 路由由 `Protected` 守卫，未登录时自动 `<Navigate to="/login" replace/>`，已登录时直接进入后台首页，已登录的同事不必再经过登录页。
-- `public/help.html` 顶部的“进入员工后台”、内页的“打开员工后台”，以及 `public/changelog-2026-11-18.html` 顶部的“进入员工后台”同步改为 `/admin`。
+- `public/help.html` 顶部的“进入员工后台”、内页的“打开员工后台”，以及 `public/changelog-details.html` 顶部的“进入员工后台”同步改为 `/admin`。
 - `LoginPage` 路由与退出登录后的跳转保持 `/login` 不变；`/admin` 与 `/login` 由后端 `SPAStaticFiles` 回落 `index.html`，直接访问均可正常打开。
 - 验证：CDP 实测未登录点击页脚入口后跳到 `/login` 并渲染登录表单；写入员工令牌后点击同一入口停在 `/admin`，渲染后台框架与“今天，从容开始。”概览页。
 
@@ -593,7 +593,7 @@
 
 - `npm run build` 通过。
 - CDP 实测：打开大屏时 class 为 `room-board light`、`localStorage` 写入 `light`；点击切换按钮后 class 为 `room-board dark`、背景 `rgb(12, 25, 23)`、标题文字 `rgb(243, 248, 245)`、`localStorage` 为 `dark`；关闭后重新打开仍为 `room-board dark`。
-- 截图核对：浅色与深色两版大屏（`public/changelog-2026-11-18/32-room-board.jpg`、`35-board-dark.jpg`）。
+- 截图核对：浅色与深色两版大屏（`public/changelog-images/32-room-board.jpg`、`35-board-dark.jpg`）。
 
 ---
 
@@ -766,3 +766,25 @@
 
 - `npm run build` 通过（`tsc -b` 无报错）。
 - CDP 截图核对：手机端（390×844）底栏 5 个按钮，逐个点击后可见区块分别为 `home` / `schedule` / `guides` / `cards` / `me`；未登录点「我的」弹出登录窗口；登录后「我的」页 `me-tabs` 6 个标签、我的预约 14 条；桌面端（1440×900）可见区块 `home, home, schedule, guides, cards`，底栏 `display: none`。
+
+---
+
+## 二十四、更新说明页面固定为 changelog-details.html（2026-11-23）
+
+### 1. 文件更名与链接固定
+
+- `public/changelog-2026-11-18.html` 更名为 `public/changelog-details.html`，截图目录 `public/changelog-2026-11-18/` 更名为 `public/changelog-images/`，页面内 35 处图片路径同步替换。
+- `src/pages/admin/settings/ChangelogSettings.tsx` 的“查看完整图文更新说明”按钮指向 `/changelog-details.html`。
+- **约定**：该文件名固定，不再带日期；后续每次更新都在这一页上追加章节，不另建新文件，链接始终使用 `/changelog-details.html`。
+
+### 2. 页面内容更新到 2026-11-23
+
+- 新增 5 个批次章节（BATCH 10 – BATCH 14），覆盖会员照片与名单导出、会员卡操作与开卡日期待定、报表中心与 Excel 导出、财务结账方式筛选与三项合计、会员端交互改版与手机端教室总览、会员端手机多页模式。
+- 概览区新增 5 张批次卡片，目录（TOC）同步扩充，接口表补 10 个新接口并注明 `reports.pdf` 已改为 Excel，修复清单补 6 条。
+- 新增 28 张界面截图（编号 36 – 63），统一压缩到宽 1500px 内并转 JPEG（q86），`public/changelog-images/` 目录合计约 9MB。
+
+### 3. 验证
+
+- `npm run build` 通过。
+- 页面标签配平校验通过（section / article / figure / div / table 等无失衡），65 处图片引用全部存在。
+- 后台“系统设置 → 更新日志”的链接指向 `/changelog-details.html` 且可正常打开。
