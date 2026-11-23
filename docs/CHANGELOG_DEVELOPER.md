@@ -732,3 +732,37 @@
 - `npm run build` 通过（`tsc -b` 无报错）。
 - CDP 截图核对：手机端教室总览（色块条 5 个、紧凑列表 5 张卡片）、手机端全屏排课表（缩放控件存在、缩放后 `transform: translate(-39px, -73.8px) scale(1.2)`）、弹窗打开时页面级报错 `position: fixed`、`z-index: 220`。
 - `python docs/build_api_docs.py` 重新生成 `public/api-docs.html`（17 章、137 个接口），`docs/API.md` 补充 `/api/public/sessions` 的 `booked` 字段说明。
+
+---
+
+## 二十三、会员端手机多页模式（2026-11-23）
+
+### 1. 页面模型
+
+- `src/pages/PublicHome.tsx` 新增 `type MobilePage = "home" | "schedule" | "guides" | "cards" | "me"` 与 `mobilePage` / `compact` 状态；`compact` 由 `window.matchMedia("(max-width: 700px)")` 驱动并监听 `change` 事件实时切换。
+- 根节点 `<div className="public-site">` 上带 `data-mobile-page={mobilePage}`，各内容区块带 `data-page`（`home` / `schedule` / `guides` / `cards` / `me`）与 `data-active`（仅当前页为 `"true"`）。
+
+### 2. 显示逻辑（CSS 驱动，不改动桌面端）
+
+- `styles.css`：`@media (max-width: 700px)` 下 `.public-site [data-page]:not([data-active="true"]) { display: none !important; }`；`@media (min-width: 701px)` 下 `.public-site [data-page="me"] { display: none !important; }`。
+- 桌面端所有 `data-page` 区块照旧整页滚动，底部导航 `.mobile-bottom-nav` 仍为 `display: none`。
+
+### 3. 底部导航
+
+- 底部导航由 3 个入口改为 5 个按钮（首页 / 预约 / 引导者 / 卡课 / 我的），当前页按钮加 `.active`（加深加粗）。
+- `grid-template-columns` 由 `repeat(3, 1fr)` 改为 `repeat(5, 1fr)`。
+
+### 4. 「我的」独立页面
+
+- 抽出 `mePanel()` 函数复用原弹窗内容（个人信息 / 我的预约 / 我的会员卡 / 购卡记录 / 到店签到 / 退出登录）：桌面端仍走 `Modal`，手机端渲染在 `<section className="me-page" data-page="me">` 中。
+- `openMe(tab?)` 统一入口：手机端切到 `me` 页面，桌面端打开弹窗；`completeOrder()` 改为 `await loadMe(); openMe("orders")`。
+- 未登录时手机端「我的」页展示登录按钮，点击直接打开登录弹窗。
+
+### 5. 移除折叠区
+
+- 删除上一批引入的 `.section-toggle` 折叠按钮与 `.teacher-grid:not(.is-open)` / `.product-grid:not(.is-open)` 隐藏规则——多页模式已承担「按需展开」的职责。
+
+### 6. 验证
+
+- `npm run build` 通过（`tsc -b` 无报错）。
+- CDP 截图核对：手机端（390×844）底栏 5 个按钮，逐个点击后可见区块分别为 `home` / `schedule` / `guides` / `cards` / `me`；未登录点「我的」弹出登录窗口；登录后「我的」页 `me-tabs` 6 个标签、我的预约 14 条；桌面端（1440×900）可见区块 `home, home, schedule, guides, cards`，底栏 `display: none`。

@@ -12,6 +12,8 @@ import type { Booking, Bootstrap, CourseType, MemberMe, Product, Session, Transa
 
 type ScheduleView = "day" | "week" | "month";
 type SeatStatus = "available" | "limited" | "full";
+// 手机端把会员端拆成若干页面，底部导航按钮切换；桌面端仍是整页滚动。
+type MobilePage = "home" | "schedule" | "guides" | "cards" | "me";
 const PHONE_KEY = "wellness_member_phone";
 
 function monthStart(value: string) { return `${value.slice(0, 7)}-01`; }
@@ -59,8 +61,8 @@ export function PublicHome() {
   const [pendingProduct, setPendingProduct] = useState<number | null>(null);
   const [confirmProduct, setConfirmProduct] = useState<Product | null>(null);
   const [cancelOrderTarget, setCancelOrderTarget] = useState<Transaction | null>(null);
-  const [guidesOpen, setGuidesOpen] = useState(false);
-  const [cardsOpen, setCardsOpen] = useState(false);
+  const [mobilePage, setMobilePage] = useState<MobilePage>("home");
+  const [compact, setCompact] = useState(() => window.matchMedia("(max-width: 700px)").matches);
   const scheduleSwipe = useSwipeNavigation(() => navigatePeriod(-1), () => navigatePeriod(1));
   const codeSent = useRef("");
   const days = useMemo(() => {
@@ -157,6 +159,36 @@ export function PublicHome() {
     if (!loginOpen || codeSent.current === phone || !/^1[0-9]{10}$/.test(phone)) return;
     void sendCode();
   }, [loginOpen, phone]);
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 700px)");
+    const update = () => setCompact(media.matches);
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
+  /** 手机端切换底部导航页面；桌面端不使用，仅回退到整页滚动。 */
+  function goPage(page: MobilePage) {
+    setMobilePage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  /** 打开“我的”：手机端切到独立页面，桌面端仍用弹窗。 */
+  function openMe(tab?: typeof meTab) {
+    if (tab) setMeTab(tab);
+    if (compact) { setMobilePage("me"); setMeOpen(false); }
+    else setMeOpen(true);
+  }
+
+  /** “我的”面板内容：桌面端放在弹窗里，手机端放在独立页面里，两边共用。 */
+  function mePanel() {
+    return <>
+      <div className="me-tabs"><button className={meTab === "profile" ? "active" : ""} onClick={() => setMeTab("profile")} type="button"><Icon name="user" size={16}/>{local("个人信息", "Profile")}</button><button className={meTab === "bookings" ? "active" : ""} onClick={() => setMeTab("bookings")} type="button">{t("myBookings")}</button><button className={meTab === "cards" ? "active" : ""} onClick={() => setMeTab("cards")} type="button">{t("myCards")}</button><button className={meTab === "orders" ? "active" : ""} onClick={() => setMeTab("orders")} type="button">{t("myOrders")}</button><button className={meTab === "checkin" ? "active" : ""} onClick={() => setMeTab("checkin")} type="button"><Icon name="qr" size={16}/>{local("到店签到", "Check in")}</button><button className="logout-link" type="button" onClick={() => setLogoutOpen(true)}>{t("logout")}</button></div>
+      {meTab === "bookings" && <div className="me-list">{!me?.bookings.length ? <Empty>{t("noBookings")}</Empty> : me.bookings.map((booking) => { const session = booking.session; if (!session) return null; return <article key={booking.id} className={booking.status === "cancelled" ? "muted" : ""}><div><span className={`status-dot status-${booking.status}`}/><h3>{local(session.course.name, session.course.name_en)}</h3><p>{session.session_date} · {session.start_time}–{session.end_time}</p><small>{local(session.teacher.name, session.teacher.name_en)} · {local(session.room.name, session.room.name_en)}</small></div><div><span className="booking-status">{statusLabel(booking.status)}</span>{booking.status === "booked" && <><button className="text-button" type="button" onClick={() => void downloadFile(`/api/public/bookings/${booking.id}/calendar.ics`, `booking-${booking.id}.ics`, "member")}>{t("addCalendar")}</button><button className="text-button danger" type="button" onClick={() => void cancelBooking(booking)}>{t("cancel")}</button></>}</div></article>; })}</div>}
+      {meTab === "cards" && <div className="member-card-grid">{!me?.cards.length ? <Empty>{t("noCards")}</Empty> : me.cards.map((card) => <article className="member-pass" key={card.id}><span>{card.card_no}</span><h3>{local(card.product_name, card.product_name_en)}</h3><strong>{card.remaining_sessions ?? t("unlimited")}<small>{card.remaining_sessions !== null ? ` ${t("sessions")}` : ""}</small></strong><p>{card.start_pending ? local("开卡日期待定", "Starts on the first check-in") : `${t("expires")} ${card.expires_on}`}</p><div className="pass-benefits">{card.benefits.map((benefit) => <span key={benefit.course_type}>{t(benefit.course_type as CourseType)} {benefit.remaining ?? benefit.quantity}</span>)}</div></article>)}</div>}
+      {meTab === "orders" && <div className="me-list">{!me?.transactions.length ? <Empty>{local("暂无购卡申请", "No card requests yet")}</Empty> : me.transactions.map((order) => <article key={order.id} className={order.status === "cancelled" ? "muted" : ""}><div><h3>{local(order.product_name || order.note, order.product_name_en)}</h3><p>{order.occurred_at} · {orderStatusLabel(order.status)}</p>{order.cancelled_at && <small>{local("取消于", "Cancelled at")} {order.cancelled_at}</small>}{order.redemption_code && <strong className="redeem-code">{order.redemption_code}</strong>}{order.status === "pending" && <small>{local("到店支付并出示此码核销；未核销前可取消。", "Pay in store and show this code. You can cancel before redemption.")}</small>}</div><div><strong>{money(order.amount)}</strong>{order.status === "pending" && <button className="text-button danger" type="button" disabled={busy} onClick={() => setCancelOrderTarget(order)}>{local("取消申请", "Cancel request")}</button>}</div></article>)}</div>}
+      {meTab === "checkin" && <MemberCheckInPanel onChecked={loadMe}/>}
+      {meTab === "profile" && me && <MemberProfilePanel member={me.member} onUpdated={loadMe}/>}
+    </>;
+  }
 
   async function completeBooking(sessionId: number) {
     setBusy(true); setError("");
@@ -189,7 +221,7 @@ export function PublicHome() {
     setBusy(true); setError("");
     try {
       const order = await apiFetch<{ redemption_code: string }>("/api/public/orders", { method: "POST", json: { product_id: productId }, tokenKind: "member" });
-      setMessage(`${t("orderCreated")} ${order.redemption_code}`); setConfirmProduct(null); await loadMe(); setMeTab("orders"); setMeOpen(true);
+      setMessage(`${t("orderCreated")} ${order.redemption_code}`); setConfirmProduct(null); await loadMe(); openMe("orders");
     } catch (err) { setError(err instanceof Error ? err.message : t("error")); }
     finally { setBusy(false); }
   }
@@ -215,12 +247,16 @@ export function PublicHome() {
       localStorage.setItem("wellness_member_token", result.access_token);
       localStorage.setItem(PHONE_KEY, phone);
       await Promise.all([loadMe(), loadSessions()]); setLoginOpen(false);
+      const hadSession = Boolean(pendingSession);
+      const hadProduct = Boolean(pendingProduct);
       if (pendingSession) { await completeBooking(pendingSession); setPendingSession(null); }
       if (pendingProduct) {
         const product = data?.products.find((item) => item.id === pendingProduct);
         if (product) setConfirmProduct(product);
         setPendingProduct(null);
       }
+      // 手机端登录后直接进入“我的”页面，桌面端保持原样。
+      if (!hadSession && !hadProduct && compact) openMe();
     } catch (err) { setError(err instanceof Error ? err.message : t("error")); }
     finally { setBusy(false); }
   }
@@ -291,25 +327,25 @@ export function PublicHome() {
     </button>;
   }
 
-  return <div className="public-site" ref={siteRef}>
+  return <div className="public-site" ref={siteRef} data-mobile-page={mobilePage}>
     <header className="public-header">
       <a href="#top" className="brand" aria-label="Yinyu Wellness"><BrandLogo/><span><strong>{data ? local(data.venue.name, data.venue.name_en) : "音昱 Wellness"}</strong><small>MIND · BODY · EVERYDAY</small></span></a>
       <nav className="public-nav" aria-label="Main"><a href="#schedule">{t("schedule")}</a><a href="#teachers">{t("teachers")}</a><a href="#membership">{t("membership")}</a></nav>
-      <div className="header-actions"><button className="text-button" type="button" onClick={() => setLanguage(language === "zh" ? "en" : "zh")}>{t("language")}</button><button className="account-button" type="button" aria-label={me?.member.name ?? t("login")} onClick={() => getToken("member") ? setMeOpen(true) : setLoginOpen(true)}><Icon name="user" size={18}/><span>{me?.member.name ?? t("login")}</span></button></div>
+      <div className="header-actions"><button className="text-button" type="button" onClick={() => setLanguage(language === "zh" ? "en" : "zh")}>{t("language")}</button><button className="account-button" type="button" aria-label={me?.member.name ?? t("login")} onClick={() => getToken("member") ? openMe() : setLoginOpen(true)}><Icon name="user" size={18}/><span>{me?.member.name ?? t("login")}</span></button></div>
     </header>
 
     <a className="skip-link" href="#main-content">{local("跳到主要内容", "Skip to main content")}</a>
     <main id="main-content">
-      <section className="hero-section" id="top">
+      <section className="hero-section" id="top" data-page="home" data-active={mobilePage === "home" ? "true" : undefined}>
         <div className="hero-orbit" aria-hidden="true"><span/><span/><span/></div>
-        <div className="hero-copy"><p className="hero-eyebrow">{t("heroEyebrow")}</p><h1>{t("heroTitle")}</h1><p className="hero-description">{t("heroText")}</p><div className="hero-buttons"><a className="button button-primary" href="#schedule">{t("viewSchedule")}<Icon name="arrow" size={18}/></a><a className="button button-ghost" href="#about">{t("explore")}</a></div></div>
+        <div className="hero-copy"><p className="hero-eyebrow">{t("heroEyebrow")}</p><h1>{t("heroTitle")}</h1><p className="hero-description">{t("heroText")}</p><div className="hero-buttons"><a className="button button-primary" href="#schedule" onClick={(event) => { if (!compact) return; event.preventDefault(); goPage("schedule"); }}>{t("viewSchedule")}<Icon name="arrow" size={18}/></a><a className="button button-ghost" href="#about" onClick={(event) => { if (!compact) return; event.preventDefault(); goPage("home"); }}>{t("explore")}</a></div></div>
         <div className="hero-visual" aria-label={local("安静练习的空间", "A quiet space for practice")}><img src="https://images.unsplash.com/photo-1545389336-cf090694435e?auto=format&fit=crop&w=1400&q=85" alt={local("自然光下的瑜伽练习", "Yoga practice in natural light")} /><div className="hero-note"><span>YINYU / 01</span><p>{local("呼吸 · 觉察 · 生长", "Breathe · Notice · Grow")}</p></div></div>
         <span className="hero-watermark" aria-hidden="true">息</span>
       </section>
 
-      <section className="intro-section" id="about"><p className="section-index" data-reveal>YINYU PHILOSOPHY</p><div><h2 data-reveal>{local("不追求更用力，\n而是更了解自己。", "Not more force.\nMore understanding.")}</h2><p data-reveal data-reveal-delay="90">{local("我们把传统养生、现代运动与正念练习放在同一个日常里。小班教学，诚实建议，让每一次练习都有来处，也有归处。", "Traditional wellness, modern movement and mindfulness belong in the same everyday life. Small classes, honest guidance, and practice with purpose.")}</p></div></section>
+      <section className="intro-section" id="about" data-page="home" data-active={mobilePage === "home" ? "true" : undefined}><p className="section-index" data-reveal>YINYU PHILOSOPHY</p><div><h2 data-reveal>{local("不追求更用力，\n而是更了解自己。", "Not more force.\nMore understanding.")}</h2><p data-reveal data-reveal-delay="90">{local("我们把传统养生、现代运动与正念练习放在同一个日常里。小班教学，诚实建议，让每一次练习都有来处，也有归处。", "Traditional wellness, modern movement and mindfulness belong in the same everyday life. Small classes, honest guidance, and practice with purpose.")}</p></div></section>
 
-      <section className="schedule-section" id="schedule" {...scheduleSwipe}>
+      <section className="schedule-section" id="schedule" data-page="schedule" data-active={mobilePage === "schedule" ? "true" : undefined} {...scheduleSwipe}>
         <div className="section-heading" data-reveal><div><span className="eyebrow">MOVE WITH US</span><h2>{t("schedule")}</h2></div><p>{local("日 / 周 / 月课表 · 实时名额 · 课前可自主取消", "Day, week and month views · Live availability · Cancel before class")}</p></div>
         <div className="filter-bar">
           <div className="schedule-view-switch" role="tablist" aria-label={local("课表视图", "Schedule view")}>{(["day", "week", "month"] as const).map((item) => <button key={item} type="button" role="tab" aria-selected={view === item} className={view === item ? "active" : ""} onClick={() => changeView(item)}>{item === "day" ? local("日", "Day") : item === "week" ? local("周", "Week") : local("月", "Month")}</button>)}</div>
@@ -345,26 +381,31 @@ export function PublicHome() {
         </div>
       </section>
 
-      <section className="teachers-section" id="teachers"><div className="section-heading" data-reveal><div><span className="eyebrow">PEOPLE MAKE PRACTICE</span><h2>{t("teachers")}</h2></div><p>{local("专业，而不距离感。", "Expertise, without distance.")}</p></div><button className={`section-toggle ${guidesOpen ? "is-open" : ""}`} type="button" aria-expanded={guidesOpen} onClick={() => setGuidesOpen((value) => !value)}><span>{local("身心引导者", "Guides")}</span><Icon name={guidesOpen ? "chevron" : "chevron"} size={16}/></button><div className={`teacher-grid ${guidesOpen ? "is-open" : ""}`}>{data?.teachers.map((teacher, index) => <article className="teacher-card" key={teacher.id} data-reveal data-reveal-delay={index * 65}><div className="teacher-photo"><img src={teacher.image_url} alt={local(teacher.name, teacher.name_en)} loading="lazy"/><span>0{index + 1}</span></div><h3>{local(teacher.name, teacher.name_en)}</h3><p className="teacher-specialty">{local(teacher.specialties, teacher.specialties_en)}</p><p>{local(teacher.bio, teacher.bio_en)}</p></article>)}</div></section>
+      <section className="teachers-section" id="teachers" data-page="guides" data-active={mobilePage === "guides" ? "true" : undefined}><div className="section-heading" data-reveal><div><span className="eyebrow">PEOPLE MAKE PRACTICE</span><h2>{t("teachers")}</h2></div><p>{local("专业，而不距离感。", "Expertise, without distance.")}</p></div><div className="teacher-grid">{data?.teachers.map((teacher, index) => <article className="teacher-card" key={teacher.id} data-reveal data-reveal-delay={index * 65}><div className="teacher-photo"><img src={teacher.image_url} alt={local(teacher.name, teacher.name_en)} loading="lazy"/><span>0{index + 1}</span></div><h3>{local(teacher.name, teacher.name_en)}</h3><p className="teacher-specialty">{local(teacher.specialties, teacher.specialties_en)}</p><p>{local(teacher.bio, teacher.bio_en)}</p></article>)}</div></section>
 
-      <section className="membership-section" id="membership"><div className="section-heading" data-reveal><div><span className="eyebrow">YOUR PRACTICE, YOUR PACE</span><h2>{t("membership")}</h2></div><p>{local("次卡、周期卡与私教套餐，按你的节奏选择。", "Class packs, passes and private programs for your own rhythm.")}</p></div><button className={`section-toggle ${cardsOpen ? "is-open" : ""}`} type="button" aria-expanded={cardsOpen} onClick={() => setCardsOpen((value) => !value)}><span>{local("会员卡课", "Membership cards")}</span><Icon name="chevron" size={16}/></button><div className={`product-grid ${cardsOpen ? "is-open" : ""}`}>{data?.products.filter((product) => product.online_sale).slice(0, 6).map((product, index) => <article className="product-card" key={product.id} data-reveal data-reveal-delay={(index % 3) * 70}><span className="product-type">{product.category.toUpperCase()}</span><h3>{local(product.name, product.name_en)}</h3><div className="product-price"><strong>{money(product.price)}</strong><span>/ {product.total_sessions ? `${product.total_sessions} ${t("sessions")}` : t("unlimited")}</span></div><p>{product.validity_days} {t("validDays")}</p><button className="button button-outline" type="button" disabled={busy} onClick={() => requestOrder(product)}>{t("buy")}<Icon name="arrow" size={17}/></button></article>)}</div></section>
+      <section className="membership-section" id="membership" data-page="cards" data-active={mobilePage === "cards" ? "true" : undefined}><div className="section-heading" data-reveal><div><span className="eyebrow">YOUR PRACTICE, YOUR PACE</span><h2>{t("membership")}</h2></div><p>{local("次卡、周期卡与私教套餐，按你的节奏选择。", "Class packs, passes and private programs for your own rhythm.")}</p></div><div className="product-grid">{data?.products.filter((product) => product.online_sale).slice(0, 6).map((product, index) => <article className="product-card" key={product.id} data-reveal data-reveal-delay={(index % 3) * 70}><span className="product-type">{product.category.toUpperCase()}</span><h3>{local(product.name, product.name_en)}</h3><div className="product-price"><strong>{money(product.price)}</strong><span>/ {product.total_sessions ? `${product.total_sessions} ${t("sessions")}` : t("unlimited")}</span></div><p>{product.validity_days} {t("validDays")}</p><button className="button button-outline" type="button" disabled={busy} onClick={() => requestOrder(product)}>{t("buy")}<Icon name="arrow" size={17}/></button></article>)}</div></section>
+
+      <section className="me-page" data-page="me" data-active={mobilePage === "me" ? "true" : undefined}>
+        <div className="section-heading"><div><span className="eyebrow">MY ACCOUNT</span><h2>{t("account")}</h2></div><p>{local("预约、会员卡与购卡记录都在这里。", "Bookings, membership cards and card orders live here.")}</p></div>
+        {me ? mePanel() : <div className="me-signin"><p>{local("验证手机号后即可查看预约、会员卡与购卡记录。", "Verify your mobile number to see your bookings, cards and orders.")}</p><button className="button button-primary" type="button" onClick={() => setLoginOpen(true)}>{t("login")}<Icon name="arrow" size={17}/></button></div>}
+      </section>
     </main>
 
     <footer className="public-footer"><div><span className="brand footer-brand"><BrandLogo/><strong>{data ? local(data.venue.name, data.venue.name_en) : "音昱 Wellness"}</strong></span><p>{data && local(data.venue.address, data.venue.address_en)}</p></div><div><a href={`tel:${data?.venue.phone}`}><Icon name="phone" size={17}/>{data?.venue.phone}</a><Link to="/admin"><Icon name="user" size={17}/>{t("staff")}</Link></div></footer>
 
-    <nav className="mobile-bottom-nav" aria-label="Mobile"><a href="#top"><Icon name="home"/><span>{t("home")}</span></a><a href="#schedule"><Icon name="calendar"/><span>{t("book")}</span></a><button type="button" onClick={() => getToken("member") ? setMeOpen(true) : setLoginOpen(true)}><Icon name="user"/><span>{t("account")}</span></button></nav>
+    <nav className="mobile-bottom-nav" aria-label="Mobile">
+      <button type="button" className={mobilePage === "home" ? "active" : ""} onClick={() => goPage("home")}><Icon name="home"/><span>{t("home")}</span></button>
+      <button type="button" className={mobilePage === "schedule" ? "active" : ""} onClick={() => goPage("schedule")}><Icon name="calendar"/><span>{t("book")}</span></button>
+      <button type="button" className={mobilePage === "guides" ? "active" : ""} onClick={() => goPage("guides")}><Icon name="users"/><span>{local("引导者", "Guides")}</span></button>
+      <button type="button" className={mobilePage === "cards" ? "active" : ""} onClick={() => goPage("cards")}><Icon name="card"/><span>{local("卡课", "Cards")}</span></button>
+      <button type="button" className={mobilePage === "me" ? "active" : ""} onClick={() => getToken("member") ? goPage("me") : setLoginOpen(true)}><Icon name="user"/><span>{t("account")}</span></button>
+    </nav>
 
     {selected && <Modal title={t("details")} onClose={() => setSelected(null)}><div className="class-detail"><div className="class-detail-color" style={{ background: selected.course.color }}/><span className="class-category">{t(selected.course.course_type)}</span><h3>{local(selected.course.name, selected.course.name_en)}</h3><p>{local(selected.course.description, selected.course.description_en)}</p><dl><div><dt>{t("teacher")}</dt><dd>{local(selected.teacher.name, selected.teacher.name_en)}</dd></div><div><dt>{t("room")}</dt><dd>{local(selected.room.name, selected.room.name_en)}</dd></div><div><dt><Icon name="calendar" size={17}/></dt><dd>{selected.session_date} · {selected.start_time}–{selected.end_time}</dd></div><div><dt><Icon name="clock" size={17}/></dt><dd>{selected.course.duration_minutes} {t("minutes")}</dd></div></dl><div className="teacher-mini">{selected.teacher.image_url && <img src={selected.teacher.image_url} alt=""/>}<p>{local(selected.teacher.bio, selected.teacher.bio_en)}</p></div><button className={`button button-primary button-full ${selected.booked ? "is-booked" : ""}`} disabled={isPast(selected) || busy || (selected.available === 0 && !selected.booked)} type="button" onClick={() => selected.booked ? void cancelSessionBooking(selected) : requestBooking(selected)}>{isPast(selected) ? local("已结束", "Ended") : selected.booked ? local("已预约 · 点击取消", "Booked · tap to cancel") : selected.available === 0 ? t("full") : `${t("bookNow")} · ${selected.available} ${t("available")}`}</button></div></Modal>}
 
     {loginOpen && <Modal title={t("login")} onClose={() => { setLoginOpen(false); setPendingSession(null); setPendingProduct(null); }}><form className="auth-form" onSubmit={login}><p>{local("新会员验证手机号后会自动建立档案，验证码已自动发送。演示会员可使用 13900001001。", "New members are registered automatically after phone verification. The code is sent automatically. Demo member: 13900001001.")}</p><label>{t("phone")}<input required pattern="1[0-9]{10}" inputMode="numeric" value={phone} onChange={(event) => setPhone(event.target.value)}/></label><label>{t("code")}<div className="code-input"><input required inputMode="numeric" maxLength={6} value={code} onChange={(event) => setCode(event.target.value)}/><button className="button button-outline" type="button" disabled={busy || cooldown > 0} onClick={() => void sendCode()}>{cooldown > 0 ? `${cooldown}s` : t("sendCode")}</button></div></label>{devCode && <p className="dev-code">{t("devCode")}: <strong>{devCode}</strong></p>}<button className="button button-primary button-full" disabled={busy} type="submit">{busy ? t("loading") : t("submit")}</button></form></Modal>}
 
-    {meOpen && <Modal title={`${local("你好", "Hello")}，${me?.member.name ?? ""}`} wide onClose={() => setMeOpen(false)}><div className="me-tabs"><button className={meTab === "profile" ? "active" : ""} onClick={() => setMeTab("profile")} type="button"><Icon name="user" size={16}/>{local("个人信息", "Profile")}</button><button className={meTab === "bookings" ? "active" : ""} onClick={() => setMeTab("bookings")} type="button">{t("myBookings")}</button><button className={meTab === "cards" ? "active" : ""} onClick={() => setMeTab("cards")} type="button">{t("myCards")}</button><button className={meTab === "orders" ? "active" : ""} onClick={() => setMeTab("orders")} type="button">{t("myOrders")}</button><button className={meTab === "checkin" ? "active" : ""} onClick={() => setMeTab("checkin")} type="button"><Icon name="qr" size={16}/>{local("到店签到", "Check in")}</button><button className="logout-link" type="button" onClick={() => setLogoutOpen(true)}>{t("logout")}</button></div>
-      {meTab === "bookings" && <div className="me-list">{!me?.bookings.length ? <Empty>{t("noBookings")}</Empty> : me.bookings.map((booking) => { const session = booking.session; if (!session) return null; return <article key={booking.id} className={booking.status === "cancelled" ? "muted" : ""}><div><span className={`status-dot status-${booking.status}`}/><h3>{local(session.course.name, session.course.name_en)}</h3><p>{session.session_date} · {session.start_time}–{session.end_time}</p><small>{local(session.teacher.name, session.teacher.name_en)} · {local(session.room.name, session.room.name_en)}</small></div><div><span className="booking-status">{statusLabel(booking.status)}</span>{booking.status === "booked" && <><button className="text-button" type="button" onClick={() => void downloadFile(`/api/public/bookings/${booking.id}/calendar.ics`, `booking-${booking.id}.ics`, "member")}>{t("addCalendar")}</button><button className="text-button danger" type="button" onClick={() => void cancelBooking(booking)}>{t("cancel")}</button></>}</div></article>; })}</div>}
-      {meTab === "cards" && <div className="member-card-grid">{!me?.cards.length ? <Empty>{t("noCards")}</Empty> : me.cards.map((card) => <article className="member-pass" key={card.id}><span>{card.card_no}</span><h3>{local(card.product_name, card.product_name_en)}</h3><strong>{card.remaining_sessions ?? t("unlimited")}<small>{card.remaining_sessions !== null ? ` ${t("sessions")}` : ""}</small></strong><p>{card.start_pending ? local("开卡日期待定", "Starts on the first check-in") : `${t("expires")} ${card.expires_on}`}</p><div className="pass-benefits">{card.benefits.map((benefit) => <span key={benefit.course_type}>{t(benefit.course_type as CourseType)} {benefit.remaining ?? benefit.quantity}</span>)}</div></article>)}</div>}
-      {meTab === "orders" && <div className="me-list">{!me?.transactions.length ? <Empty>{local("暂无购卡申请", "No card requests yet")}</Empty> : me.transactions.map((order) => <article key={order.id} className={order.status === "cancelled" ? "muted" : ""}><div><h3>{local(order.product_name || order.note, order.product_name_en)}</h3><p>{order.occurred_at} · {orderStatusLabel(order.status)}</p>{order.cancelled_at && <small>{local("取消于", "Cancelled at")} {order.cancelled_at}</small>}{order.redemption_code && <strong className="redeem-code">{order.redemption_code}</strong>}{order.status === "pending" && <small>{local("到店支付并出示此码核销；未核销前可取消。", "Pay in store and show this code. You can cancel before redemption.")}</small>}</div><div><strong>{money(order.amount)}</strong>{order.status === "pending" && <button className="text-button danger" type="button" disabled={busy} onClick={() => setCancelOrderTarget(order)}>{local("取消申请", "Cancel request")}</button>}</div></article>)}</div>}
-      {meTab === "checkin" && <MemberCheckInPanel onChecked={loadMe}/>}
-      {meTab === "profile" && me && <MemberProfilePanel member={me.member} onUpdated={loadMe}/>}
-    </Modal>}
+    {meOpen && <Modal title={`${local("你好", "Hello")}，${me?.member.name ?? ""}`} wide onClose={() => setMeOpen(false)}>{mePanel()}</Modal>}
     {confirmProduct && <Modal title={local("确认购卡申请", "Confirm card request")} onClose={() => { if (!busy) setConfirmProduct(null); }}><div className="logout-confirmation order-confirmation"><span className="logout-confirmation-icon"><Icon name="card" size={26}/></span><h3>{local(confirmProduct.name, confirmProduct.name_en)}</h3><div className="order-confirmation-details"><span>{money(confirmProduct.price)}</span><span>{confirmProduct.total_sessions ? local(`${confirmProduct.total_sessions} 次`, `${confirmProduct.total_sessions} sessions`) : local("不限次", "Unlimited")} · {local(`${confirmProduct.validity_days} 天有效`, `${confirmProduct.validity_days} days validity`)}</span></div><p>{local("提交后将生成待核销电子码。请到店支付并出示电子码，核销成功后会员卡才会开通；未核销前可取消申请。", "A pending redemption code will be generated. Pay in store and present the code; your card activates only after redemption. You may cancel before then.")}</p><div className="logout-confirmation-actions"><button className="button button-outline" type="button" disabled={busy} onClick={() => setConfirmProduct(null)}>{local("再想想", "Not now")}</button><button className="button button-primary" type="button" disabled={busy} onClick={() => void completeOrder(confirmProduct.id)}><Icon name="check" size={17}/>{busy ? local("提交中…", "Submitting…") : local("确认申请", "Confirm request")}</button></div></div></Modal>}
     {cancelOrderTarget && <Modal title={local("取消购卡申请", "Cancel card request")} onClose={() => { if (!busy) setCancelOrderTarget(null); }}><div className="logout-confirmation order-confirmation"><span className="logout-confirmation-icon"><Icon name="card" size={26}/></span><h3>{local(cancelOrderTarget.product_name || cancelOrderTarget.note, cancelOrderTarget.product_name_en)}</h3><p>{local(`取消后电子码 ${cancelOrderTarget.redemption_code || ""} 将立即失效，且不能恢复。确定取消这笔待核销申请吗？`, `Redemption code ${cancelOrderTarget.redemption_code || ""} will immediately become invalid and cannot be restored. Cancel this pending request?`)}</p><div className="logout-confirmation-actions"><button className="button button-outline" type="button" disabled={busy} onClick={() => setCancelOrderTarget(null)}>{local("保留申请", "Keep request")}</button><button className="button button-primary" type="button" disabled={busy} onClick={() => void cancelOrder()}>{busy ? local("取消中…", "Cancelling…") : local("确认取消", "Confirm cancellation")}</button></div></div></Modal>}
     {logoutOpen && <LogoutConfirm title={t("logout")} description={local("退出后需要重新验证手机号，才能查看预约、会员卡与购卡记录。", "Sign in with your mobile number again to view your bookings, membership and orders.")} cancelLabel={local("取消", "Cancel")} confirmLabel={local("确认退出", "Sign out")} onClose={() => setLogoutOpen(false)} onConfirm={logout}/>}

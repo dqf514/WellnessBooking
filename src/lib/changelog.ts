@@ -1,6 +1,6 @@
 // 系统版本与更新日志：后台“系统设置 → 更新日志”展示，按日期为分界列出主要内容。
 export const APP_VERSION = "1.1.0";
-export const APP_RELEASE_DATE = "2026-11-22";
+export const APP_RELEASE_DATE = "2026-11-23";
 export const API_VERSION = "v1.0.0";
 export const API_ENDPOINT_COUNT = 137;
 
@@ -9,6 +9,25 @@ export interface ChangelogGroup { title: ChangelogText; points: ChangelogText[] 
 export interface ChangelogRelease { date: string; version: string; title: ChangelogText; summary: ChangelogText; groups: ChangelogGroup[] }
 
 export const changelogReleases: ChangelogRelease[] = [
+  {
+    date: "2026-11-23",
+    version: APP_VERSION,
+    title: { zh: "会员端手机改成多页：底部按钮切换", en: "The member app on phones becomes multi-page with a bottom tab bar" },
+    summary: { zh: "手机端不再是一整页从上拉到底，底部新增首页、预约、引导者、卡课、我的五个按钮，点哪个显示哪个页面；“我的”成为独立页面。电脑端保持原来的整页滚动样式不变。", en: "Phones no longer scroll through one long page: a bottom bar switches between Home, Book, Guides, Cards and Me, and “Me” is now a page of its own. The desktop layout is unchanged." },
+    groups: [
+      { title: { zh: "手机端多页", en: "Multi-page on phones" }, points: [
+        { zh: "底部新增五个导航按钮：首页、预约、引导者、卡课、我的", en: "Five bottom tabs: Home, Book, Guides, Cards and Me" },
+        { zh: "每个页面只放一类内容，“我的”是独立页面，含个人信息、我的预约、我的会员卡、购卡记录与到店签到", en: "Each page holds one topic; “Me” is a page with profile, bookings, cards, card orders and check-in" },
+        { zh: "当前页面按钮加深加粗，一眼看出所在位置", en: "The active tab is highlighted so you always know where you are" },
+        { zh: "未登录点“我的”直接弹出登录窗口，登录后自动进入“我的”", en: "Tapping “Me” while signed out opens the sign-in window, and lands on “Me” once signed in" },
+      ] },
+      { title: { zh: "桌面端", en: "On the desktop" }, points: [
+        { zh: "电脑版仍是完整的一整页，从上往下依次浏览，不显示底部导航", en: "The desktop keeps the full scrolling page and shows no bottom bar" },
+        { zh: "右上角头像仍然弹出“我的”窗口，与手机端功能完全一致", en: "The avatar in the top right still opens the “Me” dialog, with exactly the same content as on phones" },
+        { zh: "上一版的“点标题展开”折叠区被多页导航取代，手机端引导者与卡课现在各自独立成页", en: "The previous tap-to-expand sections are replaced by the tab bar; guides and cards are now pages of their own" },
+      ] },
+    ],
+  },
   {
     date: "2026-11-22",
     version: APP_VERSION,
