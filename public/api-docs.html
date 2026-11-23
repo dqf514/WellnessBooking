@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#173f35">
-  <meta name="description" content="音昱 Wellness 完整 API 对接文档，覆盖 137 个接口、权限、字段、业务规则与示例。">
+  <meta name="description" content="音昱 Wellness 完整 API 对接文档，覆盖 140 个接口、权限、字段、业务规则与示例。">
   <meta name="generator" content="docs/build_api_docs.py">
   <link id="api-favicon" rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Crect width='36' height='36' rx='18' fill='%23173f35'/%3E%3Cpath d='M28 6C15 7 8 13 8 23c7 1 15-2 20-17ZM8 29c3-8 8-12 16-17' fill='none' stroke='%23e9efe7' stroke-width='1.5'/%3E%3C/svg%3E">
   <title>API 对接文档 · 音昱 Wellness</title>
@@ -33,11 +33,11 @@
     <aside class="sidebar" aria-label="API 文档目录">
       <label class="search-label"><span>搜索接口、字段或业务规则</span><input class="search-input" id="api-search" type="search" placeholder="例如：签到、退款、bookings" autocomplete="off"><span class="search-hint">按 / 快速搜索，Esc 清空</span></label>
       <p class="search-results" id="search-results" aria-live="polite"></p>
-      <p class="toc-title">API REFERENCE · 137 ENDPOINTS</p>
+      <p class="toc-title">API REFERENCE · 140 ENDPOINTS</p>
       <nav><ul class="toc-list"><li><a href="#1-接入基础">1. 接入基础</a></li>
 <li><a href="#2-通用数据结构">2. 通用数据结构</a></li>
-<li><a href="#3-健康检查与员工认证-7">3. 健康检查与员工认证（7）</a></li>
-<li><a href="#4-会员端接口-17">4. 会员端接口（17）</a></li>
+<li><a href="#3-健康检查与员工认证-9">3. 健康检查与员工认证（9）</a></li>
+<li><a href="#4-会员端接口-18">4. 会员端接口（18）</a></li>
 <li><a href="#5-经营概览与基础元数据-2">5. 经营概览与基础元数据（2）</a></li>
 <li><a href="#6-会员档案-会员卡-权益与爽约-22">6. 会员档案、会员卡、权益与爽约（22）</a></li>
 <li><a href="#7-会员合同与评估文件-7">7. 会员合同与评估文件（7）</a></li>
@@ -56,8 +56,8 @@
     <main class="docs-main" id="api-content">
       <label class="section-jump"><span>跳转到文档章节</span><select id="mobile-jump"><option value="1-接入基础">1. 接入基础</option>
 <option value="2-通用数据结构">2. 通用数据结构</option>
-<option value="3-健康检查与员工认证-7">3. 健康检查与员工认证（7）</option>
-<option value="4-会员端接口-17">4. 会员端接口（17）</option>
+<option value="3-健康检查与员工认证-9">3. 健康检查与员工认证（9）</option>
+<option value="4-会员端接口-18">4. 会员端接口（18）</option>
 <option value="5-经营概览与基础元数据-2">5. 经营概览与基础元数据（2）</option>
 <option value="6-会员档案-会员卡-权益与爽约-22">6. 会员档案、会员卡、权益与爽约（22）</option>
 <option value="7-会员合同与评估文件-7">7. 会员合同与评估文件（7）</option>
@@ -277,46 +277,56 @@
 </tbody>
 </table></div>
 <p>线上申请初始为 <code>pending</code>，核销后原单改为 <code>paid</code>，不会再新增一条购买流水。待核销申请可取消为 <code>cancelled</code>，电子码保留用于审计但立即失效；取消不开卡、不计实收。退款会新增负数 <code>refund</code> 流水，原正数单改为 <code>refunded</code>。私教/评估消课营收使用 <code>consumption</code>，取消签到或取消已消课预约会自动新增对应 <code>consumption_reversal</code>，不删除历史。</p>
-<h2 id="3-健康检查与员工认证-7">3. 健康检查与员工认证（7）<a class="anchor" href="#3-健康检查与员工认证-7" aria-label="链接到此节">#</a></h2>
+<h2 id="3-健康检查与员工认证-9">3. 健康检查与员工认证（9）<a class="anchor" href="#3-健康检查与员工认证-9" aria-label="链接到此节">#</a></h2>
 <h3 id="3-1-服务健康检查">3.1 服务健康检查<a class="anchor" href="#3-1-服务健康检查" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/health">
 <h4 id="get-api-health"><span class="method method-get">GET</span><a href="#get-api-health" class="route">/api/health</a></h4>
 <ul><li><strong>权限</strong>：公开；<strong>请求</strong>：无。</li><li><strong>响应</strong>：<code>{ &quot;ok&quot;: true, &quot;service&quot;: &quot;wellness-booking&quot; }</code>。</li><li>只表示 HTTP 服务可响应，不替代数据库、短信网关或磁盘备份检查。</li></ul>
 </section>
-<h3 id="3-2-员工账号密码登录">3.2 员工账号密码登录<a class="anchor" href="#3-2-员工账号密码登录" aria-label="链接到此节">#</a></h3>
+<h3 id="3-2-登录图片验证码">3.2 登录图片验证码<a class="anchor" href="#3-2-登录图片验证码" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="get /api/auth/captcha">
+<h4 id="get-api-auth-captcha"><span class="method method-get">GET</span><a href="#get-api-auth-captcha" class="route">/api/auth/captcha</a></h4>
+<ul><li><strong>权限</strong>：公开；<strong>请求</strong>：无。</li><li><strong>响应</strong>：<code>{ captcha_id, image, expires_in }</code>，<code>image</code> 是 <code>data:image/png;base64,</code> 开头的图片。</li><li>4 位字符（去掉 0/O/1/I 等易混字符），带旋转、干扰线与噪点；5 分钟过期，一次一用，同一张图最多尝试 5 次。</li><li>后台“登录安全”里关闭“登录需要图片验证码”后，登录接口不再校验该字段。</li></ul>
+</section>
+<h3 id="3-3-员工账号密码登录">3.3 员工账号密码登录<a class="anchor" href="#3-3-员工账号密码登录" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/auth/login">
 <h4 id="post-api-auth-login"><span class="method method-post">POST</span><a href="#post-api-auth-login" class="route">/api/auth/login</a></h4>
-<ul><li><strong>权限</strong>：公开。</li><li><strong>Body</strong>：<code>username</code>（string，必填）、<code>password</code>（string，必填）。</li><li><strong>响应</strong>：<code>{ access_token, user }</code>，<code>user</code> 为 User。</li><li>用户不存在、密码错误或账号停用均返回 <code>400 用户名或密码错误</code>。</li></ul>
+<ul><li><strong>权限</strong>：公开。</li><li><strong>Body</strong>：<code>username</code>（string，必填）、<code>password</code>（string，必填）、<code>captcha_id</code>（string，启用图片验证码时必填）、<code>captcha_text</code>（string，启用图片验证码时必填，4 位）。</li><li><strong>响应</strong>：</li><li>正常登录：<code>{ access_token, user }</code>，<code>user</code> 为 User。</li><li>开启二次验证（MFA）时：<code>{ mfa_required: true, mfa_token, phone_masked }</code>，短信通道关闭的本地演示环境额外返回 <code>dev_code</code>；此时不返回 <code>access_token</code>。</li><li>用户不存在、密码错误或账号停用均返回 <code>400 用户名或密码错误</code>；验证码错误返回 <code>400 图片验证码错误或已过期，请点击图片刷新</code>。</li><li>开启二次验证后，账号未绑定手机号返回 <code>400 该账号未绑定手机号，无法完成二次验证，请联系管理员</code>。</li></ul>
 </section>
 <div class="code-block"><button class="copy-code" type="button">复制</button><pre><code class="language-bash">curl -X POST &quot;$API/api/auth/login&quot; \
   -H &#x27;Content-Type: application/json&#x27; \
-  -d &#x27;{&quot;username&quot;:&quot;your_username&quot;,&quot;password&quot;:&quot;your_password&quot;}&#x27;</code></pre></div>
-<h3 id="3-3-员工短信验证码">3.3 员工短信验证码<a class="anchor" href="#3-3-员工短信验证码" aria-label="链接到此节">#</a></h3>
+  -d &#x27;{&quot;username&quot;:&quot;your_username&quot;,&quot;password&quot;:&quot;your_password&quot;,&quot;captcha_id&quot;:&quot;...&quot;,&quot;captcha_text&quot;:&quot;AB3C&quot;}&#x27;</code></pre></div>
+<h3 id="3-4-员工登录二次验证-mfa">3.4 员工登录二次验证（MFA）<a class="anchor" href="#3-4-员工登录二次验证-mfa" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="post /api/auth/login-mfa">
+<h4 id="post-api-auth-login-mfa"><span class="method method-post">POST</span><a href="#post-api-auth-login-mfa" class="route">/api/auth/login-mfa</a></h4>
+<ul><li><strong>权限</strong>：公开；<strong>Body</strong>：<code>mfa_token</code>（string，取自密码登录响应）、<code>code</code>（string，短信验证码）。</li><li><strong>响应</strong>：<code>{ access_token, user }</code>，与密码登录一致。</li><li>挑战令牌 5 分钟过期，最多尝试 5 次；验证码错误或过期返回 <code>400 验证码错误或已过期</code>。</li></ul>
+</section>
+<h3 id="3-5-员工短信验证码">3.5 员工短信验证码<a class="anchor" href="#3-5-员工短信验证码" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/auth/sms/send-code">
 <h4 id="post-api-auth-sms-send-code"><span class="method method-post">POST</span><a href="#post-api-auth-sms-send-code" class="route">/api/auth/sms/send-code</a></h4>
 <ul><li><strong>权限</strong>：公开；<strong>Body</strong>：<code>phone</code>。</li><li>手机号必须匹配已启用的员工账号，否则 <code>400</code>。</li><li><strong>响应</strong>：<code>{ ok, message, dev_mode }</code>；本地演示且短信关闭时额外返回 <code>dev_code</code>。</li><li>验证码 5 分钟有效，60 秒内不可重发，最多尝试 5 次；新验证码会使旧验证码失效。</li></ul>
 </section>
-<h3 id="3-4-员工短信登录">3.4 员工短信登录<a class="anchor" href="#3-4-员工短信登录" aria-label="链接到此节">#</a></h3>
+<h3 id="3-6-员工短信登录">3.6 员工短信登录<a class="anchor" href="#3-6-员工短信登录" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/auth/login-sms">
 <h4 id="post-api-auth-login-sms"><span class="method method-post">POST</span><a href="#post-api-auth-login-sms" class="route">/api/auth/login-sms</a></h4>
 <ul><li><strong>权限</strong>：公开；<strong>Body</strong>：<code>phone</code>、<code>code</code>。</li><li><strong>响应</strong>：同密码登录。短信用途独立为 <code>staff_login</code>。</li></ul>
 </section>
-<h3 id="3-5-当前员工">3.5 当前员工<a class="anchor" href="#3-5-当前员工" aria-label="链接到此节">#</a></h3>
+<h3 id="3-7-当前员工">3.7 当前员工<a class="anchor" href="#3-7-当前员工" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/auth/me">
 <h4 id="get-api-auth-me"><span class="method method-get">GET</span><a href="#get-api-auth-me" class="route">/api/auth/me</a></h4>
 <ul><li><strong>权限</strong>：员工；<strong>请求</strong>：无 Body。</li><li><strong>响应</strong>：User 对象，不含 <code>access_token</code> 和密码。</li></ul>
 </section>
-<h3 id="3-6-修改自己的资料">3.6 修改自己的资料<a class="anchor" href="#3-6-修改自己的资料" aria-label="链接到此节">#</a></h3>
+<h3 id="3-8-修改自己的资料">3.8 修改自己的资料<a class="anchor" href="#3-8-修改自己的资料" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="patch /api/auth/me">
 <h4 id="patch-api-auth-me"><span class="method method-patch">PATCH</span><a href="#patch-api-auth-me" class="route">/api/auth/me</a></h4>
 <ul><li><strong>权限</strong>：员工登录会话（API Key 不支持）；<strong>Body</strong>：<code>full_name</code>、<code>phone</code> 任意子集。</li><li><code>full_name</code> 不能为空；<code>phone</code> 需为 11 位手机号，且不能与其他员工账号重复。</li><li><strong>响应</strong>：更新后的 User 对象。任何角色都可以修改自己的姓名与绑定手机号；登录名、角色与密码需走专门接口。</li></ul>
 </section>
-<h3 id="3-7-修改自己的密码">3.7 修改自己的密码<a class="anchor" href="#3-7-修改自己的密码" aria-label="链接到此节">#</a></h3>
+<h3 id="3-9-修改自己的密码">3.9 修改自己的密码<a class="anchor" href="#3-9-修改自己的密码" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/auth/change-password">
 <h4 id="post-api-auth-change-password"><span class="method method-post">POST</span><a href="#post-api-auth-change-password" class="route">/api/auth/change-password</a></h4>
 <ul><li><strong>权限</strong>：员工；<strong>Body</strong>：<code>old_password</code>、<code>new_password</code>。</li><li>新密码至少 8 位；原密码错误返回 <code>400</code>。</li><li><strong>响应</strong>：<code>{ &quot;ok&quot;: true }</code>。只更新当前 Token 对应员工。</li></ul>
 </section>
-<h2 id="4-会员端接口-17">4. 会员端接口（17）<a class="anchor" href="#4-会员端接口-17" aria-label="链接到此节">#</a></h2>
+<h2 id="4-会员端接口-18">4. 会员端接口（18）<a class="anchor" href="#4-会员端接口-18" aria-label="链接到此节">#</a></h2>
 <h3 id="4-1-会员端初始化数据">4.1 会员端初始化数据<a class="anchor" href="#4-1-会员端初始化数据" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/public/bootstrap">
 <h4 id="get-api-public-bootstrap"><span class="method method-get">GET</span><a href="#get-api-public-bootstrap" class="route">/api/public/bootstrap</a></h4>
@@ -402,6 +412,11 @@
 <section class="endpoint" data-search="delete /api/public/me/photo">
 <h4 id="delete-api-public-me-photo"><span class="method method-delete">DELETE</span><a href="#delete-api-public-me-photo" class="route">/api/public/me/photo</a></h4>
 <ul><li><strong>权限</strong>：会员；<strong>请求</strong>：无 Body。</li><li><strong>响应</strong>：<code>member</code>，<code>photo_url</code> 为空字符串；原照片文件同时从服务器删除。</li></ul>
+</section>
+<h3 id="4-18-登录页运行期开关">4.18 登录页运行期开关<a class="anchor" href="#4-18-登录页运行期开关" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="get /api/public/app-config">
+<h4 id="get-api-public-app-config"><span class="method method-get">GET</span><a href="#get-api-public-app-config" class="route">/api/public/app-config</a></h4>
+<ul><li><strong>权限</strong>：公开；<strong>请求</strong>：无。</li><li><strong>响应</strong>：<code>{ demo_login: bool, captcha: bool }</code>。</li><li><code>demo_login</code> 为真时，员工登录页会预填演示账号 <code>admin / admin123</code> 并显示账号提示；正式上线前应在后台关闭该开关，或用环境变量 <code>LOGIN_DEMO_CREDENTIALS=false</code> 强制关闭。</li><li><code>captcha</code> 为真时，账号密码登录需要图片验证码。</li></ul>
 </section>
 <h2 id="5-经营概览与基础元数据-2">5. 经营概览与基础元数据（2）<a class="anchor" href="#5-经营概览与基础元数据-2" aria-label="链接到此节">#</a></h2>
 <h3 id="5-1-今日经营概览">5.1 今日经营概览<a class="anchor" href="#5-1-今日经营概览" aria-label="链接到此节">#</a></h3>
@@ -842,12 +857,12 @@
 <h3 id="10-1-读取系统设置">10.1 读取系统设置<a class="anchor" href="#10-1-读取系统设置" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/settings">
 <h4 id="get-api-admin-settings"><span class="method method-get">GET</span><a href="#get-api-admin-settings" class="route">/api/admin/settings</a></h4>
-<ul><li><strong>权限</strong>：管理员；<strong>响应</strong>：AppSettings。</li><li>字段：<code>venue_name</code>、<code>venue_name_en</code>、<code>address</code>、<code>address_en</code>、<code>phone</code>、<code>logo_url</code>、<code>favicon_url</code>、<code>booking_cutoff_minutes</code>、<code>no_show_block_days</code>、<code>reminder_hours</code>、<code>revenue_mode</code>。</li><li><code>revenue_mode</code> 是购卡营收口径：<code>auto</code>（按卡种自动）/ <code>immediate</code>（购卡即全额确认营收）/ <code>amortized</code>（按有效期每日均摊确认营收）；私教与评估卡始终在实际消课后确认营收。</li></ul>
+<ul><li><strong>权限</strong>：管理员；<strong>响应</strong>：AppSettings。</li><li>字段：<code>venue_name</code>、<code>venue_name_en</code>、<code>address</code>、<code>address_en</code>、<code>phone</code>、<code>logo_url</code>、<code>favicon_url</code>、<code>booking_cutoff_minutes</code>、<code>no_show_block_days</code>、<code>reminder_hours</code>、<code>revenue_mode</code>、<code>demo_login_enabled</code>、<code>demo_login_locked</code>、<code>captcha_enabled</code>、<code>mfa_enabled</code>。</li><li><code>revenue_mode</code> 是购卡营收口径：<code>auto</code>（按卡种自动）/ <code>immediate</code>（购卡即全额确认营收）/ <code>amortized</code>（按有效期每日均摊确认营收）；私教与评估卡始终在实际消课后确认营收。</li><li><code>demo_login_enabled</code> 控制登录页是否预填演示账号；<code>captcha_enabled</code> 控制账号密码登录是否需要图片验证码；<code>mfa_enabled</code> 控制口令通过后是否还要短信二次验证。</li><li><code>demo_login_locked</code> 为真表示环境变量 <code>LOGIN_DEMO_CREDENTIALS</code> 已强制关闭演示账号，此时后台勾选不会生效。</li></ul>
 </section>
 <h3 id="10-2-更新系统设置">10.2 更新系统设置<a class="anchor" href="#10-2-更新系统设置" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="put /api/admin/settings">
 <h4 id="put-api-admin-settings"><span class="method method-put">PUT</span><a href="#put-api-admin-settings" class="route">/api/admin/settings</a></h4>
-<ul><li><strong>权限</strong>：管理员；<strong>Body</strong>：上述字段，但品牌 URL 不接受此接口修改。</li><li>自助截止 0–10080 分钟，爽约限制 0–365 天，提醒提前量 1–168 小时。</li><li><code>revenue_mode</code> 只能取 <code>auto</code> / <code>immediate</code> / <code>amortized</code>，其他值返回 <code>400</code>；修改后立即对新的购卡与升卡生效。</li><li><strong>响应</strong>：完整 AppSettings；未传字段保持原值。</li></ul>
+<ul><li><strong>权限</strong>：管理员；<strong>Body</strong>：上述字段，但品牌 URL 不接受此接口修改。</li><li>自助截止 0–10080 分钟，爽约限制 0–365 天，提醒提前量 1–168 小时。</li><li><code>revenue_mode</code> 只能取 <code>auto</code> / <code>immediate</code> / <code>amortized</code>，其他值返回 <code>400</code>；修改后立即对新的购卡与升卡生效。</li><li><code>demo_login_enabled</code>、<code>captcha_enabled</code>、<code>mfa_enabled</code> 接受布尔值；<code>demo_login_locked</code> 只读，不可通过接口修改。</li><li><strong>响应</strong>：完整 AppSettings；未传字段保持原值。</li></ul>
 </section>
 <h3 id="10-3-上传-logo-favicon">10.3 上传 Logo / favicon<a class="anchor" href="#10-3-上传-logo-favicon" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/settings/branding/{kind}">
@@ -896,7 +911,7 @@
 <section class="endpoint" data-search="put /api/admin/sms-settings">
 <h4 id="put-api-admin-sms-settings"><span class="method method-put">PUT</span><a href="#put-api-admin-sms-settings" class="route">/api/admin/sms-settings</a></h4>
 <ul><li><strong>权限</strong>：管理员；<strong>Body</strong>：上述字段（除 <code>password_set</code>），密码使用 <code>password</code>。</li><li><code>password</code> 可传明文，服务端保存 MD5；也可直接传 32 位十六进制 MD5。空密码表示不修改。</li><li>模板开头不要重复写 <code>【签名】</code>，系统统一添加 <code>signature_prefix</code>；否则 <code>400</code>。</li><li><strong>响应</strong>：安全视图。</li></ul>
-<p>模板变量：<code>{name}</code>、<code>{course}</code>、<code>{date}</code>、<code>{time}</code>、<code>{room}</code>、<code>{teacher}</code>、<code>{id}</code>。通知开关和总开关共同决定是否真正发送；预约业务不会因通知失败而回滚。</p>
+<p>模板变量：<code>{name}</code>、<code>{course}</code>、<code>{date}</code>、<code>{time}</code>、<code>{room}</code>、<code>{teacher}</code>、<code>{id}</code>。通知开关和总开关共同决定是否真正发送；预约业务不会因通知失败而回滚。 默认模板不含“预约编号”等易被运营商判为敏感词的措辞；若网关报黑词拦截，改写模板措辞后重新保存即可。</p>
 </section>
 <h3 id="11-3-发送连通性测试短信">11.3 发送连通性测试短信<a class="anchor" href="#11-3-发送连通性测试短信" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/sms-settings/test">
@@ -1126,7 +1141,7 @@ const dashboard = await api(&quot;/api/admin/dashboard&quot;, {
 <h4 id="get-api-admin-transactions-transaction-id-receipt-pdf"><span class="method method-get">GET</span><a href="#get-api-admin-transactions-transaction-id-receipt-pdf" class="route">/api/admin/transactions/{transaction_id}/receipt.pdf</a></h4>
 <ul><li><strong>权限</strong>：财务查看（<code>finance.view</code>）。</li><li><strong>响应</strong>：单页 <strong>75 × 145 mm</strong> 小票；待核销或已取消记录返回 <code>400</code>。</li><li>包含 Octave/自定义品牌 Logo、健康管理 Wellness、日期时间、项目、金额、入账类型、客户、结账方式、备注、入账人、6% 增值税与去税金额、签字栏及场馆地址电话。</li><li>去税金额按“含税金额 ÷ 1.06”计算，增值税为含税金额减去去税金额；退款或冲销记录以负数展示。</li></ul>
 </section>
-      <footer class="docs-footer"><span>音昱 Wellness · API v1.0.0 · 137 个业务接口</span><span><a href="/help.html">系统操作指南</a> · <a href="/openapi.json">OpenAPI 3</a> · 文档源：<a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md">docs/API.md</a></span></footer>
+      <footer class="docs-footer"><span>音昱 Wellness · API v1.0.0 · 140 个业务接口</span><span><a href="/help.html">系统操作指南</a> · <a href="/openapi.json">OpenAPI 3</a> · 文档源：<a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md">docs/API.md</a></span></footer>
     </main>
   </div>
   <script>

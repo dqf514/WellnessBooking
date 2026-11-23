@@ -13,8 +13,8 @@ from .models import AppSettings, Booking, ClassSession, SmsOtpCode, SmsSendLog, 
 from .security import hash_otp
 from .sms_gateway import send_sms_batch
 
-DEFAULT_BOOKING = "尊敬的{name}，您已预约{course}：{date} {time}，教室{room}，预约编号{id}。如需取消请在开课前操作。"
-DEFAULT_CANCEL = "尊敬的{name}，您于{date} {time}的{course}预约（编号{id}）已取消。"
+DEFAULT_BOOKING = "尊敬的{name}，您已预约{course}：{date} {time}，教室{room}。如需取消请在开课前操作。"
+DEFAULT_CANCEL = "尊敬的{name}，您于{date} {time}的{course}预约已取消。"
 DEFAULT_REMINDER = "尊敬的{name}，提醒您预约的{course}将于{date} {time}开始，教室{room}，请提前到场。"
 
 

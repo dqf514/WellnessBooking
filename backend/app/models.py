@@ -305,6 +305,11 @@ class AppSettings(Base):
     reminder_hours: Mapped[int] = mapped_column(Integer, default=24)
     # 营收确认口径：auto（按卡种自动）/ immediate（购卡即全额确认）/ amortized（按有效期均摊）。
     revenue_mode: Mapped[str] = mapped_column(String(20), default="auto")
+    # 测试期便利：登录页自动填入演示账号，正式上线前应关闭。
+    demo_login_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    # 登录安全：图片验证码与短信二次验证（MFA）。
+    captcha_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    mfa_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 class SmsSettings(Base):

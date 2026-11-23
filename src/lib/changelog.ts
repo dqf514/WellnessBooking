@@ -2,13 +2,33 @@
 export const APP_VERSION = "1.1.0";
 export const APP_RELEASE_DATE = "2026-11-23";
 export const API_VERSION = "v1.0.0";
-export const API_ENDPOINT_COUNT = 137;
+export const API_ENDPOINT_COUNT = 140;
 
 export interface ChangelogText { zh: string; en: string }
 export interface ChangelogGroup { title: ChangelogText; points: ChangelogText[] }
 export interface ChangelogRelease { date: string; version: string; title: ChangelogText; summary: ChangelogText; groups: ChangelogGroup[] }
 
 export const changelogReleases: ChangelogRelease[] = [
+  {
+    date: "2026-11-23",
+    version: APP_VERSION,
+    title: { zh: "登录更安全：图片验证码、短信二次验证与演示账号开关", en: "Safer sign-in: image captcha, SMS two-step verification and a demo-account switch" },
+    summary: { zh: "员工账号密码登录现在带图片验证码；后台可开启短信二次验证（MFA），口令通过后还要手机号验证码才算登录成功。测试期自动填入 admin / admin123 的便利也做成了开关，正式上线前关掉即可。", en: "Staff password sign-in now asks for an image captcha. Administrators can enable SMS two-step verification (MFA) so a valid password still needs a code on the bound phone. The test-period auto-fill of admin / admin123 is now a switch you turn off before going live." },
+    groups: [
+      { title: { zh: "登录安全", en: "Sign-in security" }, points: [
+        { zh: "账号密码登录新增 4 位图片验证码，挡住脚本批量试密码", en: "Password sign-in now adds a 4-character image captcha to block scripted guessing" },
+        { zh: "看不清可点击图片刷新，5 分钟有效、一次一用", en: "Click the image to refresh; valid for 5 minutes and single-use" },
+        { zh: "短信二次验证（MFA）默认关闭，可在“系统设置 → 场馆与预约 → 登录安全”里开启", en: "SMS two-step verification (MFA) is off by default and can be enabled under “Settings → Venue & booking → Sign-in security”" },
+        { zh: "开启后口令通过后还要输入绑定手机号收到的验证码，未绑定手机号的员工需先补手机号", en: "When on, a valid password still needs the code sent to the bound mobile number; staff without one must add it first" },
+      ] },
+      { title: { zh: "上线前开关", en: "Go-live switches" }, points: [
+        { zh: "“登录页自动填充演示账号”可一键关闭，登录页不再显示 admin / admin123", en: "One click turns off the prefilled demo account, and the page no longer shows admin / admin123" },
+        { zh: "服务器环境变量 LOGIN_DEMO_CREDENTIALS=false 可强制关闭，后台勾选不再生效", en: "The LOGIN_DEMO_CREDENTIALS=false environment variable forces it off and overrides the admin checkbox" },
+        { zh: "预约成功短信默认措辞去掉“预约编号”，避免被运营商判为敏感词", en: "The default booking SMS no longer says “预约编号”, which carriers can flag as a blocked word" },
+        { zh: "短信模板可在“系统设置 → 短信通知”里随时改写，保存即生效", en: "SMS templates can be reworded any time under “Settings → SMS notifications”, effective as soon as you save" },
+      ] },
+    ],
+  },
   {
     date: "2026-11-23",
     version: APP_VERSION,

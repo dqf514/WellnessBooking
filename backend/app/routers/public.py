@@ -12,6 +12,7 @@ from ..deps import _payload, bearer, get_current_member
 from ..log_util import audit
 from ..membership_service import voucher_dict
 from ..models import AppSettings, Booking, CardProduct, ClassSession, Course, ExperienceVoucher, Member, MemberCard, MemberCardShare, Teacher, Transaction
+from ..runtime_flags import demo_login_enabled
 from ..security import create_access_token
 from ..serializers import booking_dict, card_dict, course_dict, member_dict, product_dict, session_dict, teacher_dict, transaction_dict
 from ..sms_service import notify_booking, send_otp, verify_otp
@@ -59,6 +60,13 @@ def bootstrap(db: Session = Depends(get_db)):
         "teachers": [teacher_dict(row) for row in teachers],
         "products": [product_dict(row) for row in products],
     }
+
+
+@router.get("/app-config")
+def app_config(db: Session = Depends(get_db)):
+    """登录页需要的运行期开关（不含任何敏感数据）。"""
+    settings = db.get(AppSettings, 1)
+    return {"demo_login": demo_login_enabled(db), "captcha": True if settings is None else bool(settings.captcha_enabled)}
 
 
 @router.get("/sessions")

@@ -15,3 +15,5 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", 
 SEED_DEMO_DATA = os.environ.get("SEED_DEMO_DATA", "true").lower() in {"1", "true", "yes"}
 SMS_DEV_MODE = os.environ.get("SMS_DEV_MODE", "true").lower() in {"1", "true", "yes"}
 SMS_DEV_CODE = os.environ.get("SMS_DEV_CODE", "246810")
+# 登录页演示账号开关：留空表示跟随后台设置；设为 0/false/no/off 时强制关闭（生产环境建议显式关闭）。
+LOGIN_DEMO_CREDENTIALS = os.environ.get("LOGIN_DEMO_CREDENTIALS", "").strip().lower()

@@ -15,6 +15,7 @@ from ..log_util import audit, sms_log
 from ..models import AppSettings, OperationLog, SmsSendLog, SmsSettings, User
 from ..permissions import ROLE_LABELS, permission_matrix, role_capabilities
 from ..recycle_service import move_to_recycle
+from ..runtime_flags import demo_login_locked
 from ..security import hash_password
 from ..serializers import user_dict
 from ..sms_gateway import query_balance, send_sms_batch
@@ -25,7 +26,7 @@ router = APIRouter(prefix="/api/admin", tags=["admin-settings"])
 
 
 def _settings_dict(row: AppSettings) -> dict:
-    return {"venue_name": row.venue_name, "venue_name_en": row.venue_name_en, "address": row.address, "address_en": row.address_en, "phone": row.phone, "logo_url": row.logo_url, "favicon_url": row.favicon_url, "booking_cutoff_minutes": row.booking_cutoff_minutes, "no_show_block_days": row.no_show_block_days, "reminder_hours": row.reminder_hours, "revenue_mode": row.revenue_mode or "auto"}
+    return {"venue_name": row.venue_name, "venue_name_en": row.venue_name_en, "address": row.address, "address_en": row.address_en, "phone": row.phone, "logo_url": row.logo_url, "favicon_url": row.favicon_url, "booking_cutoff_minutes": row.booking_cutoff_minutes, "no_show_block_days": row.no_show_block_days, "reminder_hours": row.reminder_hours, "revenue_mode": row.revenue_mode or "auto", "demo_login_enabled": bool(row.demo_login_enabled), "demo_login_locked": demo_login_locked(), "captcha_enabled": bool(row.captcha_enabled), "mfa_enabled": bool(row.mfa_enabled)}
 
 
 @router.get("/settings")
@@ -36,10 +37,13 @@ def get_app_settings(db: Session = Depends(get_db), _: User = Depends(require_se
 @router.put("/settings")
 def put_app_settings(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_settings_write)):
     row = db.get(AppSettings, 1)
-    allowed = {"venue_name", "venue_name_en", "address", "address_en", "phone", "booking_cutoff_minutes", "no_show_block_days", "reminder_hours", "revenue_mode"}
+    allowed = {"venue_name", "venue_name_en", "address", "address_en", "phone", "booking_cutoff_minutes", "no_show_block_days", "reminder_hours", "revenue_mode", "demo_login_enabled", "captcha_enabled", "mfa_enabled"}
     for key, value in payload.items():
         if key in allowed:
             setattr(row, key, value)
+    row.demo_login_enabled = True if row.demo_login_enabled is None else as_bool(row.demo_login_enabled, "登录页演示账号开关")
+    row.captcha_enabled = True if row.captcha_enabled is None else as_bool(row.captcha_enabled, "图片验证码开关")
+    row.mfa_enabled = False if row.mfa_enabled is None else as_bool(row.mfa_enabled, "短信二次验证开关")
     if row.revenue_mode not in SYSTEM_REVENUE_MODES:
         raise HTTPException(400, "营收口径不合法")
     # 先做类型与范围校验，避免把非法数值写进数据库后触发 500。

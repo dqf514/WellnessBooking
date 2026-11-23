@@ -269,7 +269,7 @@ FastAPI 参数校验错误格式：
 
 线上申请初始为 `pending`，核销后原单改为 `paid`，不会再新增一条购买流水。待核销申请可取消为 `cancelled`，电子码保留用于审计但立即失效；取消不开卡、不计实收。退款会新增负数 `refund` 流水，原正数单改为 `refunded`。私教/评估消课营收使用 `consumption`，取消签到或取消已消课预约会自动新增对应 `consumption_reversal`，不删除历史。
 
-## 3. 健康检查与员工认证（7）
+## 3. 健康检查与员工认证（9）
 
 ### 3.1 服务健康检查
 
@@ -279,22 +279,42 @@ FastAPI 参数校验错误格式：
 - **响应**：`{ "ok": true, "service": "wellness-booking" }`。
 - 只表示 HTTP 服务可响应，不替代数据库、短信网关或磁盘备份检查。
 
-### 3.2 员工账号密码登录
+### 3.2 登录图片验证码
+
+#### GET /api/auth/captcha
+
+- **权限**：公开；**请求**：无。
+- **响应**：`{ captcha_id, image, expires_in }`，`image` 是 `data:image/png;base64,` 开头的图片。
+- 4 位字符（去掉 0/O/1/I 等易混字符），带旋转、干扰线与噪点；5 分钟过期，一次一用，同一张图最多尝试 5 次。
+- 后台“登录安全”里关闭“登录需要图片验证码”后，登录接口不再校验该字段。
+
+### 3.3 员工账号密码登录
 
 #### POST /api/auth/login
 
 - **权限**：公开。
-- **Body**：`username`（string，必填）、`password`（string，必填）。
-- **响应**：`{ access_token, user }`，`user` 为 User。
-- 用户不存在、密码错误或账号停用均返回 `400 用户名或密码错误`。
+- **Body**：`username`（string，必填）、`password`（string，必填）、`captcha_id`（string，启用图片验证码时必填）、`captcha_text`（string，启用图片验证码时必填，4 位）。
+- **响应**：
+  - 正常登录：`{ access_token, user }`，`user` 为 User。
+  - 开启二次验证（MFA）时：`{ mfa_required: true, mfa_token, phone_masked }`，短信通道关闭的本地演示环境额外返回 `dev_code`；此时不返回 `access_token`。
+- 用户不存在、密码错误或账号停用均返回 `400 用户名或密码错误`；验证码错误返回 `400 图片验证码错误或已过期，请点击图片刷新`。
+- 开启二次验证后，账号未绑定手机号返回 `400 该账号未绑定手机号，无法完成二次验证，请联系管理员`。
 
 ```bash
 curl -X POST "$API/api/auth/login" \
   -H 'Content-Type: application/json' \
-  -d '{"username":"your_username","password":"your_password"}'
+  -d '{"username":"your_username","password":"your_password","captcha_id":"...","captcha_text":"AB3C"}'
 ```
 
-### 3.3 员工短信验证码
+### 3.4 员工登录二次验证（MFA）
+
+#### POST /api/auth/login-mfa
+
+- **权限**：公开；**Body**：`mfa_token`（string，取自密码登录响应）、`code`（string，短信验证码）。
+- **响应**：`{ access_token, user }`，与密码登录一致。
+- 挑战令牌 5 分钟过期，最多尝试 5 次；验证码错误或过期返回 `400 验证码错误或已过期`。
+
+### 3.5 员工短信验证码
 
 #### POST /api/auth/sms/send-code
 
@@ -303,21 +323,21 @@ curl -X POST "$API/api/auth/login" \
 - **响应**：`{ ok, message, dev_mode }`；本地演示且短信关闭时额外返回 `dev_code`。
 - 验证码 5 分钟有效，60 秒内不可重发，最多尝试 5 次；新验证码会使旧验证码失效。
 
-### 3.4 员工短信登录
+### 3.6 员工短信登录
 
 #### POST /api/auth/login-sms
 
 - **权限**：公开；**Body**：`phone`、`code`。
 - **响应**：同密码登录。短信用途独立为 `staff_login`。
 
-### 3.5 当前员工
+### 3.7 当前员工
 
 #### GET /api/auth/me
 
 - **权限**：员工；**请求**：无 Body。
 - **响应**：User 对象，不含 `access_token` 和密码。
 
-### 3.6 修改自己的资料
+### 3.8 修改自己的资料
 
 #### PATCH /api/auth/me
 
@@ -325,7 +345,7 @@ curl -X POST "$API/api/auth/login" \
 - `full_name` 不能为空；`phone` 需为 11 位手机号，且不能与其他员工账号重复。
 - **响应**：更新后的 User 对象。任何角色都可以修改自己的姓名与绑定手机号；登录名、角色与密码需走专门接口。
 
-### 3.7 修改自己的密码
+### 3.9 修改自己的密码
 
 #### POST /api/auth/change-password
 
@@ -333,7 +353,7 @@ curl -X POST "$API/api/auth/login" \
 - 新密码至少 8 位；原密码错误返回 `400`。
 - **响应**：`{ "ok": true }`。只更新当前 Token 对应员工。
 
-## 4. 会员端接口（17）
+## 4. 会员端接口（18）
 
 ### 4.1 会员端初始化数据
 
@@ -486,6 +506,15 @@ curl -X POST "$API/api/auth/login" \
 
 - **权限**：会员；**请求**：无 Body。
 - **响应**：`member`，`photo_url` 为空字符串；原照片文件同时从服务器删除。
+
+### 4.18 登录页运行期开关
+
+#### GET /api/public/app-config
+
+- **权限**：公开；**请求**：无。
+- **响应**：`{ demo_login: bool, captcha: bool }`。
+- `demo_login` 为真时，员工登录页会预填演示账号 `admin / admin123` 并显示账号提示；正式上线前应在后台关闭该开关，或用环境变量 `LOGIN_DEMO_CREDENTIALS=false` 强制关闭。
+- `captcha` 为真时，账号密码登录需要图片验证码。
 
 ## 5. 经营概览与基础元数据（2）
 
@@ -1170,8 +1199,10 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 #### GET /api/admin/settings
 
 - **权限**：管理员；**响应**：AppSettings。
-- 字段：`venue_name`、`venue_name_en`、`address`、`address_en`、`phone`、`logo_url`、`favicon_url`、`booking_cutoff_minutes`、`no_show_block_days`、`reminder_hours`、`revenue_mode`。
+- 字段：`venue_name`、`venue_name_en`、`address`、`address_en`、`phone`、`logo_url`、`favicon_url`、`booking_cutoff_minutes`、`no_show_block_days`、`reminder_hours`、`revenue_mode`、`demo_login_enabled`、`demo_login_locked`、`captcha_enabled`、`mfa_enabled`。
 - `revenue_mode` 是购卡营收口径：`auto`（按卡种自动）/ `immediate`（购卡即全额确认营收）/ `amortized`（按有效期每日均摊确认营收）；私教与评估卡始终在实际消课后确认营收。
+- `demo_login_enabled` 控制登录页是否预填演示账号；`captcha_enabled` 控制账号密码登录是否需要图片验证码；`mfa_enabled` 控制口令通过后是否还要短信二次验证。
+- `demo_login_locked` 为真表示环境变量 `LOGIN_DEMO_CREDENTIALS` 已强制关闭演示账号，此时后台勾选不会生效。
 
 ### 10.2 更新系统设置
 
@@ -1180,6 +1211,7 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 - **权限**：管理员；**Body**：上述字段，但品牌 URL 不接受此接口修改。
 - 自助截止 0–10080 分钟，爽约限制 0–365 天，提醒提前量 1–168 小时。
 - `revenue_mode` 只能取 `auto` / `immediate` / `amortized`，其他值返回 `400`；修改后立即对新的购卡与升卡生效。
+- `demo_login_enabled`、`captcha_enabled`、`mfa_enabled` 接受布尔值；`demo_login_locked` 只读，不可通过接口修改。
 - **响应**：完整 AppSettings；未传字段保持原值。
 
 ### 10.3 上传 Logo / favicon
@@ -1258,6 +1290,7 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 - **响应**：安全视图。
 
 模板变量：`{name}`、`{course}`、`{date}`、`{time}`、`{room}`、`{teacher}`、`{id}`。通知开关和总开关共同决定是否真正发送；预约业务不会因通知失败而回滚。
+默认模板不含“预约编号”等易被运营商判为敏感词的措辞；若网关报黑词拦截，改写模板措辞后重新保存即可。
 
 ### 11.3 发送连通性测试短信
 

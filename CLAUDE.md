@@ -102,6 +102,16 @@ backend/.venv/Scripts/python -m pip install -r backend/requirements.txt
 
 `backend/app/scheduler.py` 起一个守护线程，每 20 秒轮询：按 `BackupPlanSettings` 的时间点自动备份并清理旧备份，同时调用 `send_due_reminders` 发到期提醒。
 
+### 员工登录安全
+
+员工账号密码登录（`POST /api/auth/login`）走三道可配置开关，全部存放在 `app_settings`（后台「系统设置 → 场馆与预约 → 登录安全」）：
+
+- `captcha_enabled`（默认开）：需要 `GET /api/auth/captcha` 的 `captcha_id` + `captcha_text`。实现见 `backend/app/captcha_service.py`（Pillow 绘制，挑战存内存、一次一用、5 分钟过期）。
+- `mfa_enabled`（默认关）：口令通过后还要短信验证码，换令牌走 `POST /api/auth/login-mfa`。挑战存 `backend/app/mfa_service.py`（内存，单进程部署足够）。
+- `demo_login_enabled`（默认开，仅测试期）：登录页预填 `admin / admin123`；环境变量 `LOGIN_DEMO_CREDENTIALS=0/false/no/off` 可强制关闭（`backend/app/runtime_flags.py`）。
+- 登录页据此渲染的开关由公开接口 `GET /api/public/app-config` 下发（`demo_login`、`captcha`）。
+
+
 ## 代码风格约定
 
 - **用户可见文案全部中文**（前端界面文案 + 后端 `HTTPException` 的 `detail`）。新增错误提示直接写中文。
@@ -120,7 +130,7 @@ backend/.venv/Scripts/python -m pip install -r backend/requirements.txt
 
 短信默认是开发模式：`SMS_DEV_MODE=true`、固定验证码 `SMS_DEV_CODE=246810`（`SMS_XINXINYUN_SP_ID` / `SMS_XINXINYUN_PASSWORD_MD5` 未配置时不会真发短信，只写 `sms_send_logs`）。
 
-其他环境变量：`JWT_SECRET`（**上线前必须改**）、`DATABASE_URL`、`ACCESS_TOKEN_EXPIRE_MINUTES`（默认 10080 = 7 天）。
+其他环境变量：`JWT_SECRET`（**上线前必须改**）、`DATABASE_URL`、`ACCESS_TOKEN_EXPIRE_MINUTES`（默认 10080 = 7 天）、`LOGIN_DEMO_CREDENTIALS`（设为 `0/false/no/off` 时强制关闭登录页演示账号）。
 
 ## 文档
 

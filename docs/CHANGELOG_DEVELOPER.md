@@ -866,3 +866,36 @@
 
 - `npm run build` 通过（`tsc -b` 无报错）。
 - CDP 实测：会员端（390×844）上传照片 → 裁剪窗口弹出 → 确认裁剪 → 提示“照片已更新”，保存结果为 640 × 640；后台会员档案同样流程通过；教练照片裁剪框为 300 × 350（竖版），课程图片裁剪框为 300 × 300 且带“使用原图”按钮。
+
+## 二十八、登录安全：图片验证码 + 短信二次验证 + 演示账号开关（2026-11-23）
+
+### 1. 后端新增
+
+| 文件 | 作用 |
+| --- | --- |
+| `backend/app/captcha_service.py` | 生成 4 位图片验证码（Pillow 绘制：旋转、干扰线、噪点），一次一用、5 分钟过期、同图最多 5 次；答案用 `hash_otp` 哈希存放，内存保存挑战 |
+| `backend/app/mfa_service.py` | 二次验证挑战令牌（内存、5 分钟、5 次上限）与手机号掩码 |
+| `backend/app/runtime_flags.py` | `demo_login_enabled(db)` / `demo_login_locked()`：后台开关与环境变量 `LOGIN_DEMO_CREDENTIALS` 的合并判断 |
+
+- `app_settings` 新增三列：`demo_login_enabled`（默认 1）、`captcha_enabled`（默认 1）、`mfa_enabled`（默认 0），同步写入 `ensure_schema()` 的 `additions`。
+- `config.py` 新增 `LOGIN_DEMO_CREDENTIALS`：留空跟随后台设置，值为 `0/false/no/off` 时强制关闭演示账号。
+- `POST /api/auth/login` 现在先校验图片验证码（`captcha_id` + `captcha_text`），再校验口令；开启 MFA 时返回 `{ mfa_required, mfa_token, phone_masked }` 而不发令牌。
+- 新增 `GET /api/auth/captcha`（返回 `captcha_id` + base64 PNG）与 `POST /api/auth/login-mfa`（校验挑战令牌 + 短信验证码换取令牌）。
+- `GET /api/public/app-config` 返回 `{ demo_login, captcha }`，登录页据此决定是否预填与是否显示验证码框。
+- `GET/PUT /api/admin/settings` 增加 `demo_login_enabled`、`demo_login_locked`（只读）、`captcha_enabled`、`mfa_enabled`。
+
+### 2. 前端
+
+- `src/pages/LoginPage.tsx`：改为拉取 `app-config` 后再决定预填；新增验证码图片（点击刷新）与输入框；MFA 步骤独立成「二次验证」面板（显示掩码手机号、返回重新登录）；提交失败自动换一张新验证码。
+- `src/pages/admin/settings/GeneralSettings.tsx`：新增「登录安全」分区（图片验证码 / 短信二次验证）与「测试期登录便利」分区（演示账号开关，环境变量强制关闭时置灰并给出说明）。
+- `src/styles.css`：新增 `.captcha-row` / `.captcha-input` / `.captcha-image` / `.login-back-step`。
+
+### 3. 短信默认措辞
+
+- `sms_service.DEFAULT_BOOKING` / `DEFAULT_CANCEL` 去掉「预约编号{id}」，避免被运营商判为敏感词导致发送失败；模板仍可在后台自由改写（接口与界面不变）。
+
+### 4. 验证
+
+- `npm run build` 通过（`tsc -b` 无报错）。
+- 接口级：错误验证码 / 缺验证码均返回 `400 图片验证码错误或已过期`；正确验证码登录成功；开启 MFA 后登录返回 `mfa_required`，错误验证码 `400`，正确验证码换取令牌 `200`。
+- CDP 实测：登录页自动带出验证码图片与演示账号 → 输入验证码 → 进入工作台；开启 MFA 后页面切换到「二次验证」并显示掩码手机号，输入短信验证码后进入工作台；后台「登录安全」开关渲染与保存正常。
