@@ -479,7 +479,7 @@ textarea { resize: vertical; line-height: 1.7; }input[readonly] { background: #e
 /* 会员档案头部放大（后台档案抽屉）：照片与姓名在左，详细信息在右侧固定分两行，字号整体加大 */
 .member-drawer .profile-summary { grid-template-columns: max-content minmax(0, 1fr); align-items: start; gap: 18px 22px; padding: 22px; }
 .profile-head { gap: 18px; }
-.profile-head h2 { font-size: 30px; }
+.profile-head h2 { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; font-size: 30px; }
 .profile-head h2 small { font-size: 15px; }
 .profile-head .profile-avatar { width: 100px; height: 100px; border-radius: 14px; font-size: 44px; }
 .profile-head .profile-avatar-photo { width: 100px; height: 100px; border-radius: 14px; }
