@@ -45,12 +45,18 @@ def ensure_schema():
     with engine.begin() as connection:
         additions = {
             "app_settings": {"logo_url": "VARCHAR(600) DEFAULT ''", "favicon_url": "VARCHAR(600) DEFAULT ''", "revenue_mode": "VARCHAR(20) DEFAULT 'auto'", "demo_login_enabled": "BOOLEAN DEFAULT 1", "captcha_enabled": "BOOLEAN DEFAULT 1", "mfa_enabled": "BOOLEAN DEFAULT 0"},
-            "members": {"photo_url": "VARCHAR(600) DEFAULT ''"},
-            "class_sessions": {"reserved_count": "INTEGER DEFAULT 0"},
-            "member_cards": {"version": "INTEGER DEFAULT 0", "frozen_from": "VARCHAR(10) DEFAULT ''", "is_renewal": "BOOLEAN DEFAULT 0", "start_pending": "BOOLEAN DEFAULT 0", "opened_booking_id": "INTEGER DEFAULT 0"},
-            "rooms": {"floor": "VARCHAR(30) DEFAULT '1F'", "sort_order": "INTEGER DEFAULT 0"},
-            "bookings": {"experience_voucher_id": "INTEGER REFERENCES experience_vouchers(id)"},
+            "members": {"photo_url": "VARCHAR(600) DEFAULT ''", "external_id": "VARCHAR(64) DEFAULT ''", "legacy_category": "VARCHAR(80) DEFAULT ''", "legacy_customer_level": "VARCHAR(24) DEFAULT ''"},
+            "teachers": {"external_id": "VARCHAR(64) DEFAULT ''", "legacy_position": "VARCHAR(120) DEFAULT ''", "legacy_teacher_type": "VARCHAR(40) DEFAULT ''"},
+            "courses": {"external_id": "VARCHAR(64) DEFAULT ''"},
+            "class_sessions": {"reserved_count": "INTEGER DEFAULT 0", "external_id": "VARCHAR(64) DEFAULT ''"},
+            "card_products": {"external_id": "VARCHAR(64) DEFAULT ''", "legacy_card_type": "VARCHAR(24) DEFAULT ''"},
+            "member_cards": {"version": "INTEGER DEFAULT 0", "frozen_from": "VARCHAR(10) DEFAULT ''", "is_renewal": "BOOLEAN DEFAULT 0", "start_pending": "BOOLEAN DEFAULT 0", "opened_booking_id": "INTEGER DEFAULT 0", "external_id": "VARCHAR(64) DEFAULT ''", "legacy_card_type": "VARCHAR(24) DEFAULT ''", "legacy_status": "VARCHAR(24) DEFAULT ''", "legacy_source": "VARCHAR(80) DEFAULT ''", "legacy_total": "VARCHAR(40) DEFAULT ''", "legacy_remaining": "VARCHAR(40) DEFAULT ''"},
+            "rooms": {"floor": "VARCHAR(30) DEFAULT '1F'", "sort_order": "INTEGER DEFAULT 0", "external_id": "VARCHAR(64) DEFAULT ''"},
+            "bookings": {"experience_voucher_id": "INTEGER REFERENCES experience_vouchers(id)", "external_id": "VARCHAR(64) DEFAULT ''", "legacy_source": "VARCHAR(24) DEFAULT ''"},
             "member_documents": {"category": "VARCHAR(24) DEFAULT 'contract'"},
+            "member_records": {"external_id": "VARCHAR(64) DEFAULT ''"},
+            "experience_vouchers": {"external_id": "VARCHAR(64) DEFAULT ''"},
+            "operation_logs": {"external_id": "VARCHAR(64) DEFAULT ''"},
             "room_reservations": {"external_uid": "VARCHAR(160) DEFAULT ''", "source": "VARCHAR(24) DEFAULT ''"},
             "transactions": {
                 "cancelled_at": "DATETIME",
@@ -63,6 +69,10 @@ def ensure_schema():
                 "revenue_sequence": "INTEGER DEFAULT 0",
                 "created_by": "VARCHAR(80) DEFAULT ''",
                 "is_renewal": "BOOLEAN DEFAULT 0",
+                "external_id": "VARCHAR(64) DEFAULT ''",
+                "legacy_flow_no": "VARCHAR(64) DEFAULT ''",
+                "legacy_business_type": "VARCHAR(40) DEFAULT ''",
+                "legacy_contract_no": "VARCHAR(64) DEFAULT ''",
             },
         }
         soft_delete_tables = {"users", "members", "teachers", "rooms", "courses", "class_sessions", "card_products", "member_cards", "bookings", "member_card_shares", "experience_vouchers", "member_reminders", "room_reservations", "member_records", "member_documents", "transactions", "api_keys"}

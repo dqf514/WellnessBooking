@@ -76,7 +76,7 @@ def required_api_key_scope(request: Request) -> str | None:
         return "catalog:write"
     if path.startswith(("/api/admin/products", "/api/admin/transactions", "/api/admin/orders")):
         return "finance:write"
-    if path.startswith(("/api/admin/settings", "/api/admin/users", "/api/admin/sms-settings")):
+    if path.startswith(("/api/admin/settings", "/api/admin/users", "/api/admin/sms-settings", "/api/admin/import")):
         return "settings:write"
     if path.startswith("/api/admin/maintenance"):
         return "maintenance:write"

@@ -45,6 +45,11 @@ class Member(Base, TimestampMixin, SoftDeleteMixin):
     notes: Mapped[str] = mapped_column(Text, default="")
     no_show_blocked_until: Mapped[str] = mapped_column(String(10), default="")
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # 外部系统主键：勤鸟历史数据导入时保留原始 ID，重复导入按它幂等去重。
+    external_id: Mapped[str] = mapped_column(String(64), default="", index=True)
+    # 勤鸟原系统的分类与客户级别，本系统暂无对应字段，原样保留备查。
+    legacy_category: Mapped[str] = mapped_column(String(80), default="")
+    legacy_customer_level: Mapped[str] = mapped_column(String(24), default="")
 
     advisor: Mapped[User | None] = relationship()
     cards: Mapped[list["MemberCard"]] = relationship(back_populates="member")
@@ -65,6 +70,10 @@ class Teacher(Base, TimestampMixin, SoftDeleteMixin):
     image_url: Mapped[str] = mapped_column(String(600), default="")
     visible: Mapped[bool] = mapped_column(Boolean, default=True)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    external_id: Mapped[str] = mapped_column(String(64), default="", index=True)
+    # 勤鸟原系统的教练类型与职位，本系统暂无对应字段，原样保留备查。
+    legacy_position: Mapped[str] = mapped_column(String(120), default="")
+    legacy_teacher_type: Mapped[str] = mapped_column(String(40), default="")
 
 
 class Room(Base, TimestampMixin, SoftDeleteMixin):
@@ -77,6 +86,7 @@ class Room(Base, TimestampMixin, SoftDeleteMixin):
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
     color: Mapped[str] = mapped_column(String(20), default="#2f6b5b")
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    external_id: Mapped[str] = mapped_column(String(64), default="", index=True)
 
 
 class Course(Base, TimestampMixin, SoftDeleteMixin):
@@ -92,6 +102,7 @@ class Course(Base, TimestampMixin, SoftDeleteMixin):
     color: Mapped[str] = mapped_column(String(20), default="#2f6b5b")
     image_url: Mapped[str] = mapped_column(String(600), default="")
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    external_id: Mapped[str] = mapped_column(String(64), default="", index=True)
 
 
 class ClassSession(Base, TimestampMixin, SoftDeleteMixin):
@@ -107,6 +118,7 @@ class ClassSession(Base, TimestampMixin, SoftDeleteMixin):
     status: Mapped[str] = mapped_column(String(20), default="scheduled", index=True)
     notes: Mapped[str] = mapped_column(Text, default="")
     reserved_count: Mapped[int] = mapped_column(Integer, default=0)
+    external_id: Mapped[str] = mapped_column(String(64), default="", index=True)
 
     course: Mapped[Course] = relationship()
     teacher: Mapped[Teacher] = relationship()
@@ -129,6 +141,9 @@ class CardProduct(Base, TimestampMixin, SoftDeleteMixin):
     description_en: Mapped[str] = mapped_column(Text, default="")
     online_sale: Mapped[bool] = mapped_column(Boolean, default=False)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    external_id: Mapped[str] = mapped_column(String(64), default="", index=True)
+    # 勤鸟原系统的卡类型（期限卡 / 次卡 / 私教课 / 储值卡），本系统以 category 表达。
+    legacy_card_type: Mapped[str] = mapped_column(String(24), default="")
 
 
 class MemberCard(Base, TimestampMixin, SoftDeleteMixin):
@@ -153,6 +168,13 @@ class MemberCard(Base, TimestampMixin, SoftDeleteMixin):
     opened_booking_id: Mapped[int] = mapped_column(Integer, default=0)
     note: Mapped[str] = mapped_column(Text, default="")
     version: Mapped[int] = mapped_column(Integer, default=0)
+    external_id: Mapped[str] = mapped_column(String(64), default="", index=True)
+    # 勤鸟原字段：卡类型、原始状态文案、来源，以及「30天 / 10次」这类原始计量。
+    legacy_card_type: Mapped[str] = mapped_column(String(24), default="")
+    legacy_status: Mapped[str] = mapped_column(String(24), default="")
+    legacy_source: Mapped[str] = mapped_column(String(80), default="")
+    legacy_total: Mapped[str] = mapped_column(String(40), default="")
+    legacy_remaining: Mapped[str] = mapped_column(String(40), default="")
 
     member: Mapped[Member] = relationship(back_populates="cards")
     product: Mapped[CardProduct] = relationship()
@@ -174,6 +196,9 @@ class Booking(Base, SoftDeleteMixin):
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     consumed: Mapped[bool] = mapped_column(Boolean, default=False)
     notes: Mapped[str] = mapped_column(Text, default="")
+    external_id: Mapped[str] = mapped_column(String(64), default="", index=True)
+    # 勤鸟原字段：签到来源方式（0 前台 / 2 会员端 / 3 教练端）。
+    legacy_source: Mapped[str] = mapped_column(String(24), default="")
 
     session: Mapped[ClassSession] = relationship(back_populates="bookings")
     member: Mapped[Member] = relationship()
@@ -205,6 +230,7 @@ class ExperienceVoucher(Base, SoftDeleteMixin):
     issued_by: Mapped[str] = mapped_column(String(80), default="")
     version: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    external_id: Mapped[str] = mapped_column(String(64), default="", index=True)
     member: Mapped[Member] = relationship()
 
 
@@ -266,6 +292,7 @@ class MemberRecord(Base, SoftDeleteMixin):
     content: Mapped[str] = mapped_column(Text, default="")
     record_date: Mapped[str] = mapped_column(String(10), index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    external_id: Mapped[str] = mapped_column(String(64), default="", index=True)
     teacher: Mapped[Teacher | None] = relationship()
 
 
@@ -307,6 +334,11 @@ class Transaction(Base, SoftDeleteMixin):
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     cancelled_by: Mapped[str] = mapped_column(String(80), default="")
     is_renewal: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    external_id: Mapped[str] = mapped_column(String(64), default="", index=True)
+    # 勤鸟原字段：流水号、业务类型与合同编号，便于与旧系统对账。
+    legacy_flow_no: Mapped[str] = mapped_column(String(64), default="", index=True)
+    legacy_business_type: Mapped[str] = mapped_column(String(40), default="")
+    legacy_contract_no: Mapped[str] = mapped_column(String(64), default="")
     member: Mapped[Member | None] = relationship()
     product: Mapped[CardProduct | None] = relationship()
 
@@ -388,6 +420,7 @@ class OperationLog(Base):
     entity_id: Mapped[str] = mapped_column(String(60), default="")
     detail_json: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, index=True)
+    external_id: Mapped[str] = mapped_column(String(64), default="", index=True)
 
 
 class BackupPlanSettings(Base):

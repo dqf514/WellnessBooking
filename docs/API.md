@@ -1,8 +1,8 @@
 # 音昱 Wellness API 对接文档
 
-> 版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 **137 个 HTTP 接口**。
+> 版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 **148 个 HTTP 接口**。
 >
-> 文档更新：2026-11-22 · 功能基线：预约排课、动态二维码签到、购卡申请取消、会员权益与营收业务闭环、角色能力矩阵与课程库独立接口。
+> 文档更新：2026-11-26 · 功能基线：预约排课、动态二维码签到、购卡申请取消、会员权益与营收业务闭环、角色能力矩阵与课程库独立接口、勤鸟历史数据导入。
 >
 > 在线交互文档：`/docs`（Swagger UI）、`/redoc`（ReDoc）；原始 OpenAPI 3 定义：`/openapi.json`。接口路径、方法、参数和实时响应结构以同版本 `/openapi.json` 为最终依据。
 
@@ -1413,7 +1413,7 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 - 日志项：`id`、`api_key_id`、`key_name`、`key_prefix`、`method`、`path`、`status_code`、`ip`、`user_agent`、`created_at`。
 - 无效或过期密钥的拒绝请求也会记录；路径不含 Query String，日志中不会出现完整密钥。
 
-## 13. 数据导出、备份与恢复（11）
+## 13. 数据导出、备份与恢复（13）
 
 > 以下接口均需管理员。备份工具只支持 SQLite 文件数据库；数据库备份不包含 `/uploads` 中的合同、Logo 等文件，完整灾难恢复还需另行备份上传目录。
 
@@ -1506,6 +1506,29 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 - 工作表名为“会员列表”，中文表头：会员姓名、照片、手机号码、生日、性别、会员卡类别、合同总金额、购买时间、到期时间、会籍归属、会员时长、备注；首行冻结。
 - 会员照片直接嵌入“照片”列单元格（无照片留空），其余列取该会员当前有效会员卡的汇总数据。
 - `categories` 与 `GET /api/admin/members` 的卡种口径一致：`group` 团课、`private` 私教与评估、`annual` 年卡与组合套餐。
+
+### 13.12 上传勤鸟导出压缩包导入历史数据
+
+#### POST /api/admin/import/rocketbird/upload
+
+- **权限**：需 `settings.write`，且只接受员工登录会话（API Key 会被拒绝）。
+- **multipart**：`file`（ZIP，最大 200MB，仅接受 `.zip`）、`dry_run`（默认 `false`，为 `true` 时只统计不写库）、`include_logs`（默认 `true`，是否导入勤鸟操作日志）。
+- 压缩包内需包含勤鸟导出的 CSV，至少包括 `members.csv`、`member_cards.csv`、`sign_logs.csv`、`finance_flow.csv`；系统会自动在解压目录中定位真正存放 CSV 的那一层。
+- **响应**：`{ source, directory, dry_run, tables, warnings, notes }`。
+  - `tables` 为逐表统计：`{ 数据表名: { read, created, skipped } }`。
+  - `warnings` 为需要人工确认的提示，`notes` 为口径说明。
+- 解压时逐个校验压缩包内路径，拒绝 `../` 之类的目录穿越；导入结束（含出错）后自动清理解压出来的临时目录。
+- 导入按外部 ID 幂等：外部 ID 由来源字段拼成（勤鸟主键或可复现的组合键），重复导入同一批数据时各表 `created` 均为 0，不会产生重复会员、卡、预约与流水，也不会覆盖已有档案。
+- 正式导入会写入一条操作日志（分类 `data_import`）。
+
+### 13.13 从服务器目录导入勤鸟历史数据
+
+#### POST /api/admin/import/rocketbird/path
+
+- **权限**：需 `settings.write`，且只接受员工登录会话（API Key 会被拒绝）。
+- **请求体**：`{ path, dry_run?, include_logs? }`。`path` 为服务器上存放勤鸟导出 CSV 的目录，必须包含 `members.csv`、`member_cards.csv`、`sign_logs.csv`、`finance_flow.csv`。
+- **响应**：同 13.12 的导入报告。
+- 适用于在线服务器上已经放好导出文件、避免经浏览器上传大压缩包的场景。
 
 ## 14. 典型业务调用顺序
 

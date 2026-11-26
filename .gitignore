@@ -10,6 +10,7 @@ backend/.venv/
 backend/__pycache__/
 backend/app/__pycache__/
 backend/app/routers/__pycache__/
+__pycache__/
 backend/data/
 backend/backups/
 backend/uploads/
@@ -26,6 +27,10 @@ backend/uploads/
 /MODIFY*.pdf
 /logos/
 /docs/CHANGELOG_CLIENT.pdf
+
+# 勤鸟导出的历史数据含会员姓名、手机号、身份证号等个人信息，不入库
+/historicalData/
+/.tmp/
 
 # 截图脚本与中间产物（本地工具，不入库）
 .shot/

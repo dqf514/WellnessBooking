@@ -965,3 +965,65 @@
 
 - `npm run build` 通过（`tsc -b` 无报错）。
 - CDP 实测：1600px 展开态点击折叠按钮后 `.admin-shell` 变为 `collapsed`、栅格列变为 `78px 1507px`；底部快捷按钮与个人中心全部可见不溢出；用 `Input.dispatchMouseEvent` 悬停分组标题，子菜单浮层在右侧正常展开且文字完整。
+
+## 三十一、勤鸟历史数据导入（2026-11-26）
+
+### 1. 数据模型与表结构对齐
+
+- `models.py` 新增 `external_id` 字段（`Member` / `Teacher` / `Room` / `Course` / `ClassSession` / `CardProduct` / `MemberCard` / `Booking` / `ExperienceVoucher` / `MemberRecord` / `Transaction` / `OperationLog`），统一作为导入数据的幂等键（勤鸟主键或可复现的复合键）。
+- 按需保留勤鸟原始字段以便追溯：`Member.legacy_category` / `legacy_customer_level`、`Teacher.legacy_position` / `legacy_teacher_type`、`CardProduct.legacy_card_type`、`MemberCard.legacy_card_type` / `legacy_status` / `legacy_source` / `legacy_total` / `legacy_remaining`、`Booking.legacy_source`、`Transaction.legacy_flow_no` / `legacy_business_type` / `legacy_contract_no`。
+- `database.py` 的 `ensure_schema()` `additions` 字典同步补齐上述全部列（新增列必须同时改 ORM 模型与 `ensure_schema()`，否则已有库不会自动获得该列）。
+
+### 2. 导入器 `backend/app/legacy_import.py`
+
+- `RocketbirdImporter.run()` 按依赖顺序执行：教室 → 教练 → 课种 → 卡产品 → 会员 → 会员卡 → 补建卡 → 团课排课 → 团课签到 → 私教 → 流水 → 档案记录 → 操作日志。
+- 字段映射集中在模块级常量：`PRODUCT_CATEGORY` / `PRODUCT_ALIASES`（月卡→团课月卡、年卡→会员年卡、邀请体验-测试→邀请单次体验卡 等）、`PRODUCT_DEFAULT`（卡名→有效天数与总次数）、`PAYMENT_METHODS`（现金/刷卡/支付宝/微信）、`TRANSACTION_KINDS`（购卡/购私教→purchase、换卡→upgrade、销卡/商品退款→refund、请假/转卡→manual）、`BOOKING_SOURCES`（0/1→后台、2→会员端）。
+- 勤鸟各表的课程名存在截断，用 `_name_key()`（归一化后取前 12 个字符）做前缀匹配：12,522 条精确命中、189 条同日同区间模糊命中（`SequenceMatcher ≥ 0.6`）、约 52 条生成合成场次。
+- 体验卡（是否体验卡=是）落到 `ExperienceVoucher`，期限卡（总计以「天」结尾）建成不限次的团课卡，会籍套餐用 `benefits_json` 表达有效期权益；状态映射已用完→used、未激活→`start_pending`、请假中→冻结区间。
+- `_import_cards_from_purchases()`：勤鸟「会员卡明细」未覆盖的购卡订单按流水补建会员卡（118 张，`external_id="cardx:<流水ID>"`）。
+- `_import_private()`：私教排课 + 私教签到按 ±6 小时匹配，消课生成显式的 `kind="consumption"` 流水（金额 = 卡购买价 ÷ 总次数，`revenue_mode="immediate"`、`revenue_sequence=1`、`cash_basis=False`），配合 `finance_service` 对已有购卡流水的私教卡屏蔽隐式确认路径，避免重复计营收。
+- `_import_transactions()`：`finance_flow` 落 `Transaction`，`cash_basis` 取「流水号 ∈ 收银流水单号」；勤鸟「收银流水」并入现金口径而不单独建表；退款金额取负并继承原流水的 `revenue_mode`。
+- `_import_records()`：协议、同意书、请假与处罚记录落 `MemberRecord(record_type="note")`，仍在生效期的处罚同时写 `Member.no_show_blocked_until`。
+- `_import_logs()`：6 个 `uplog_*.csv` 落 `OperationLog`（`actor_role="legacy"`），可用 `include_logs=False` 跳过。
+- 入口函数 `import_rocketbird(db, source_dir, *, dry_run=False, include_logs=True)`，演练模式整体回滚。
+
+#### 幂等设计（重复导入同一批数据不产生第二份）
+
+- **外部 ID 必须可复现**：不能用「本次运行的第 N 条」这种计数器写进 `external_id`，否则第二次导入认不出旧数据。全部改成由来源字段拼出来的组合键（`_occ_key()`）：会员卡 `card:<用户ID>:<卡课ID>:<购卡日期>:<同组序号>`、体验券 `voucher:<用户ID>:<卡课ID>:<购卡日期>:<同组序号>`、补建卡 `cardx:<流水ID>`、团课签到 `sign:<签到ID>`、私教 `pt:<排课ID>` / `ptconsume:<排课ID>`、业务流水 `<流水ID>`、档案记录 `rec:op|agr|consent|punish:<主键>`、操作日志 `log:<文件名>:<记录ID>`。组合键超过 `external_id` 的 64 位时用 SHA-1 摘要收敛。
+- **同组序号可复现**：勤鸟「会员卡明细」「操作记录」等表没有主键，用 `_occ(base)` 记录同一组合键下的出现序号。CSV 行序固定，所以每次导入算出的序号一致。
+- **卡号可复现且唯一**：`member_cards.card_no` 有 UNIQUE 约束，旧实现用运行内自增序号会二次导入直接冲突。改成 `RB<用户ID><卡课ID><购买日><序号>`（补建卡用 `RBX<流水ID>`），由同一组来源字段推导，重跑必然一致。
+- **插入前先查**：`_known(kind)` 一次性载入库里已有的 `external_id → 实体 id`，`_claim(kind, external_id)` 判断这条是否已经导过；已存在的会员卡 / 体验券会把实体挂回 `self.cards` / `self.vouchers`，后续「卡 × 会员」匹配与营收计算不受影响。
+- **预约另有一道防线**：`bookings` 上有 `(session_id, member_id)` 部分唯一索引（同一会员同一节课只能有一条活跃预约），导入时用 `_known_booking_pairs()` 载入库里已有的「课 × 会员」组合，避免同一场课被拆成多条预约。
+- **补建卡要认领已存在的卡**：按流水补卡时会跳过「同会员同产品同日期」已覆盖的卡；重复导入时若流水对应的卡已存在，必须把它挂回 `owned` 索引，否则第二次导入会误判成「还没补过」而多建一张。
+- **「找或建」也要查库**：`_course_for()` / `_teacher_for()` / `_room_for()` / `_synthetic_session()` 在新建前先按 `external_id` 或名称查库，避免重复导入多出一批课种 / 教练 / 教室 / 合成场次。
+
+### 3. 命令行脚本
+
+- `backend/scripts/import_rocketbird.py`：参数 `--dir`（必填，导出目录）、`--db`、`--dry-run`、`--no-logs`、`--report`（写出 JSON 报告路径）。启动时先设置 `DATABASE_URL` 再导入 app 模块，调用 `Base.metadata.create_all()` / `ensure_schema()` / `ensure_constraints()`（`create_all` 让脚本也能对空库直接跑），逐表打印读取 / 导入 / 跳过统计与提示信息。
+- `backend/scripts/package_rocketbird_export.py`：把导出目录里的 CSV 打包成可上传的 ZIP（只打 CSV，不含 Excel 汇总表与说明文档；缺少 `members.csv` / `member_cards.csv` / `sign_logs.csv` / `finance_flow.csv` 时拒绝打包），供后台「历史数据导入」上传。
+
+### 4. 后台接口与页面
+
+- 新增 `backend/app/routers/admin_import.py`：
+  - `POST /api/admin/import/rocketbird/upload`：multipart 上传 ZIP（≤200MB），解压前逐条校验路径拒绝目录穿越，自动定位存放 CSV 的目录层。
+  - `POST /api/admin/import/rocketbird/path`：JSON `{path, dry_run?, include_logs?}`，从服务器目录导入。
+  - 两个接口都用 `require_interactive_admin`（`settings.write` + 仅限登录会话，API Key 一律拒绝），正式导入后写 `audit()` 操作日志。
+- `deps.required_api_key_scope()` 增加 `/api/admin/import` → `settings:write` 映射，保证 API Key 命中时给出明确的范围提示而不是「不支持此接口」。
+- 前端新增 `src/pages/admin/settings/LegacyImportPanel.tsx`，在 `SettingsPage` 增加「历史数据导入」标签页：演练 / 操作日志两个勾选项、ZIP 上传、逐表统计表格与提示信息；`src/lib/adminTranslations.ts` 补齐中英文案。
+
+### 5. 营收口径与验证
+
+- 营收按本系统口径重算：团课购卡全额确认、365 天年卡与组合套餐按天均摊、私教与评估只在消课时确认。
+- 导入后核对：现金实收 3,414,790.14 元，确认营收 2,990,348.89 元（团课 2,060,344.80 / 私教 376,316.39 / 年卡 553,687.69），分年度现金实收 2023 年 643,358.02 元 … 2026 年 880,430.00 元。
+- 幂等实测：同一份导出连续导入三次，第二次与第三次 **所有表 created = 0**（会员 / 会员卡 / 体验券 / 排课 / 预约 / 流水 / 档案记录 / 操作日志全部跳过），三次导入后各表行数完全一致（会员 5,240、会员卡 1,419、体验券 1,265、排课 8,237、预约 13,494、流水 1,863、档案记录 4,795）。HTTP 接口侧同样验证：演练 → 正式导入 → 再正式导入，第二次全部跳过。
+- `npm run build` 通过；HTTP 接口实测全量导入（含 2.2 万条操作日志）约 18 秒，演练模式完整回滚（导入后数据库计数与演练前一致），解压出来的临时目录在导入结束（含出错）后自动清理。
+
+### 6. 文档
+
+- `docs/API.md` 新增 13.12 / 13.13 两节（接口总数 137 → 148），`python docs/build_api_docs.py` 重新生成 `public/api-docs.html`（18 章 / 148 个接口）。
+- `public/help.html` 「数据导入、备份与恢复」新增第 4 节「导入勤鸟（RocketBird）历史数据」，含准备压缩包、先演练后正式导入、营收口径与幂等说明。
+- `public/changelog-details.html` 追加 BATCH 19（含三张后台界面截图，其中第三张展示「重复导入时各表导入数为 0」）、`docs/CHANGELOG_CLIENT.md` / `docs/CHANGELOG_DEVELOPER.md` / `src/lib/changelog.ts` 同步；`API_ENDPOINT_COUNT` 同步为 148。
+
+### 7. 数据安全
+
+- 勤鸟导出目录 `historicalData/` 含会员姓名、手机号、身份证号等个人信息，仓库是公开的，因此连同本地临时目录 `.tmp/` 一起写进 `.gitignore`，不入库；数据通过后台「历史数据导入」上传 ZIP 或服务器目录导入线上库。

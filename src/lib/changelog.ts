@@ -2,7 +2,7 @@
 export const APP_VERSION = "1.1.0";
 export const APP_RELEASE_DATE = "2026-11-26";
 export const API_VERSION = "v1.0.0";
-export const API_ENDPOINT_COUNT = 146;
+export const API_ENDPOINT_COUNT = 148;
 
 export interface ChangelogText { zh: string; en: string }
 export interface ChangelogGroup { title: ChangelogText; points: ChangelogText[] }
@@ -41,6 +41,12 @@ export const changelogReleases: ChangelogRelease[] = [
       { title: { zh: "后台导航", en: "Admin navigation" }, points: [
         { zh: "左侧导航栏可一键折叠为图标栏，内容区随之变宽；再点一次展开", en: "The sidebar can be collapsed to icons in one click, giving the content area more room" },
         { zh: "折叠后把鼠标移到分组图标上，子菜单仍以浮层展开；折叠状态会被记住", en: "Hovering a group icon still opens its submenu as a flyout, and the collapsed state is remembered" },
+      ] },
+      { title: { zh: "勤鸟历史数据导入", en: "RocketBird legacy import" }, points: [
+        { zh: "后台“系统设置 → 历史数据导入”可上传勤鸟导出的 ZIP，把会员、会员卡、排课、签到、消课与流水整套导入", en: "“Settings → Legacy data import” accepts a ZIP of the RocketBird export and brings in members, cards, sessions, check-ins, consumptions and transactions" },
+        { zh: "先勾“先演练”只看统计不写库，确认各表的读取 / 导入 / 跳过数量后再正式导入", en: "Tick “Dry run” first to review per-table read / imported / skipped counts, then import for real" },
+        { zh: "重复导入按外部 ID 幂等跳过，不会产生重复会员、会员卡、预约或流水，也不覆盖已有档案", en: "Re-importing skips existing records by external ID — no duplicate members, cards, bookings or transactions, and nothing is overwritten" },
+        { zh: "营收按本系统口径重算：团课购卡确认、年卡与套餐按天均摊、私教与评估消课时确认", en: "Revenue is recalculated with this system’s rules: group cards at purchase, annual cards and packages amortized daily, private training and assessments on consumption" },
       ] },
     ],
   },
