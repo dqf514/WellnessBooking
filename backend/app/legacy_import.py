@@ -18,9 +18,11 @@ from difflib import SequenceMatcher
 from html import unescape
 from pathlib import Path
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from .finance_service import resolve_purchase_revenue_mode
+from .name_normalizer import split_bilingual
 from .models import (
     Booking,
     CardProduct,
@@ -75,7 +77,7 @@ PRODUCT_CATEGORY = {
     "太极五次课-团课": "group",
     "音钵疗愈五次课": "group",
     "音钵疗愈五次课套餐-大众点评": "group",
-    "测试-Wellness": "group",
+    "测试": "group",
     "音昱听堂月卡套餐": "annual",
     "音昱听堂季卡会籍套餐": "annual",
     "音昱听堂年卡会籍套餐": "annual",
@@ -85,15 +87,15 @@ PRODUCT_CATEGORY = {
     "悬浮疗愈": "private",
     "悬浮疗愈（初次体验）": "private",
     "TCM": "private",
-    "Xman运动康复私教": "private",
+    "运动康复私教": "private",
     "白医生中医养生咨询": "private",
     "量子时光波咨询": "private",
     "量子时光波咨询（三十分钟）": "private",
-    "健康评估Assessment": "assessment",
+    "健康评估": "assessment",
     "音昱水中天健康评估": "assessment",
     "健康餐": "workshop",
     "黑金超光子嫩肤（苏州音昱水中天）": "workshop",
-    "合一文化节门票 At One Festival": "workshop",
+    "合一文化节门票": "workshop",
     "庆祝人生主题活动门票": "workshop",
 }
 
@@ -105,7 +107,7 @@ PRODUCT_ALIASES = {
     "私教卡": "1:1私教",
     "邀请体验-测试": "邀请单次体验卡",
     "TCM test": "TCM",
-    "体质咨询与健康评估（大众点评）": "健康评估Assessment",
+    "体质咨询与健康评估（大众点评）": "健康评估",
     "悬浮疗愈+下午茶（初次体验）": "悬浮疗愈（初次体验）",
     "Zozo Test": "太极五次课-团课",
 }
@@ -122,7 +124,7 @@ PRODUCT_DEFAULT = {
     "太极五次课-团课": (90, 5),
     "音钵疗愈五次课": (90, 5),
     "音钵疗愈五次课套餐-大众点评": (90, 5),
-    "测试-Wellness": (365, None),
+    "测试": (365, None),
     "音昱听堂月卡套餐": (30, None),
     "音昱听堂季卡会籍套餐": (90, None),
     "音昱听堂年卡会籍套餐": (365, None),
@@ -132,18 +134,49 @@ PRODUCT_DEFAULT = {
     "悬浮疗愈": (365, 8),
     "悬浮疗愈（初次体验）": (90, 1),
     "TCM": (90, 1),
-    "Xman运动康复私教": (365, 10),
+    "运动康复私教": (365, 10),
     "白医生中医养生咨询": (365, 10),
     "量子时光波咨询": (90, 3),
     "量子时光波咨询（三十分钟）": (90, 1),
-    "健康评估Assessment": (90, 2),
+    "健康评估": (90, 2),
     "音昱水中天健康评估": (90, 1),
     "健康餐": (90, 1),
     "黑金超光子嫩肤（苏州音昱水中天）": (90, 1),
-    "合一文化节门票 At One Festival": (30, 1),
+    "合一文化节门票": (30, 1),
     "庆祝人生主题活动门票": (30, 1),
     "邀请单次体验卡": (30, 1),
 }
+
+def _canonical_product(name: str) -> str:
+    """卡名归一：先过别名表，再把中英文混排拆开，结果与卡产品表里的 name 保持一致。"""
+    canonical = PRODUCT_ALIASES.get(str(name or "").strip(), str(name or "").strip())
+    return split_bilingual(canonical)[0]
+
+
+def _apply_bilingual(entity, display: str, english: str) -> None:
+    """把已经存库的中英文混排名称拆到 name / name_en 两个字段。
+
+    已经填过英文名的记录（例如系统预置资料）保留原有英文名，只纠正中文名。
+    """
+    if not display or display == entity.name:
+        return
+    entity.name = display
+    if english and not entity.name_en:
+        entity.name_en = english
+
+
+def _explicit_names(row: dict, prefix: str, raw: str) -> tuple[str, str]:
+    """优先用适配包给出的中英文两列，没有再按原文拆分。
+
+    适配包在课种、教室、教练、卡产品四张表里补了「XX中文名 / XX英文名」，
+    这样即使原文写法特殊，也能得到确定的中英文名。
+    """
+    zh = " ".join(str(row.get(f"{prefix}中文名", "") or "").split())
+    en = " ".join(str(row.get(f"{prefix}英文名", "") or "").split())
+    if zh:
+        return zh, en
+    return split_bilingual(raw)
+
 
 # 勤鸟支付方式 → 本系统结账方式。未知渠道保留原文，前端按原文展示。
 PAYMENT_METHODS = {
@@ -291,6 +324,8 @@ class RocketbirdImporter:
         self.teachers: dict[str, Teacher] = {}
         self.teachers_by_name: dict[str, Teacher] = {}
         self.rooms_by_key: dict[str, Room] = {}
+        # 课种 → 勤鸟原文名：拆分中英文后仍要用原文做模糊匹配，否则签到表里的截断名匹配不上。
+        self.course_raw_names: dict[int, str] = {}
         self.sessions_by_key: dict[str, list[tuple[datetime, datetime, ClassSession]]] = {}
         self.sessions_by_date: dict[str, list[tuple[datetime, datetime, ClassSession]]] = {}
         self.synthetic_by_key: dict[tuple[str, str], list[tuple[datetime, datetime, ClassSession]]] = {}
@@ -363,6 +398,7 @@ class RocketbirdImporter:
     # —— 入口 ——
 
     def run(self) -> dict:
+        self._normalize_catalogue()
         self._import_rooms()
         self._import_teachers()
         self._import_courses()
@@ -382,11 +418,46 @@ class RocketbirdImporter:
 
     # —— 基础资料 ——
 
+    def _normalize_catalogue(self) -> None:
+        """把库里已有的资料名称统一拆成中文名 + 英文名。
+
+        覆盖系统预置资料与旧版导入留下的混排名称；拆分只把英文挪到英文名字段，
+        文字本身不作改动。重名时跳过，避免与既有资料撞车。
+        """
+        changed = 0
+        for model in (Course, Room, Teacher):
+            for row in self.db.query(model).all():
+                display, english = split_bilingual(row.name)
+                if not display or display == row.name:
+                    continue
+                if self.db.query(model).filter(model.name == display, model.id != row.id).first() is not None:
+                    continue
+                row.name = display
+                if english and not row.name_en:
+                    row.name_en = english
+                changed += 1
+        for row in self.db.query(CardProduct).all():
+            canonical = PRODUCT_ALIASES.get(row.name.strip(), row.name.strip())
+            display, english = split_bilingual(canonical)
+            if not display or display == row.name:
+                continue
+            if self.db.query(CardProduct).filter(CardProduct.name == display, CardProduct.id != row.id).first() is not None:
+                continue
+            row.name = display
+            if english and not row.name_en:
+                row.name_en = english
+            changed += 1
+        if changed:
+            self._flush()
+            self._note(f"整理资料名称 {changed} 条：中文名与英文名分开存放")
+
     def _import_rooms(self) -> None:
         rows = self.csv("classrooms.csv")
         created = skipped = 0
         for row in rows:
-            name = " ".join(row.get("教室名称", "").split())
+            raw_name = " ".join(row.get("教室名称", "").split())
+            # 「谈天说地 3 Connection 3」这类中英文混排的名字拆开：中文进 name，英文进 name_en。
+            name, name_en = _explicit_names(row, "教室", raw_name)
             external_id = row.get("教室ID", "").strip()
             if not name:
                 continue
@@ -394,14 +465,21 @@ class RocketbirdImporter:
             if external_id:
                 existing = self.db.query(Room).filter(Room.external_id == external_id, Room.external_id != "").first()
             if existing is None:
+                existing = self.db.query(Room).filter(Room.name == raw_name).first()
+            if existing is None and name != raw_name:
                 existing = self.db.query(Room).filter(Room.name == name).first()
             if existing is not None:
                 skipped += 1
                 if not existing.external_id and external_id:
                     existing.external_id = external_id
+                # 旧库里存的是混排名，重新导入时顺手拆开。
+                if existing.name == raw_name and name != raw_name:
+                    existing.name = name
+                    existing.name_en = name_en
             else:
                 existing = Room(
                     name=name,
+                    name_en=name_en,
                     capacity=max(1, _int(row.get("允许人数"), 10)),
                     external_id=external_id,
                     floor="1F",
@@ -412,14 +490,19 @@ class RocketbirdImporter:
                 self.db.add(existing)
                 self._flush()
                 created += 1
-            self.rooms_by_key[_name_key(name)] = existing
+            # 匹配键同时登记原始名与拆分后的名字，其他表引用教室时两种写法都能命中。
+            self.rooms_by_key[_name_key(raw_name)] = existing
+            if name != raw_name:
+                self.rooms_by_key[_name_key(name)] = existing
         self._track("教室资料", created, skipped, len(rows))
 
     def _import_teachers(self) -> None:
         rows = self.csv("staff_coaches.csv")
         created = skipped = 0
         for row in rows:
-            name = " ".join(row.get("姓名", "").split())
+            raw_name = " ".join(row.get("姓名", "").split())
+            # 「Lisa Tang 汤双双」拆成中文名与英文名，界面上不再中英文混排。
+            name, name_en = _explicit_names(row, "教练", raw_name)
             external_id = row.get("ID", "").strip()
             if not name:
                 continue
@@ -427,14 +510,20 @@ class RocketbirdImporter:
             if external_id:
                 existing = self.db.query(Teacher).filter(Teacher.external_id == external_id, Teacher.external_id != "").first()
             if existing is None:
+                existing = self.db.query(Teacher).filter(Teacher.name == raw_name).first()
+            if existing is None and name != raw_name:
                 existing = self.db.query(Teacher).filter(Teacher.name == name).first()
             if existing is not None:
                 skipped += 1
                 if not existing.external_id and external_id:
                     existing.external_id = external_id
+                if existing.name == raw_name and name != raw_name:
+                    existing.name = name
+                    existing.name_en = name_en
             else:
                 existing = Teacher(
                     name=name,
+                    name_en=name_en,
                     phone=row.get("手机号", "").strip(),
                     gender=row.get("性别", "").strip(),
                     specialties=row.get("专长", "").strip()[:300],
@@ -452,14 +541,21 @@ class RocketbirdImporter:
                 self._flush()
                 created += 1
             self.teachers[external_id] = existing
-            self.teachers_by_name[_norm(name)] = existing
+            # 教练名可能被排课表按原文引用，原始名与拆分后的名字都登记一份。
+            self.teachers_by_name[_norm(raw_name)] = existing
+            if name != raw_name:
+                self.teachers_by_name[_norm(name)] = existing
+            if name_en:
+                self.teachers_by_name[_norm(name_en)] = existing
         self._track("教练", created, skipped, len(rows))
 
     def _import_courses(self) -> None:
         rows = self.csv("class_types.csv")
         created = skipped = 0
         for row in rows:
-            name = _plain(row.get("课程名称", ""), 160)
+            raw_name = _plain(row.get("课程名称", ""), 160)
+            # 「瑜伽拉伸与声音共振 Yogic Stretch & Sound Resonance」拆成中文名与英文名。
+            name, name_en = _explicit_names(row, "课程", raw_name)
             external_id = row.get("课程ID", "").strip()
             if not name:
                 continue
@@ -467,16 +563,21 @@ class RocketbirdImporter:
             if external_id:
                 existing = self.db.query(Course).filter(Course.external_id == external_id, Course.external_id != "").first()
             if existing is None:
+                existing = self.db.query(Course).filter(Course.name == raw_name).first()
+            if existing is None and name != raw_name:
                 existing = self.db.query(Course).filter(Course.name == name).first()
             if existing is not None:
                 skipped += 1
                 if not existing.external_id and external_id:
                     existing.external_id = external_id
+                if existing.name == raw_name and name != raw_name:
+                    existing.name = name
+                    existing.name_en = name_en
             else:
                 existing = Course(
                     course_type="group",
                     name=name,
-                    name_en="",
+                    name_en=name_en,
                     description=_plain(row.get("简介", "")),
                     description_en="",
                     duration_minutes=max(1, _int(row.get("时长(分钟)"), 60)),
@@ -489,7 +590,11 @@ class RocketbirdImporter:
                 self._flush()
                 created += 1
             self.courses[external_id] = existing
-            self.courses_by_key[_name_key(name)] = existing
+            self.course_raw_names[existing.id] = raw_name
+            # 排课与签到表里的课程名是勤鸟截断后的原文，原始名与拆分名都要能查到。
+            self.courses_by_key[_name_key(raw_name)] = existing
+            if name != raw_name:
+                self.courses_by_key[_name_key(name)] = existing
         self._track("课种", created, skipped, len(rows))
 
     def _product_specs(self) -> dict[str, dict]:
@@ -506,6 +611,8 @@ class RocketbirdImporter:
                 "sale": row.get("售卖状态", "").strip(),
                 "trial": row.get("体验卡", "").strip() == "是",
                 "description": _plain(row.get("说明", ""), 500),
+                "name_zh": row.get("卡中文名", "").strip(),
+                "name_en": row.get("卡英文名", "").strip(),
             }
         for row in self.csv("member_cards.csv"):
             name = row.get("卡课名称", "").strip()
@@ -518,6 +625,8 @@ class RocketbirdImporter:
                     "sale": "",
                     "trial": row.get("是否体验卡", "").strip() == "是",
                     "description": "",
+                    "name_zh": row.get("卡中文名", "").strip(),
+                    "name_en": row.get("卡英文名", "").strip(),
                 }
         for row in self.csv("contract_orders.csv"):
             name = row.get("卡课名称", "").strip()
@@ -530,6 +639,8 @@ class RocketbirdImporter:
                     "sale": "",
                     "trial": False,
                     "description": "",
+                    "name_zh": row.get("卡中文名", "").strip(),
+                    "name_en": row.get("卡英文名", "").strip(),
                 }
         return specs
 
@@ -538,6 +649,13 @@ class RocketbirdImporter:
         created = skipped = 0
         for raw_name, spec in specs.items():
             canonical = PRODUCT_ALIASES.get(raw_name, raw_name)
+            # 「合一文化节门票 At One Festival」「健康评估Assessment」这类混排卡名拆开。
+            explicit_zh = " ".join(str(spec.get("name_zh", "") or "").split())
+            explicit_en = " ".join(str(spec.get("name_en", "") or "").split())
+            if explicit_zh:
+                canonical, name_en = explicit_zh, explicit_en
+            else:
+                canonical, name_en = split_bilingual(canonical)
             if canonical == "储值卡":
                 self._note("储值卡：本系统没有储值卡概念，未建卡产品（勤鸟卡ID 608480，无会员持卡记录）。")
                 skipped += 1
@@ -558,15 +676,21 @@ class RocketbirdImporter:
             if spec["external_id"]:
                 existing = self.db.query(CardProduct).filter(CardProduct.external_id == spec["external_id"], CardProduct.external_id != "").first()
             if existing is None:
-                existing = self.db.query(CardProduct).filter(CardProduct.name == canonical).first()
+                # 旧库里可能存的是混排原名，两种写法都查一次。
+                existing = self.db.query(CardProduct).filter(or_(CardProduct.name == canonical, CardProduct.name == raw_name)).first()
             if existing is not None:
                 skipped += 1
                 if not existing.external_id and spec["external_id"]:
                     existing.external_id = spec["external_id"]
+                if existing.name != canonical and existing.name in {raw_name, canonical}:
+                    existing.name = canonical
+                    existing.name_en = name_en
+                elif not existing.name_en and name_en:
+                    existing.name_en = name_en
             else:
                 existing = CardProduct(
                     name=canonical,
-                    name_en="",
+                    name_en=name_en,
                     category=category,
                     price=spec["price"],
                     original_price=spec["price"],
@@ -688,7 +812,7 @@ class RocketbirdImporter:
                 skipped += 1
                 continue
             raw_name = row.get("卡课名称", "").strip()
-            canonical = PRODUCT_ALIASES.get(raw_name, raw_name)
+            canonical = _canonical_product(raw_name)
             card_ref = row.get("卡课ID", "").strip()
             product = self._product_for(card_ref, raw_name)
             if product is None:
@@ -797,7 +921,7 @@ class RocketbirdImporter:
     def _product_for(self, product_id: str, name: str) -> CardProduct | None:
         if product_id and product_id in self.products:
             return self.products[product_id]
-        canonical = PRODUCT_ALIASES.get(name.strip(), name.strip())
+        canonical = _canonical_product(name)
         product = self.products_by_name.get(_norm(canonical))
         if product is not None:
             return product
@@ -941,22 +1065,32 @@ class RocketbirdImporter:
         course = self.courses_by_key.get(key)
         if course is not None:
             return course
+        clean = " ".join(str(name or "").split())
+        display, name_en = split_bilingual(clean)
         if external_id:
             course = self.db.query(Course).filter(Course.external_id == external_id, Course.external_id != "").first()
             if course is not None:
                 self.courses[external_id] = course
+                if course.name == clean:
+                    # 库里的名字还是混排的，拆成中文名 + 英文名。
+                    _apply_bilingual(course, display, name_en)
+                    self.course_raw_names[course.id] = clean
                 self.courses_by_key[_name_key(course.name)] = course
-                return course
-        clean = " ".join(str(name or "").split())
-        if clean:
-            course = self.db.query(Course).filter(Course.name == clean).first()
-            if course is not None:
                 self.courses_by_key[key] = course
+                return course
+        for candidate in (clean, display):
+            if not candidate:
+                continue
+            course = self.db.query(Course).filter(Course.name == candidate).first()
+            if course is not None:
+                _apply_bilingual(course, display, name_en)
+                self.courses_by_key[key] = course
+                self.courses_by_key[_name_key(display)] = course
                 return course
         course = Course(
             course_type=course_type,
-            name=name or f"历史课程 {external_id}",
-            name_en="",
+            name=display or name or f"历史课程 {external_id}",
+            name_en=name_en,
             description="勤鸟历史课程",
             description_en="",
             duration_minutes=60,
@@ -969,6 +1103,7 @@ class RocketbirdImporter:
         self._flush()
         self.courses[external_id] = course
         self.courses_by_key[key] = course
+        self.courses_by_key[_name_key(display)] = course
         return course
 
     def _teacher_for(self, external_id: str, name: str, alternate_id: str = "") -> Teacher:
@@ -979,23 +1114,32 @@ class RocketbirdImporter:
         if key and key in self.teachers_by_name:
             return self.teachers_by_name[key]
         clean = " ".join((name or "").split())
+        display, name_en = split_bilingual(clean)
         for candidate in (external_id, alternate_id):
             if not candidate:
                 continue
             teacher = self.db.query(Teacher).filter(Teacher.external_id == candidate, Teacher.external_id != "").first()
             if teacher is not None:
                 self.teachers[candidate] = teacher
+                if teacher.name == clean:
+                    _apply_bilingual(teacher, display, name_en)
                 if clean:
                     self.teachers_by_name[_norm(clean)] = teacher
+                if display:
+                    self.teachers_by_name[_norm(display)] = teacher
                 return teacher
-        if clean:
-            teacher = self.db.query(Teacher).filter(Teacher.name == clean).first()
+        for candidate in (clean, display):
+            if not candidate:
+                continue
+            teacher = self.db.query(Teacher).filter(Teacher.name == candidate).first()
             if teacher is not None:
+                _apply_bilingual(teacher, display, name_en)
                 self.teachers_by_name[key] = teacher
+                self.teachers_by_name[_norm(display)] = teacher
                 return teacher
         teacher = Teacher(
-            name=clean or f"历史教练 {external_id or '未知'}",
-            name_en="",
+            name=display or clean or f"历史教练 {external_id or '未知'}",
+            name_en=name_en,
             phone="",
             gender="",
             specialties="",
@@ -1015,6 +1159,8 @@ class RocketbirdImporter:
             self.teachers[alternate_id] = teacher
         if key:
             self.teachers_by_name[key] = teacher
+        if display:
+            self.teachers_by_name[_norm(display)] = teacher
         return teacher
 
     def _room_for(self, name: str) -> Room:
@@ -1023,10 +1169,18 @@ class RocketbirdImporter:
         if room is not None:
             return room
         clean = " ".join(str(name or "").split()) or "历史教室"
-        room = self.db.query(Room).filter(Room.name == clean).first()
+        display, name_en = split_bilingual(clean)
+        room = None
+        for candidate in (clean, display):
+            if not candidate:
+                continue
+            room = self.db.query(Room).filter(Room.name == candidate).first()
+            if room is not None:
+                break
         if room is None:
             room = Room(
-                name=clean,
+                name=display or clean,
+                name_en=name_en,
                 capacity=10,
                 floor="1F",
                 sort_order=0,
@@ -1036,18 +1190,24 @@ class RocketbirdImporter:
             )
             self.db.add(room)
             self._flush()
+        else:
+            _apply_bilingual(room, display, name_en)
         self.rooms_by_key[key] = room
+        self.rooms_by_key[_name_key(display)] = room
         return room
 
     def _private_room(self) -> Room:
         if self.private_room is not None:
             return self.private_room
-        name = "私教室 Private Studio"
-        room = self.db.query(Room).filter(Room.name == name).first()
+        name, name_en = split_bilingual("私教室 Private Studio")
+        room = self.db.query(Room).filter(Room.name.in_([name, "私教室 Private Studio"])).first()
         if room is None:
-            room = Room(name=name, capacity=2, floor="1F", sort_order=0, color="#41677a", active=True, external_id="")
+            room = Room(name=name, name_en=name_en, capacity=2, floor="1F", sort_order=0, color="#41677a", active=True, external_id="")
             self.db.add(room)
             self._flush()
+        else:
+            room.name = name
+            room.name_en = name_en
         self.private_room = room
         return room
 
@@ -1080,7 +1240,11 @@ class RocketbirdImporter:
         for start, end, session in self.sessions_by_date.get(when.strftime("%Y-%m-%d"), []):
             if not (start - timedelta(hours=6) <= when <= end + timedelta(hours=6)):
                 continue
-            ratio = SequenceMatcher(None, key, _name_key(session.course.name if session.course else "")).ratio()
+            # 与课种的中文名、勤鸟原文名分别比一次，取相似度更高的一边。
+            ratio = 0.0
+            for candidate in {session.course.name if session.course else "", self.course_raw_names.get(session.course_id, "")}:
+                if candidate:
+                    ratio = max(ratio, SequenceMatcher(None, key, _name_key(candidate)).ratio())
             if ratio > best_ratio:
                 best, best_ratio = session, ratio
         if best is not None and best_ratio >= 0.6:
@@ -1165,7 +1329,7 @@ class RocketbirdImporter:
                 continue
             known_bookings[external_id] = 0
             card_name = row.get("卡课名称", "").strip()
-            canonical = PRODUCT_ALIASES.get(card_name, card_name)
+            canonical = _canonical_product(card_name)
             card = None
             voucher = None
             if canonical == "邀请单次体验卡":
@@ -1232,7 +1396,7 @@ class RocketbirdImporter:
             if session is None:
                 end = _moment(row.get("结束时间", "")) or (start + timedelta(minutes=60))
                 course_name = _plain(row.get("课程", ""), 160) or "私教课"
-                canonical = PRODUCT_ALIASES.get(course_name, course_name)
+                canonical = _canonical_product(course_name)
                 category = PRODUCT_CATEGORY.get(canonical, "private")
                 course_type = "assessment" if category == "assessment" else "private"
                 course = self._course_for("", course_name, course_type)
@@ -1263,7 +1427,7 @@ class RocketbirdImporter:
             known_bookings[booking_ext] = 0
             booking_pairs.add((session.id, member.id))
             course_name = _plain(row.get("课程", ""), 160) or "私教课"
-            canonical = PRODUCT_ALIASES.get(course_name, course_name)
+            canonical = _canonical_product(course_name)
             card = self._card_by_product(member_key, row.get("卡ID", "").strip(), canonical)
             sign = self._match_private_sign(by_member.get(member_key, []), start)
             consumed = sign is not None
@@ -1455,7 +1619,7 @@ class RocketbirdImporter:
     def _transaction_card(self, member: Member | None, card_name: str, day: str) -> MemberCard | None:
         if member is None:
             return None
-        canonical = PRODUCT_ALIASES.get(card_name.strip(), card_name.strip())
+        canonical = _canonical_product(card_name)
         pool = [card for card in self.cards.values() if card.member_id == member.id and card.product is not None and _norm(card.product.name) == _norm(canonical)]
         if not pool:
             return None

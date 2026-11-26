@@ -31,6 +31,10 @@ def run_seed() -> None:
         db.commit()
         if not SEED_DEMO_DATA:
             return
+        settings = db.get(AppSettings, 1)
+        if settings is not None and settings.demo_data_disabled:
+            # 执行过「一键清除」：不再自动写入演示数据。
+            return
         if db.query(Room).count() == 0:
             db.add_all([
                 Room(name="修葺室 1", name_en="Practice Room", capacity=12, color="#49796a"),
@@ -54,7 +58,7 @@ def run_seed() -> None:
                 Course(course_type="group", name="芳香音疗", name_en="Aroma Sound Healing", description="在植物香气与颂钵声中安静躺下，让神经系统慢下来。", description_en="Rest with botanical aromas and singing bowls as your nervous system slows down.", duration_minutes=60, price=380, color="#7a7191", image_url="https://images.unsplash.com/photo-1600618528240-fb9fc964b853?auto=format&fit=crop&w=1000&q=80"),
                 Course(course_type="group", name="垫上普拉提", name_en="Mat Pilates", description="关注核心控制、身体排列与动作质量的小班练习。", description_en="Small-group practice for core control, alignment and movement quality.", duration_minutes=60, price=380, color="#41677a", image_url="https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=1000&q=80"),
                 Course(course_type="private", name="1:1 私教（60 分钟）", name_en="1:1 Personal Training", description="根据个人体态与目标定制的一小时训练。", description_en="A fully personalised hour based on your body and goals.", duration_minutes=60, price=1180, color="#41677a"),
-                Course(course_type="assessment", name="健康评估 Assessment", name_en="Wellness Assessment", description="从活动度、呼吸与生活方式建立个人健康基线。", description_en="A personal baseline of mobility, breath and lifestyle.", duration_minutes=60, price=1180, color="#a77350"),
+                Course(course_type="assessment", name="健康评估", name_en="Wellness Assessment", description="从活动度、呼吸与生活方式建立个人健康基线。", description_en="A personal baseline of mobility, breath and lifestyle.", duration_minutes=60, price=1180, color="#a77350"),
                 Course(course_type="workshop", name="芳香疗愈工作坊", name_en="Aromatherapy Workshop", description="认识日常植物香气，并调配自己的放松香氛。", description_en="Explore everyday botanicals and blend your own calming aroma.", duration_minutes=120, price=680, color="#a77350", image_url="https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&w=1000&q=80"),
                 Course(course_type="training", name="身心教练基础培训", name_en="Wellness Coach Foundation", description="面向练习者与教练的身心教学基础课程。", description_en="A foundation in wellness teaching for practitioners and coaches.", duration_minutes=480, price=6800, color="#925f55"),
             ])

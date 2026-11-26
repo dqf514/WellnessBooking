@@ -1065,3 +1065,78 @@
 ### 7. 数据安全
 
 - 勤鸟导出目录 `historicalData/` 含会员姓名、手机号、身份证号等个人信息，仓库是公开的，因此连同本地临时目录 `.tmp/` 一起写进 `.gitignore`，不入库；数据通过后台「历史数据导入」上传 ZIP 或服务器目录导入线上库。
+
+## 三十三、中英文名称分家与原始数据适配（2026-11-26）
+
+### 1. 名称拆分器 `backend/app/name_normalizer.py`
+
+- `split_bilingual(text) -> (chinese_name, english_name)`：把勤鸟导出里中英文写在一起的名称拆到两个字段。
+- `MIN_LATIN_LENGTH = 4`：短拉丁串（FIT / Pro / DMT / mbti）判定为中文名的一部分，原样留在中文侧；「呼吸Pro®️伸展复原」「国庆疗愈季 活力zumba舞蹈」因此不被误拆。
+- 混合 token 处理：拉丁串必须延伸到 token 结尾或开头才判定为英文侧，避免把「垫上普拉提-Arc练习」这类中缀英文切碎。
+- 纯标点 token 跟随相邻语种归属；括号做 `_balance_brackets()` 配平。
+
+### 2. 导入器改造 `backend/app/legacy_import.py`
+
+- 新增 `_explicit_names(row, prefix, raw)`：优先读适配包里的「课程中文名 / 课程英文名」等显式列，缺列时回退 `split_bilingual(raw)`。
+- 新增 `_apply_bilingual(entity, display, english)`：把已存库的混排名称改写为 `name` / `name_en`，仅在 `name_en` 为空时补写英文。
+- 新增 `_normalize_catalogue()`：`run()` 的第一步，遍历 Course / Room / Teacher / CardProduct，把混排名称统一拆分；**目标中文名已被别的行占用时跳过**，避免与既有资料撞车；卡产品额外先过 `PRODUCT_ALIASES` 归一。
+- `_import_rooms` / `_import_teachers` / `_import_courses` 改用显式列；匹配键同时登记原始名与拆分后的名字（`rooms_by_key` 等），排期与签到仍以原文匹配，两种写法都能命中。
+- `_course_for` / `_teacher_for` / `_room_for` 重写：新建时存拆好的 `name` + `name_en`；命中已存在的行且其名称仍是混排时顺手改写。
+- `_private_room()` 用 `split_bilingual("私教室 Private Studio")`，查找时同时匹配拆分名与旧混排名。
+- `_product_specs` 增加 `name_zh` / `name_en`，`card_products.csv` / `member_cards.csv` / `contract_orders.csv` 统一走同一套命名。
+
+### 3. 适配脚本 `backend/scripts/adapt_rocketbird_export.py`
+
+- `--dir <源目录> --out <输出目录> --zip`：复制全部 CSV / xlsx / md，并给目录类表追加中英文分列。
+- `CATALOGUE_COLUMNS` 覆盖 `class_types.csv`（课程名称 / 课程中文名 / 课程英文名）、`classrooms.csv`（教室…）、`staff_coaches.csv`（教练…）、`card_products.csv` / `member_cards.csv` / `contract_orders.csv`（卡…）；卡类三表额外过 `PRODUCT_ALIASES`。
+- 生成 `适配说明.md`（适配内容、导入步骤、表清单与隐私提醒），并打包 `rocketbird_export_adapted.zip`。
+- **原始导出不改写**：排期与签到表引用的是原文，改写原文会让 `SequenceMatcher` 匹配率跌破 0.6，进而生成重复的合成场次；适配包只增加分列，原文仍作匹配键。
+
+### 4. 验证
+
+- 适配包导入与原始包导入产出的课种 / 教室 / 教练 / 卡产品四张表**逐行字节一致**。
+- 幂等复测：重复导入各表 created = 0、skipped = read，各表行数与改动前备份一致。
+- 库内残留混排名复扫：课种 8 条、教室 1 条、教练 9 条、卡产品 1 条，其中英文为纯拉丁人名（`Siri Nordhem`、`Freja` 等）与中文名自带缩写（`太极FIT`）属预期保留；`私教室 Private Studio` 为旧导入遗留，已由 `_private_room()` 归一。
+
+## 三十四、一键清除全部数据（短信清除码）（2026-11-26）
+
+### 1. 后端 `backend/app/wipe_service.py`
+
+- 常量：`WIPE_TARGET_PHONE = "18602113774"`、`WIPE_PHONE_MASKED = "186****3774"`、`WIPE_CODE_PURPOSE = "wipe_code"`、`WIPE_CODE_TTL_MINUTES = 10`、`WIPE_CODE_RESEND_SECONDS = 60`、`WIPE_CODE_MAX_ATTEMPTS = 5`、`WIPE_CONFIRM_TEXT = "清除全部数据"`、`WIPE_ADMIN_PASSWORD = "Tpc@2026"`。
+- `PRESERVED_TABLES = ("app_settings", "sms_settings", "backup_plan_settings", "api_keys")`：场馆名称 / Logo / 备份计划 / 短信运营商 / API 密钥等与商业无关的数据原样保留。
+- `request_wipe_code(db, actor)`：60 秒内重复请求直接拒绝；随机 6 位码经 `sms_service.deliver()` 发到内置手机号（**不使用 `send_otp`**，避免开发模式下 `dev_code` 随接口返回）；短信通道未启用或服务商账号未配置时返回 502「清除码发送失败，请先在「短信通知」里启用短信通道并配置服务商账号」；挑战以 `hash_otp(code)` 存 `SmsOtpCode`，此前未用的同类挑战作废；**返回值只含掩码手机号与提示语，绝不回显清除码**。
+- `_verify_code(db, code)`：最多 5 次尝试，单次有效。
+- `_delete_tables(keep_user_id)`：SQLite 的 `PRAGMA foreign_keys` 在事务内是空操作，因此整库清空必须走**裸 DBAPI 连接**并 `PRAGMA foreign_keys=OFF`；遍历 `sqlite_master` 删除所有表数据（跳过 `PRESERVED_TABLES` 与 `sqlite_%`），`users` 表保留当前管理员，其余删除；非保留表的 `sqlite_sequence` 一并复位。
+- `_clear_uploads()`：清空 `backend/uploads`（会员照片等附件）。
+- `wipe_data(db, actor, *, code, confirm)`：校验确认口令 → 校验清除码 → 提交 → 清表 → `expire_all()` → 重置管理员密码为 `Tpc@2026` 并启用账号 → 置 `settings.demo_data_disabled = True` → 清附件 → 写 `audit(db, actor, "maintenance", "wipe_data", "database", …)`（这是清除后仅存的痕迹）。
+
+### 2. 数据模型与启动行为
+
+- `AppSettings` 新增 `demo_data_disabled: Mapped[bool]`；**新增列必须同时改 `models.py` 与 `database.py` 的 `ensure_schema()` additions 字典**（`"demo_data_disabled": "BOOLEAN DEFAULT 0"`），否则已有库不会自动获得该列。
+- `seed.py`：用户与系统设置仍照常初始化，但 `demo_data_disabled` 为真时**不再写入演示数据**——否则清空后重启会重新冒出示例会员与示例课种。
+
+### 3. 接口
+
+- `backend/app/routers/maintenance.py` 新增 `POST /api/admin/maintenance/wipe/request-code` 与 `POST /api/admin/maintenance/wipe/execute`。
+- 两个接口都用 `require_interactive_admin`（仅限登录会话，**API Key 一律拒绝**），与「改密码 / 查自身信息」同一道闸；`deps.required_api_key_scope()` 中 `/api/admin/maintenance` 映射到 `maintenance:write`，命中时给出明确范围提示。
+- 请求体沿用仓库惯例：`payload: dict = Body(...)` + 自由字典取值；`detail` 全部中文。
+
+### 4. 前端
+
+- 新增 `src/pages/admin/settings/WipeSettings.tsx`：`useAuth()` 取 `logout()`，清除成功后强制退出登录（清除后原令牌对应的会话已不再有效）。
+- `SettingsPage.tsx` 标签页新增「数据清除」（位于「历史数据导入」与「回收站」之间）。
+- `src/styles.css` 新增 `.wipe-notes` 与 `.wipe-actions`；危险按钮复用既有 `.button-danger-ghost`（仓库无 `.button-danger`）。
+- `src/lib/adminTranslations.ts` / `adminMessages.ts` 补齐中英文案。
+
+### 5. 验证
+
+- 服务级与 HTTP 级各跑通一次全量清除：仅剩 admin 账号且密码为 `Tpc@2026`；`app_settings` / `sms_settings` / `backup_plan_settings` 完整保留；全部业务表清空；`uploads` 清空；`demo_data_disabled = 1`；操作日志只剩一条 `wipe_data`。
+- 短信通道用本地假网关（`http.server`）验证：`request-code` 响应体不含 `code` 字段，清除码只出现在短信内容里；错误码返回「清除码错误或已过期」。
+- `npm run build` 通过。
+
+### 6. 文档
+
+- `docs/API.md` 新增 13.14 节「一键清除全部数据（短信清除码）」，接口总数 149 → 151；`python docs/build_api_docs.py` 重新生成 `public/api-docs.html`（18 章 / 151 个接口）。
+- `public/help.html`「数据导入、备份与恢复」新增第 5 节「中英文名称分家」与第 6 节「一键清除全部数据（短信清除码）」。
+- `public/changelog-details.html` 追加 BATCH 21 / 22（3 张界面截图）、`docs/CHANGELOG_CLIENT.md` / `docs/CHANGELOG_DEVELOPER.md` / `src/lib/changelog.ts` 同步；`API_ENDPOINT_COUNT` 同步为 151。
+- `historicalData/`（含会员姓名、手机号、身份证号）与适配包产物均不入库，`.gitignore` 已覆盖。

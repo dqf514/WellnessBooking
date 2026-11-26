@@ -363,6 +363,8 @@ class AppSettings(Base):
     # 登录安全：图片验证码与短信二次验证（MFA）。
     captcha_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     mfa_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    # 执行过「一键清除」后置位：不再自动写入演示数据，重启后台也不会冒出示例会员。
+    demo_data_disabled: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 class SmsSettings(Base):

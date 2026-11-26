@@ -11,11 +11,12 @@ from sqlalchemy.orm import Session
 
 from ..config import BACKUP_DIR, DATABASE_URL, DATA_DIR
 from ..database import SessionLocal, engine, get_db
-from ..deps import get_current_user, require_settings_write, required_api_key_scope
+from ..deps import get_current_user, require_interactive_admin, require_settings_write, required_api_key_scope
 from ..log_util import audit
 from ..models import BackupPlanSettings, Booking, Member, Transaction, User
 from ..permissions import has_capability
 from ..utils import dt, valid_phone
+from ..wipe_service import WIPE_PHONE_MASKED, request_wipe_code, wipe_data
 
 router = APIRouter(prefix="/api/admin/maintenance", tags=["maintenance"])
 
@@ -188,6 +189,21 @@ def put_backup_plan(payload: dict = Body(...), db: Session = Depends(get_db), us
     db.commit()
     cleanup_backups(row.keep_last)
     return {"ok": True, "enabled": row.enabled, "daily_time_hm": row.daily_time_hm, "keep_last": row.keep_last, "last_run_date": row.last_run_date}
+
+
+@router.post("/wipe/request-code")
+def wipe_request_code(db: Session = Depends(get_db), user: User = Depends(require_interactive_admin)):
+    """发送清除码：只通过短信发给内置手机号，接口不返回清除码本身。"""
+    result = request_wipe_code(db, user)
+    audit(db, user, "maintenance", "request_wipe_code", "database", detail={"phone": WIPE_PHONE_MASKED})
+    db.commit()
+    return result
+
+
+@router.post("/wipe/execute")
+def wipe_execute(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_interactive_admin)):
+    """按清除码执行一键清除：业务数据清空，保留系统设置与当前管理员。"""
+    return wipe_data(db, user, code=str(payload.get("code", "")), confirm=str(payload.get("confirm", "")))
 
 
 @router.get("/export/{kind}.csv")

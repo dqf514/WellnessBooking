@@ -36,7 +36,9 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.db:
-        os.environ["DATABASE_URL"] = f"sqlite:///{Path(args.db).resolve().as_posix()}"
+        # Windows 下要用反斜杠路径，否则 SQLite 会把 "D:/..." 当成相对路径。
+        database_path = Path(args.db).resolve()
+        os.environ["DATABASE_URL"] = f"sqlite:///{database_path if os.name == 'nt' else database_path.as_posix()}"
 
     from app.database import Base, SessionLocal, engine, ensure_constraints, ensure_schema
     from app.legacy_import import import_rocketbird

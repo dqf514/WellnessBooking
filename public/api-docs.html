@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#173f35">
-  <meta name="description" content="音昱 Wellness 完整 API 对接文档，覆盖 149 个接口、权限、字段、业务规则与示例。">
+  <meta name="description" content="音昱 Wellness 完整 API 对接文档，覆盖 151 个接口、权限、字段、业务规则与示例。">
   <meta name="generator" content="docs/build_api_docs.py">
   <link id="api-favicon" rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Crect width='36' height='36' rx='18' fill='%23173f35'/%3E%3Cpath d='M28 6C15 7 8 13 8 23c7 1 15-2 20-17ZM8 29c3-8 8-12 16-17' fill='none' stroke='%23e9efe7' stroke-width='1.5'/%3E%3C/svg%3E">
   <title>API 对接文档 · 音昱 Wellness</title>
@@ -33,7 +33,7 @@
     <aside class="sidebar" aria-label="API 文档目录">
       <label class="search-label"><span>搜索接口、字段或业务规则</span><input class="search-input" id="api-search" type="search" placeholder="例如：签到、退款、bookings" autocomplete="off"><span class="search-hint">按 / 快速搜索，Esc 清空</span></label>
       <p class="search-results" id="search-results" aria-live="polite"></p>
-      <p class="toc-title">API REFERENCE · 149 ENDPOINTS</p>
+      <p class="toc-title">API REFERENCE · 151 ENDPOINTS</p>
       <nav><ul class="toc-list"><li><a href="#1-接入基础">1. 接入基础</a></li>
 <li><a href="#2-通用数据结构">2. 通用数据结构</a></li>
 <li><a href="#3-健康检查与员工认证-9">3. 健康检查与员工认证（9）</a></li>
@@ -46,7 +46,7 @@
 <li><a href="#10-场馆-品牌与账号-9">10. 场馆、品牌与账号（9）</a></li>
 <li><a href="#11-短信与审计日志-5">11. 短信与审计日志（5）</a></li>
 <li><a href="#12-api-key-管理与调用日志-6">12. API Key 管理与调用日志（6）</a></li>
-<li><a href="#13-数据导出-备份与恢复-13">13. 数据导出、备份与恢复（13）</a></li>
+<li><a href="#13-数据导出-备份与恢复-15">13. 数据导出、备份与恢复（15）</a></li>
 <li><a href="#14-典型业务调用顺序">14. 典型业务调用顺序</a></li>
 <li><a href="#15-对接检查清单">15. 对接检查清单</a></li>
 <li><a href="#16-回收站与-180-天保留-4">16. 回收站与 180 天保留（4）</a></li>
@@ -67,7 +67,7 @@
 <option value="10-场馆-品牌与账号-9">10. 场馆、品牌与账号（9）</option>
 <option value="11-短信与审计日志-5">11. 短信与审计日志（5）</option>
 <option value="12-api-key-管理与调用日志-6">12. API Key 管理与调用日志（6）</option>
-<option value="13-数据导出-备份与恢复-13">13. 数据导出、备份与恢复（13）</option>
+<option value="13-数据导出-备份与恢复-15">13. 数据导出、备份与恢复（15）</option>
 <option value="14-典型业务调用顺序">14. 典型业务调用顺序</option>
 <option value="15-对接检查清单">15. 对接检查清单</option>
 <option value="16-回收站与-180-天保留-4">16. 回收站与 180 天保留（4）</option>
@@ -75,7 +75,7 @@
 <option value="18-会员群发通知-4">18. 会员群发通知（4）</option></select></label>
       <div class="search-empty" id="search-empty" hidden>没有匹配的接口。可尝试“预约”“卡”“settings”或清空搜索。</div>
       <h1 id="音昱-wellness-api-对接文档">音昱 Wellness API 对接文档<a class="anchor" href="#音昱-wellness-api-对接文档" aria-label="链接到此节">#</a></h1>
-<aside class="callout">版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 <strong>148 个 HTTP 接口</strong>。 文档更新：2026-11-26 · 功能基线：预约排课、动态二维码签到、购卡申请取消、会员权益与营收业务闭环、角色能力矩阵与课程库独立接口、勤鸟历史数据导入。 在线交互文档：<code>/docs</code>（Swagger UI）、<code>/redoc</code>（ReDoc）；原始 OpenAPI 3 定义：<code>/openapi.json</code>。接口路径、方法、参数和实时响应结构以同版本 <code>/openapi.json</code> 为最终依据。</aside>
+<aside class="callout">版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 <strong>151 个 HTTP 接口</strong>。 文档更新：2026-11-26 · 功能基线：预约排课、动态二维码签到、购卡申请取消、会员权益与营收业务闭环、角色能力矩阵与课程库独立接口、勤鸟历史数据导入。 在线交互文档：<code>/docs</code>（Swagger UI）、<code>/redoc</code>（ReDoc）；原始 OpenAPI 3 定义：<code>/openapi.json</code>。接口路径、方法、参数和实时响应结构以同版本 <code>/openapi.json</code> 为最终依据。</aside>
 <h2 id="1-接入基础">1. 接入基础<a class="anchor" href="#1-接入基础" aria-label="链接到此节">#</a></h2>
 <h3 id="1-1-服务地址">1.1 服务地址<a class="anchor" href="#1-1-服务地址" aria-label="链接到此节">#</a></h3>
 <div class="table-wrap"><table>
@@ -985,7 +985,7 @@
 <h4 id="get-api-admin-api-key-logs"><span class="method method-get">GET</span><a href="#get-api-admin-api-key-logs" class="route">/api/admin/api-key-logs</a></h4>
 <ul><li><strong>权限</strong>：管理员登录会话。</li><li><strong>Query</strong>：<code>key_id</code>（0 表示全部）、<code>result=all|success|denied</code>、<code>page</code>（≥1）、<code>q</code>（按密钥名称、路径或 IP 模糊搜索）。</li><li><code>success</code> 为状态码小于 400，<code>denied</code> 为状态码大于等于 400。</li><li><strong>响应</strong>：<code>{ items, total, page, page_size: 20 }</code>，按日志 ID 倒序。</li><li>日志项：<code>id</code>、<code>api_key_id</code>、<code>key_name</code>、<code>key_prefix</code>、<code>method</code>、<code>path</code>、<code>status_code</code>、<code>ip</code>、<code>user_agent</code>、<code>created_at</code>。</li><li>无效或过期密钥的拒绝请求也会记录；路径不含 Query String，日志中不会出现完整密钥。</li></ul>
 </section>
-<h2 id="13-数据导出-备份与恢复-13">13. 数据导出、备份与恢复（13）<a class="anchor" href="#13-数据导出-备份与恢复-13" aria-label="链接到此节">#</a></h2>
+<h2 id="13-数据导出-备份与恢复-15">13. 数据导出、备份与恢复（15）<a class="anchor" href="#13-数据导出-备份与恢复-15" aria-label="链接到此节">#</a></h2>
 <aside class="callout">以下接口均需管理员。备份工具只支持 SQLite 文件数据库；数据库备份不包含 <code>/uploads</code> 中的合同、Logo 等文件，完整灾难恢复还需另行备份上传目录。</aside>
 <h3 id="13-1-立即一致性备份">13.1 立即一致性备份<a class="anchor" href="#13-1-立即一致性备份" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/maintenance/backup-db">
@@ -1045,12 +1045,26 @@
 <h3 id="13-12-上传勤鸟导出压缩包导入历史数据">13.12 上传勤鸟导出压缩包导入历史数据<a class="anchor" href="#13-12-上传勤鸟导出压缩包导入历史数据" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/import/rocketbird/upload">
 <h4 id="post-api-admin-import-rocketbird-upload"><span class="method method-post">POST</span><a href="#post-api-admin-import-rocketbird-upload" class="route">/api/admin/import/rocketbird/upload</a></h4>
-<ul><li><strong>权限</strong>：需 <code>settings.write</code>，且只接受员工登录会话（API Key 会被拒绝）。</li><li><strong>multipart</strong>：<code>file</code>（ZIP，最大 200MB，仅接受 <code>.zip</code>）、<code>dry_run</code>（默认 <code>false</code>，为 <code>true</code> 时只统计不写库）、<code>include_logs</code>（默认 <code>true</code>，是否导入勤鸟操作日志）。</li><li>压缩包内需包含勤鸟导出的 CSV，至少包括 <code>members.csv</code>、<code>member_cards.csv</code>、<code>sign_logs.csv</code>、<code>finance_flow.csv</code>；系统会自动在解压目录中定位真正存放 CSV 的那一层。</li><li><strong>响应</strong>：<code>{ source, directory, dry_run, tables, warnings, notes }</code>。</li><li><code>tables</code> 为逐表统计：<code>{ 数据表名: { read, created, skipped } }</code>。</li><li><code>warnings</code> 为需要人工确认的提示，<code>notes</code> 为口径说明。</li><li>解压时逐个校验压缩包内路径，拒绝 <code>../</code> 之类的目录穿越；导入结束（含出错）后自动清理解压出来的临时目录。</li><li>导入按外部 ID 幂等：外部 ID 由来源字段拼成（勤鸟主键或可复现的组合键），重复导入同一批数据时各表 <code>created</code> 均为 0，不会产生重复会员、卡、预约与流水，也不会覆盖已有档案。</li><li>正式导入会写入一条操作日志（分类 <code>data_import</code>）。</li></ul>
+<ul><li><strong>权限</strong>：需 <code>settings.write</code>，且只接受员工登录会话（API Key 会被拒绝）。</li><li><strong>multipart</strong>：<code>file</code>（ZIP，最大 200MB，仅接受 <code>.zip</code>）、<code>dry_run</code>（默认 <code>false</code>，为 <code>true</code> 时只统计不写库）、<code>include_logs</code>（默认 <code>true</code>，是否导入勤鸟操作日志）。</li><li>压缩包内需包含勤鸟导出的 CSV，至少包括 <code>members.csv</code>、<code>member_cards.csv</code>、<code>sign_logs.csv</code>、<code>finance_flow.csv</code>；系统会自动在解压目录中定位真正存放 CSV 的那一层。</li><li><strong>响应</strong>：<code>{ source, directory, dry_run, tables, warnings, notes }</code>。</li><li><code>tables</code> 为逐表统计：<code>{ 数据表名: { read, created, skipped } }</code>。</li><li><code>warnings</code> 为需要人工确认的提示，<code>notes</code> 为口径说明。</li><li>解压时逐个校验压缩包内路径，拒绝 <code>../</code> 之类的目录穿越；导入结束（含出错）后自动清理解压出来的临时目录。</li><li>导入按外部 ID 幂等：外部 ID 由来源字段拼成（勤鸟主键或可复现的组合键），重复导入同一批数据时各表 <code>created</code> 均为 0，不会产生重复会员、卡、预约与流水，也不会覆盖已有档案。</li><li>勤鸟的课种、教室、教练、卡产品名称是中英文混在一起的（如「瑜伽拉伸与声音共振 Yogic Stretch &amp; Sound Resonance」）。导入时自动拆开：中文写进 <code>name</code>，英文写进 <code>name_en</code>，界面与导出不再中英文混排；原文名仍会作为匹配键保留，排期与签到表里的截断名照样能对上。</li><li>若压缩包里的 CSV 已经带有「课程中文名 / 课程英文名、教室中文名 / 教室英文名、教练中文名 / 教练英文名、卡中文名 / 卡英文名」这些列（由 <code>backend/scripts/adapt_rocketbird_export.py</code> 生成），优先采用列里的写法。</li><li>正式导入会写入一条操作日志（分类 <code>data_import</code>）。</li></ul>
 </section>
 <h3 id="13-13-从服务器目录导入勤鸟历史数据">13.13 从服务器目录导入勤鸟历史数据<a class="anchor" href="#13-13-从服务器目录导入勤鸟历史数据" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/import/rocketbird/path">
 <h4 id="post-api-admin-import-rocketbird-path"><span class="method method-post">POST</span><a href="#post-api-admin-import-rocketbird-path" class="route">/api/admin/import/rocketbird/path</a></h4>
 <ul><li><strong>权限</strong>：需 <code>settings.write</code>，且只接受员工登录会话（API Key 会被拒绝）。</li><li><strong>请求体</strong>：<code>{ path, dry_run?, include_logs? }</code>。<code>path</code> 为服务器上存放勤鸟导出 CSV 的目录，必须包含 <code>members.csv</code>、<code>member_cards.csv</code>、<code>sign_logs.csv</code>、<code>finance_flow.csv</code>。</li><li><strong>响应</strong>：同 13.12 的导入报告。</li><li>适用于在线服务器上已经放好导出文件、避免经浏览器上传大压缩包的场景。</li></ul>
+</section>
+<h3 id="13-14-一键清除全部数据-短信清除码">13.14 一键清除全部数据（短信清除码）<a class="anchor" href="#13-14-一键清除全部数据-短信清除码" aria-label="链接到此节">#</a></h3>
+<p>清除码只通过短信发送到系统内置手机号 <code>18602113774</code>，接口与界面都不会回显清除码本身； 执行清除还需要原样输入确认口令，避免误触。两个接口都只接受员工登录会话，API Key 会被拒绝。</p>
+<section class="endpoint" data-search="post /api/admin/maintenance/wipe/request-code">
+<h4 id="post-api-admin-maintenance-wipe-request-code"><span class="method method-post">POST</span><a href="#post-api-admin-maintenance-wipe-request-code" class="route">/api/admin/maintenance/wipe/request-code</a></h4>
+<ul><li><strong>权限</strong>：需 <code>settings.write</code>，且只接受员工登录会话。</li><li><strong>请求体</strong>：无。</li><li><strong>响应</strong>：<code>{ ok, phone, expires_in_minutes, confirm_text, message }</code>。</li><li><code>phone</code> 为掩码号码（如 <code>186****3774</code>），<code>confirm_text</code> 为需要原样输入的确认口令。</li><li>响应里<strong>没有</strong>清除码；清除码只出现在发给 <code>18602113774</code> 的短信里，10 分钟内有效、只能使用一次。</li><li>60 秒内重复请求返回 429。</li><li>短信通道未启用或未配置服务商账号时返回 502。</li><li>每次请求会作废上一个未使用的清除码。</li></ul>
+</section>
+<section class="endpoint" data-search="post /api/admin/maintenance/wipe/execute">
+<h4 id="post-api-admin-maintenance-wipe-execute"><span class="method method-post">POST</span><a href="#post-api-admin-maintenance-wipe-execute" class="route">/api/admin/maintenance/wipe/execute</a></h4>
+<ul><li><strong>权限</strong>：需 <code>settings.write</code>，且只接受员工登录会话。</li><li><strong>请求体</strong>：<code>{ code, confirm }</code>。<code>code</code> 为短信里的 6 位清除码，<code>confirm</code> 需原样填入 <code>清除全部数据</code>。</li><li><strong>响应</strong>：<code>{ ok, message, deleted_tables, removed_files, kept_username, new_password }</code>。</li><li><strong>会删除</strong>：会员、会员卡、会员分享、体验券、课种、教练、教室、排课、预约、预约状态流转记录、</li></ul>
+<p>流水、会员档案记录与附件、通知与提醒、教室预约、操作日志、短信发送与验证码记录、API Key 使用记录， 以及全部其他员工账号；上传目录（会员照片等附件）里的文件也会一并清空。</p>
+<ul><li><strong>会保留</strong>：系统设置（场馆名称、Logo、favicon、预约口径、登录安全开关）、短信通道设置、备份计划设置、</li></ul>
+<p>API 密钥，以及当前登录的这一位管理员账号（密码重置为 <code>Tpc@2026</code>）。</p>
+<ul><li>清除后系统不再自动写入演示数据，重启后端也不会再生成示例会员。</li><li>清除完成后会在操作日志里留下一条 <code>wipe_data</code> 记录，作为这次操作的唯一留痕。</li><li>清除<strong>不可撤销</strong>，执行前请先调用 13.7 的备份接口留一份数据库。</li></ul>
 </section>
 <h2 id="14-典型业务调用顺序">14. 典型业务调用顺序<a class="anchor" href="#14-典型业务调用顺序" aria-label="链接到此节">#</a></h2>
 <h3 id="14-1-会员预约闭环">14.1 会员预约闭环<a class="anchor" href="#14-1-会员预约闭环" aria-label="链接到此节">#</a></h3>
@@ -1189,7 +1203,7 @@ const dashboard = await api(&quot;/api/admin/dashboard&quot;, {
 <h4 id="post-api-admin-notices-notice-id-cancel"><span class="method method-post">POST</span><a href="#post-api-admin-notices-notice-id-cancel" class="route">/api/admin/notices/{notice_id}/cancel</a></h4>
 <ul><li><strong>权限</strong>：需 <code>members.write</code>；<strong>Body</strong>：无。</li><li><strong>响应</strong>：<code>{ ok: true, notice }</code>，<code>status=cancelled</code>，不再发送。</li></ul>
 </section>
-      <footer class="docs-footer"><span>音昱 Wellness · API v1.0.0 · 149 个业务接口</span><span><a href="/help.html">系统操作指南</a> · <a href="/openapi.json">OpenAPI 3</a> · 文档源：<a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md">docs/API.md</a></span></footer>
+      <footer class="docs-footer"><span>音昱 Wellness · API v1.0.0 · 151 个业务接口</span><span><a href="/help.html">系统操作指南</a> · <a href="/openapi.json">OpenAPI 3</a> · 文档源：<a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md">docs/API.md</a></span></footer>
     </main>
   </div>
   <script>

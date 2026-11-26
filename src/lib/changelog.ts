@@ -2,7 +2,7 @@
 export const APP_VERSION = "1.1.0";
 export const APP_RELEASE_DATE = "2026-11-26";
 export const API_VERSION = "v1.0.0";
-export const API_ENDPOINT_COUNT = 149;
+export const API_ENDPOINT_COUNT = 151;
 
 export interface ChangelogText { zh: string; en: string }
 export interface ChangelogGroup { title: ChangelogText; points: ChangelogText[] }
@@ -53,6 +53,18 @@ export const changelogReleases: ChangelogRelease[] = [
         { zh: "先勾“先演练”只看统计不写库，确认各表的读取 / 导入 / 跳过数量后再正式导入", en: "Tick “Dry run” first to review per-table read / imported / skipped counts, then import for real" },
         { zh: "重复导入按外部 ID 幂等跳过，不会产生重复会员、会员卡、预约或流水，也不覆盖已有档案", en: "Re-importing skips existing records by external ID — no duplicate members, cards, bookings or transactions, and nothing is overwritten" },
         { zh: "营收按本系统口径重算：团课购卡确认、年卡与套餐按天均摊、私教与评估消课时确认", en: "Revenue is recalculated with this system’s rules: group cards at purchase, annual cards and packages amortized daily, private training and assessments on consumption" },
+      ] },
+      { title: { zh: "中英文名称分家", en: "Chinese and English names separated" }, points: [
+        { zh: "资源与商品里中英文混在一起的名称自动拆开：中文进名称栏、英文进英文名栏，界面和导出不再混排", en: "Mixed Chinese/English names in classes, rooms, instructors and card products are split automatically: Chinese goes to the name field, English to the English-name field" },
+        { zh: "像「瑜伽拉伸与声音共振 Yogic Stretch & Sound Resonance」「健康评估Assessment」这类写法都能正确分家，中文名里本来带的 FIT、Pro 等缩写会留在中文侧", en: "Names such as “瑜伽拉伸与声音共振 Yogic Stretch & Sound Resonance” and “健康评估Assessment” split correctly, while abbreviations that belong to the Chinese name (FIT, Pro) stay put" },
+        { zh: "提供适配脚本，把勤鸟导出数据另存一份带中英文分列的 ZIP，导入后即是干净资料", en: "An adaptation script produces a second RocketBird export with the Chinese and English names in separate columns, ready to import" },
+        { zh: "已导入的旧库再次导入时，混排的名称会被顺手改写好，排期与签到的匹配不受影响", en: "Re-importing an older library rewrites the mixed names in place without breaking schedule or check-in matching" },
+      ] },
+      { title: { zh: "一键清除数据", en: "One-click data wipe" }, points: [
+        { zh: "后台“系统设置 → 数据清除”可一键清空全部业务数据，重新导入一套干净资料", en: "“Settings → Data wipe” clears all business data so a clean set of records can be imported again" },
+        { zh: "清除码只通过短信发送到内置手机号 18602113774，界面和接口都不会显示清除码", en: "The wipe code is sent by SMS only to the built-in number 18602113774; neither the screen nor the API shows it" },
+        { zh: "清除后只保留当前管理员账号（密码重置为 Tpc@2026），场馆名称、Logo、备份计划与短信通道等设置原样保留", en: "Only the current admin account is kept (password reset to Tpc@2026); venue name, logo, backup plan and SMS settings stay as they are" },
+        { zh: "清除后不再自动写入演示数据，重启后台也不会冒出示例会员", en: "Demo data is no longer written automatically after a wipe, so restarting the backend will not bring back sample members" },
       ] },
     ],
   },

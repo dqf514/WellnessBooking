@@ -1206,3 +1206,7 @@ body:has(.modal-backdrop .notice-error) .notice-error:not(.modal-backdrop .notic
   .members-table td { overflow-wrap: normal; word-break: normal; }
   .members-table td.col-phone, .members-table td.col-price, .members-table td.col-expiry { white-space: nowrap; }
 }
+.wipe-notes { margin: 0 0 18px; padding-left: 20px; color: var(--muted); font-size: 12px; line-height: 2; }
+.wipe-notes li { margin: 4px 0; }
+.wipe-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+.wipe-actions .button { min-height: 44px; }
