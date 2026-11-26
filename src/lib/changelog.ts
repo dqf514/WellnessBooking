@@ -38,6 +38,10 @@ export const changelogReleases: ChangelogRelease[] = [
         { zh: "按日程地点自动匹配教室，也可手动指定；同一日程重复导入不会重复占用", en: "Rooms are matched from the event location or picked manually; re-importing the same event creates no duplicate" },
         { zh: "与已有课程冲突的日程会跳过，不会覆盖现有排课", en: "Events that clash with existing classes are skipped rather than overwriting them" },
       ] },
+      { title: { zh: "后台导航", en: "Admin navigation" }, points: [
+        { zh: "左侧导航栏可一键折叠为图标栏，内容区随之变宽；再点一次展开", en: "The sidebar can be collapsed to icons in one click, giving the content area more room" },
+        { zh: "折叠后把鼠标移到分组图标上，子菜单仍以浮层展开；折叠状态会被记住", en: "Hovering a group icon still opens its submenu as a flyout, and the collapsed state is remembered" },
+      ] },
     ],
   },
   {

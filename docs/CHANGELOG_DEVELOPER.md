@@ -946,3 +946,22 @@
 
 - `ColorPicker` 移除无法展开的「更多颜色」，改为提示点击左侧色块，并补齐常用色。
 - `docs/API.md` 新增第 4.19、8.30、18 节并更新成员列表 / 导出参数与 API Key scope 描述；`python docs/build_api_docs.py` 重新生成 `public/api-docs.html`（18 章 / 146 个接口）；`API_ENDPOINT_COUNT` 同步为 146。
+
+## 三十、后台导航栏可折叠为图标栏（2026-11-26）
+
+### 1. 组件与状态
+
+- `src/layouts/AdminLayout.tsx`：新增常量 `SIDEBAR_KEY = "wellness_admin_sidebar_collapsed"` 与 `collapsed` state（`useState` 初始化时读 `localStorage`，避免刷新后闪烁）；`toggleSidebar()` 切换时写入 `"1"` / `"0"` 持久化。
+- 侧边栏头部抽出 `.admin-sidebar-head` 容器，把品牌区与折叠按钮并排（品牌链接 `flex: 1`，按钮 `flex: 0 0 auto`）；按钮用 `Icon name="chevron"` 旋转 180° 指向左侧表示「折叠」，折叠态下取消旋转表示「展开」，并带 `title` / `aria-label` / `aria-expanded`。
+- `.admin-shell` 增加 `collapsed` 修饰类，折叠时整体收窄到 78px；所有导航项（含分组标题、子项、个人中心）补 `title` 属性，图标态下悬停即可看到名称。
+- 分组子菜单在折叠态沿用原有的 `:hover` 浮层机制（`.admin-nav-children` 绝对定位在 `left: 100%`），并用 `.admin-shell.collapsed .admin-nav .admin-nav-children a span { display: inline; }` 保证浮层内的文字不被隐藏。
+
+### 2. 样式
+
+- `src/styles.css` 新增 `.admin-sidebar-head` / `.sidebar-collapse-btn` 基础样式与 `@media (min-width: 961px)` 下的 `.admin-shell.collapsed` 规则集：栅格列 `78px minmax(0, 1fr)`、隐藏品牌文字与各菜单文字、菜单项居中、`.sidebar-quick` 与 `.sidebar-user` 改为纵向排列、`.sidebar-profile-glyph` 显示为图标。
+- `@media (max-width: 960px)` 内隐藏折叠按钮（该断点侧边栏本就是自动图标栏，避免出现两个含义相同的状态），并同步给 701–960px 的自动图标模式补上 `.sidebar-quick` / `.sidebar-user` 纵向排列，避免 78px 窄栏溢出；≤760px / ≤700px 恢复横向排列。
+
+### 3. 验证
+
+- `npm run build` 通过（`tsc -b` 无报错）。
+- CDP 实测：1600px 展开态点击折叠按钮后 `.admin-shell` 变为 `collapsed`、栅格列变为 `78px 1507px`；底部快捷按钮与个人中心全部可见不溢出；用 `Input.dispatchMouseEvent` 悬停分组标题，子菜单浮层在右侧正常展开且文字完整。
