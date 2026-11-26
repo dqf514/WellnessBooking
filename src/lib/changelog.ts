@@ -24,7 +24,7 @@ export const changelogReleases: ChangelogRelease[] = [
       { title: { zh: "评估与会员档案", en: "Assessments and member profiles" }, points: [
         { zh: "健康评估从私教中独立出来，后台新增“评估预约”，签到时只扣评估权益", en: "Health assessments now stand apart from private training; a new “Assessment bookings” page consumes only the assessment benefit" },
         { zh: "私教/评估签到名单里点会员名字可直接打开会员档案，不用再回会员列表里找", en: "Tap a name in the private/assessment roster to open that member’s profile right away" },
-        { zh: "会员档案头部的照片、姓名与信息整体放大，一行放不下自动折行", en: "The member profile header is enlarged and wraps onto extra lines when needed" },
+        { zh: "会员档案头部放大：照片与姓名在左侧，详细信息在右侧分两行展示，字号更大更好读", en: "The member profile header is enlarged: photo and name on the left, details in two rows on the right" },
         { zh: "常用颜色补全，去掉点不开的“更多颜色”，改为提示点击左边色块选择", en: "Common colours are completed; the broken “more colours” button is replaced by a hint to tap the swatches" },
       ] },
       { title: { zh: "入账方式与通知", en: "Revenue options and notices" }, points: [

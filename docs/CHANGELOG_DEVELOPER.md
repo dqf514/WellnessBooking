@@ -915,7 +915,7 @@
 
 - `BookingsPage` 支持 `assessment` 路由类型：课程查询用 `course_type=assessment`，签到只匹配卡权益里的评估项，避免误扣私教次数；新增「评估预约」侧边栏入口与 `/admin/bookings/assessment` 路由（`/admin/schedule/assessment` 旧路径重定向）。
 - 私教/评估名单中的会员名改为按钮，点击直接打开 `MemberProfileDrawer`（可同时编辑姓名、英文名、手机号、性别、生日、备注，保存后刷新名单）。
-- `MemberProfileDrawer` 档案头部样式整体放大（照片 96px、标题 30px、事实项最小列宽 190px，auto-fit 自动折行）。
+- `MemberProfileDrawer` 档案头部样式整体放大（照片 96px、标题 30px、事实项最小列宽 190px，auto-fit 自动折行）；后续按需求二次优化为「照片与姓名在左（100px 头像 / 30px 标题）、详细信息在右固定 4 列两行（标签 15px / 数值 18px，列间距 18px）」，`.profile-summary` 改为 `grid-template-columns: max-content minmax(0, 1fr)`，备注行 `grid-column: 1 / -1` 整行铺开；≤1200px 改为上下堆叠、≤960px 与 ≤700px 事实项降为 2 列，`.profile-facts > span` 允许换行兜底，长内容不会被截断。
 
 ### 3. 购卡与升卡的入账口径可逐单选择
 
