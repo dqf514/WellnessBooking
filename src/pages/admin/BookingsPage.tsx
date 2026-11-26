@@ -13,7 +13,7 @@ import { apiFetch } from "@/lib/api";
 import { endTimeFor, formatDateTime, money, timeToMinutes, today } from "@/lib/date";
 import { paymentLabel, paymentMethods } from "@/lib/financeCopy";
 import { hasCapability, useCan, type Capability } from "@/lib/permissions";
-import type { Booking, Member, MemberDetail, Meta, Session } from "@/types";
+import type { Booking, MemberDetail, MemberOption, Meta, Session } from "@/types";
 
 const statusTones: Record<string, "neutral" | "green" | "red" | "amber" | "blue"> = { booked: "amber", checked_in: "green", completed: "green", cancelled: "neutral", no_show: "red" };
 
@@ -31,7 +31,7 @@ export function BookingsPage() {
   const can = (capability: Capability) => hasCapability(user?.role, capability, user?.capabilities);
   const [date, setDate] = useState(today());
   const [sessions, setSessions] = useState<Session[]>([]);
-  const [members, setMembers] = useState<Member[]>([]);
+  const [members, setMembers] = useState<MemberOption[]>([]);
   const [meta, setMeta] = useState<Meta | null>(null);
   const [selected, setSelected] = useState<Session | null>(null);
   const [bookingOpen, setBookingOpen] = useState(false);
@@ -68,7 +68,7 @@ export function BookingsPage() {
       const query = new URLSearchParams({ date_from: date, date_to: date, detailed: "true", course_type: type });
       const [sessionResult, memberResult, noShowResult] = await Promise.all([
         apiFetch<{ items: Session[] }>(`/api/admin/sessions?${query}`),
-        apiFetch<{ items: Member[] }>("/api/admin/members?active_only=true"),
+        apiFetch<{ items: MemberOption[] }>("/api/admin/members/options?active_only=true&limit=20000"),
         apiFetch<{ items: Booking[] }>("/api/admin/no-shows"),
       ]);
       if (requestId !== latestRequest.current) return;

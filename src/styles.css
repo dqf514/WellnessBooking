@@ -1176,3 +1176,33 @@ body:has(.modal-backdrop .notice-error) .notice-error:not(.modal-backdrop .notic
 .captcha-image img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .captcha-image span { color: var(--muted); font-size: 12px; }
 .login-back-step { margin-top: 12px; align-self: flex-start; }
+
+/* 会员管理：名单分页后按固定列宽排版 —— 长姓名换行、手机号与金额不再断行，多张会员卡分行展示 */
+.members-table { table-layout: fixed; min-width: 1180px; }
+.members-table th.col-name { width: 22%; }
+.members-table th.col-phone { width: 11%; }
+.members-table th.col-gender { width: 11%; }
+.members-table th.col-cards { width: 22%; }
+.members-table th.col-price { width: 11%; }
+.members-table th.col-expiry { width: 11%; }
+.members-table th.col-advisor { width: 7%; }
+.members-table th.col-tenure { width: 10%; }
+.members-table td { overflow-wrap: normal; word-break: keep-all; }
+.members-table td.col-name { overflow-wrap: anywhere; }
+.members-table .member-cell-info { min-width: 0; }
+.members-table .member-name-button { display: block; max-width: 100%; }
+.members-table .member-cell strong { white-space: normal; overflow-wrap: anywhere; }
+.members-table td.col-phone, .members-table td.col-price, .members-table td.col-expiry { white-space: nowrap; }
+.members-table .member-cards { display: flex; flex-wrap: wrap; gap: 5px; }
+.members-table .member-cards .badge { max-width: 100%; height: auto; padding: 3px 8px; border-radius: 11px; white-space: normal; text-align: left; }
+.member-pagination { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; justify-content: space-between; padding: 14px 15px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+.member-pagination > div { display: flex; align-items: center; gap: 9px; }
+.member-pagination select { width: auto; min-height: 32px; padding: 4px 8px; }
+.member-pagination .button { flex: 0 0 auto; white-space: nowrap; }
+.member-pagination .page-current { min-width: 52px; color: var(--ink); font-size: 13px; font-weight: 600; text-align: center; }
+.member-switcher > .member-switcher-search { display: block; width: 100%; min-height: 34px; margin-bottom: 9px; padding: 6px 9px; font-size: 12px; }
+@media (max-width: 960px) {
+  .members-table { min-width: 0; table-layout: auto; }
+  .members-table td { overflow-wrap: normal; word-break: normal; }
+  .members-table td.col-phone, .members-table td.col-price, .members-table td.col-expiry { white-space: nowrap; }
+}

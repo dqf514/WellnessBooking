@@ -1,11 +1,11 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useLanguage } from "@/context/LanguageContext";
-import type { Member } from "@/types";
+import type { MemberOption } from "@/types";
 
-export function MemberPicker({ members, value, onChange, required = false, excludeId }: { members: Member[]; value: string; onChange: (id: string) => void; required?: boolean; excludeId?: number }) {
+export function MemberPicker({ members, value, onChange, required = false, excludeId }: { members: MemberOption[]; value: string; onChange: (id: string) => void; required?: boolean; excludeId?: number }) {
   const { local } = useLanguage();
   const listId = useId();
-  const labelFor = (member: Member) => `${member.name}${member.name_en ? ` ${member.name_en}` : ""} · ${member.phone}`;
+  const labelFor = (member: MemberOption) => `${member.name}${member.name_en ? ` ${member.name_en}` : ""} · ${member.phone}`;
   const [query, setQuery] = useState("");
   const [matchedId, setMatchedId] = useState("");
   const emitted = useRef("");
@@ -16,6 +16,12 @@ export function MemberPicker({ members, value, onChange, required = false, exclu
     setMatchedId(value);
     setQuery(member ? labelFor(member) : "");
   }, [value, members]);
+  // 会员上千后不再把整份名单塞进 datalist：按输入内容过滤，最多给 60 条候选。
+  const suggestions = useMemo(() => {
+    const keyword = query.trim().toLowerCase();
+    const pool = keyword ? members.filter((member) => `${member.name} ${member.name_en ?? ""} ${member.phone}`.toLowerCase().includes(keyword)) : members;
+    return pool.filter((member) => member.id !== excludeId).slice(0, 60);
+  }, [members, query, excludeId]);
   return <>
     <input required={required && !matchedId} value={query} onChange={(event) => {
       setQuery(event.target.value);
@@ -25,6 +31,6 @@ export function MemberPicker({ members, value, onChange, required = false, exclu
       setMatchedId(nextId);
       onChange(nextId);
     }} list={listId} placeholder={local("输入姓名或手机号检索", "Search by name or mobile number")} autoComplete="off"/>
-    <datalist id={listId}>{members.filter((member) => member.id !== excludeId).map((member) => <option key={member.id} value={labelFor(member)}>{local("会员", "Member")} #{member.id}</option>)}</datalist>
+    <datalist id={listId}>{suggestions.map((member) => <option key={member.id} value={labelFor(member)}>{local("会员", "Member")} #{member.id}</option>)}</datalist>
   </>;
 }

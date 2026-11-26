@@ -75,7 +75,7 @@ def meta(db: Session = Depends(get_db), user: User = Depends(require_catalog_vie
 
 
 @router.get("/members")
-def list_members(q: str = Query(""), category: str = Query(""), card_status: str = Query(""), active_only: bool = Query(False), sort: str = Query("card"), db: Session = Depends(get_db), _: User = Depends(require_members_view)):
+def list_members(q: str = Query(""), category: str = Query(""), card_status: str = Query(""), active_only: bool = Query(False), sort: str = Query("card"), page: int | None = Query(None, ge=1), page_size: int = Query(50, ge=1, le=200), db: Session = Depends(get_db), _: User = Depends(require_members_view)):
     query = db.query(Member).options(joinedload(Member.advisor), joinedload(Member.cards).joinedload(MemberCard.product)).filter(Member.deleted_at.is_(None))
     if q.strip():
         term = f"%{q.strip()}%"
@@ -107,7 +107,26 @@ def list_members(q: str = Query(""), category: str = Query(""), card_status: str
         rows = sorted(rows, key=lambda row: (row.name, row.id))
     elif sort == "joined":
         rows = sorted(rows, key=lambda row: (-(row.created_at.timestamp() if row.created_at else 0), row.id))
-    return {"items": [member_dict(row, include_cards=True) for row in rows], "total": len(rows), "card_stats": member_card_stats(rows)}
+    # 名单上千条时页面只取当前一页，避免整包序列化；不带 page 时保持整份返回的旧行为。
+    total = len(rows)
+    pages = max(1, (total + page_size - 1) // page_size)
+    current = min(page, pages) if page else 1
+    window = rows[(current - 1) * page_size: current * page_size] if page else rows
+    return {"items": [member_dict(row, include_cards=True) for row in window], "total": total, "page": current, "page_size": page_size, "pages": pages, "card_stats": member_card_stats(rows)}
+
+
+@router.get("/members/options")
+def member_options(q: str = Query(""), active_only: bool = Query(False), limit: int = Query(200, ge=1, le=20000), db: Session = Depends(get_db), _: User = Depends(require_members_view)):
+    """下拉选择用的精简会员名单：不含卡课与档案详情，会员上千也能秒开。"""
+    query = db.query(Member.id, Member.name, Member.name_en, Member.phone, Member.active).filter(Member.deleted_at.is_(None))
+    if q.strip():
+        term = f"%{q.strip()}%"
+        query = query.filter(or_(Member.name.like(term), Member.name_en.like(term), Member.phone.like(term)))
+    if active_only:
+        query = query.filter(Member.active.is_(True))
+    total = query.count()
+    rows = query.order_by(Member.name).limit(limit).all()
+    return {"items": [{"id": row.id, "name": row.name, "name_en": row.name_en, "phone": row.phone, "active": row.active} for row in rows], "total": total}
 
 
 @router.post("/members")

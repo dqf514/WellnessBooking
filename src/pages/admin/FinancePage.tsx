@@ -10,7 +10,7 @@ import { money, today } from "@/lib/date";
 import { categoryLabel, defaultRevenueMode, entryTypeLabel, financeCategories, paymentLabel, paymentMethods } from "@/lib/financeCopy";
 import { useCan } from "@/lib/permissions";
 import { transactionNote } from "@/lib/transactionCopy";
-import type { Member, Transaction } from "@/types";
+import type { MemberOption, Transaction } from "@/types";
 
 const kindCopy: Record<string, [string, string]> = { purchase: ["购买", "Purchase"], refund: ["退款", "Refund"], upgrade: ["升卡", "Upgrade"], manual: ["手动", "Manual"], consumption: ["消课营收", "Consumption revenue"], consumption_reversal: ["营收冲销", "Revenue reversal"] };
 
@@ -25,7 +25,7 @@ export function FinancePage() {
   const [revenueTotal, setRevenueTotal] = useState(0);
   const [refundTotal, setRefundTotal] = useState(0);
   const [methods, setMethods] = useState<string[]>([]);
-  const [members, setMembers] = useState<Member[]>([]);
+  const [members, setMembers] = useState<MemberOption[]>([]);
   const [from, setFrom] = useState(today().slice(0, 8) + "01");
   const [to, setTo] = useState(today());
   const [category, setCategory] = useState("");
@@ -64,7 +64,7 @@ export function FinancePage() {
     finally { if (requestId === latestRequest.current) setLoading(false); }
   }, [from, to, category, methods]);
   useEffect(() => { if (canViewLedger) void load(); }, [load, canViewLedger]);
-  useEffect(() => { if (!canWrite) return; void apiFetch<{ items: Member[] }>("/api/admin/members").then((result) => setMembers(result.items)).catch((err) => setError(err instanceof Error ? err.message : local("加载会员失败", "Failed to load members"))); }, [canWrite]);
+  useEffect(() => { if (!canWrite) return; void apiFetch<{ items: MemberOption[] }>("/api/admin/members/options?limit=20000").then((result) => setMembers(result.items)).catch((err) => setError(err instanceof Error ? err.message : local("加载会员失败", "Failed to load members"))); }, [canWrite]);
 
   function openManual(row?: Transaction) {
     setEditingTransaction(row ?? null);

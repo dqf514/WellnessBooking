@@ -966,6 +966,44 @@
 - `npm run build` 通过（`tsc -b` 无报错）。
 - CDP 实测：1600px 展开态点击折叠按钮后 `.admin-shell` 变为 `collapsed`、栅格列变为 `78px 1507px`；底部快捷按钮与个人中心全部可见不溢出；用 `Input.dispatchMouseEvent` 悬停分组标题，子菜单浮层在右侧正常展开且文字完整。
 
+## 三十二、会员名单分页与表格排版（2026-11-26）
+
+### 1. 后端：向后兼容的分页参数
+
+- `GET /api/admin/members` 新增可选查询参数 `page: int | None = Query(None, ge=1)` 与 `page_size: int = Query(50, ge=1, le=200)`。
+- **不传 `page` 时仍返回整份名单**（旧行为保留），其它调用方（导出、报表）不受影响；传 `page` 时返回 `{ items, total, page, page_size, pages, card_stats }`。
+- `card_stats` 始终按**筛选后的全量集合**统计，卡种人数不会因为分页而变少。
+- 新增 `GET /api/admin/members/options`：只返回 `{id, name, name_en, phone, active}` 的精简名单，带 `q` / `active_only` / `limit`（上限 20000）参数，供下拉与侧边清单使用。
+- **路由顺序**：`/api/admin/members/options` 必须声明在 `/api/admin/members/{member_id}` 之前，否则会被 int 路径参数捕获并返回 422。
+
+### 2. 前端：分页与下拉数据源拆分
+
+- `src/pages/admin/MembersPage.tsx` 增加 `page` / `pageSize` / `total` / `pages` 状态，`loadMembers` 带上分页参数；切换搜索、卡种、排序、每页条数时统一 `setPage(1)`。
+- 新增 `loadMemberOptions()`（`useRef` 守卫，只加载一次）拉取精简名单，供会员档案侧边清单使用；未加载完成时回退到当前页数据。
+- `src/components/MemberPicker.tsx` 与 `src/components/MemberProfileDrawer.tsx` 的入参改为 `MemberOption[]`；`MemberPicker` 客户端过滤并把 datalist 限制在 60 条，`MemberProfileDrawer` 增加搜索框且列表限制在 40 条。
+- `src/types.ts` 新增 `MemberOption` 接口，`Member` 继承自它。
+- `BookingsPage` / `FinancePage` / `NoticesPage` 改用 `/api/admin/members/options`，避免拉取含卡课与档案详情的完整名单。
+
+### 3. 样式
+
+- `src/styles.css` 新增 `.members-table`：`table-layout: fixed` + `min-width: 1180px` + 各列百分比宽度，长内容不再压缩相邻列。
+- 全局 `overflow-wrap: anywhere` 会让手机号在数字中间断行，表格内统一覆写为 `normal` / `keep-all`，仅姓名列保留 `anywhere`。
+- 全局 `input, select, textarea { width: 100% }` 会让分页栏的「每页条数」下拉占满整行导致按钮被压扁，`.member-pagination select { width: auto }` 覆写，并给按钮加 `flex: 0 0 auto`。
+- 卡片标签 `.member-cards .badge` 改为可换行、`text-align: left`，多张卡依次排列。
+
+### 4. 验证
+
+- 实测：不分页 5,240 条 / 2.79 MB / 0.89 s；分页（每页 50）返回 50 条 / 194 KB / 0.27 s，`total=5240`、`pages=105`。
+- `GET /api/admin/members/options?limit=20000` 返回全部精简名单；带 `q` 时响应体大幅缩小。
+- CDP 截图核对桌面端、移动端、长姓名行、分页栏、档案侧边搜索框；`/admin/bookings`、`/admin/finance`、`/admin/notices`、`/admin/members` 四个页面无报错提示。
+- `npm run build` 通过。
+
+### 5. 文档
+
+- `docs/API.md` 第 6 章接口数 22 → 23，新增 `GET /api/admin/members/options` 说明并补充分页参数；`python docs/build_api_docs.py` 重新生成 `public/api-docs.html`（18 章 / 149 个接口）。
+- `public/help.html` 会员档案章节新增「名单分页翻看」并补充档案侧边搜索说明。
+- `public/changelog-details.html` 追加 BATCH 20（3 张截图）、`docs/CHANGELOG_CLIENT.md` / `docs/CHANGELOG_DEVELOPER.md` / `src/lib/changelog.ts` 同步；`API_ENDPOINT_COUNT` 同步为 149。
+
 ## 三十一、勤鸟历史数据导入（2026-11-26）
 
 ### 1. 数据模型与表结构对齐

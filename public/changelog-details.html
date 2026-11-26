@@ -50,6 +50,7 @@
       <nav>
         <ul class="toc-list">
           <li><a href="#overview">本次更新概览</a></li>
+          <li><a href="#batch-1126d">2026-11-26 · 会员名单分页与表格排版</a></li>
           <li><a href="#batch-1126c">2026-11-26 · 勤鸟历史数据一键导入</a></li>
           <li><a href="#batch-1126b">2026-11-26 · 后台导航栏可折叠为图标栏</a></li>
           <li><a href="#batch-1126">2026-11-26 · 名单只留真客户与日历导入</a></li>
@@ -92,8 +93,13 @@
         <div class="stats">
           <div class="stat"><small>REQUIREMENTS</small><strong>14 + 12</strong><span>《MODIFY1117》14 条 + 《MODIFY1125》12 条需求已落地并逐条对照</span></div>
           <div class="stat"><small>CAPABILITIES</small><strong>19</strong><span>角色能力项，覆盖 5 种员工角色</span></div>
-          <div class="stat"><small>ENDPOINTS</small><strong>148</strong><span>后台接口总数，11-26 新增 8 个（会员通知 4、Outlook 导入 1、会员指南 1、历史导入 2）</span></div>
+          <div class="stat"><small>ENDPOINTS</small><strong>149</strong><span>后台接口总数，11-26 新增 9 个（会员通知 4、Outlook 导入 1、会员指南 1、历史导入 2、会员精简名单 1）</span></div>
           <div class="stat"><small>FIXES</small><strong>12</strong><span>数据一致性、并发、权限与显示对齐缺陷修复</span></div>
+        </div>
+        <div class="batch">
+          <small>BATCH 20 · 2026-11-26</small>
+          <h2>会员名单分页翻看，表格不再挤成一团</h2>
+          <p>会员上千以后，「会员管理」不再一次性把五千多人全塞进页面：名单改为分页显示，默认每页 50 条，底部可切换 20 / 50 / 100 条并翻页，左下角显示总人数与当前页码，改搜索条件或排序会自动回到第 1 页。表格同时重新排版——列宽固定，姓名过长会换行显示，手机号、购卡价格与到期日始终保持一行不再被挤断；一位会员有多张有效卡时改为逐张排列、自动换行，比挤成一条长串更好读。会员档案侧边的会员清单加了搜索框，会员多时也能立刻找到并切换到目标会员；预约、财务入账与会员通知页也改用精简会员名单，页面加载明显更快。</p>
         </div>
         <div class="batch">
           <small>BATCH 19 · 2026-11-26</small>
@@ -190,6 +196,51 @@
           <h2>1117 需求：财务、报表与运营效率</h2>
           <p>核心是把“现金实收”和“确认营收”拆成两件事：私教按消课确认营收、年卡按天均摊、团课购卡即确认；购卡与手动入账都提供“入流水 / 入营收 / 营收每日均摊”三个可选项。同时补齐教室总览次日导出、财务与课程报表导出、品牌账单小票（14.5cm × 7.5cm），并统一课程与卡课产品的中文类目。</p>
         </div>
+      </section>
+
+      <section id="batch-1126d" class="section">
+        <span class="section-kicker">BATCH 20</span>
+        <h2>2026-11-26 · 会员名单分页与表格排版</h2>
+        <p class="section-intro">会员数量到几千以后，「会员管理」原来一次性加载整份名单，页面要等好几秒，长姓名还会把手机号挤成三行。现在名单按页显示，表格重新排版，怎么翻都不会挤。</p>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">P1</span><h3>名单分页显示</h3><span class="change-tag">已完成</span></div>
+          <ul>
+            <li>会员列表改为分页：默认每页 50 条，表格底部可切换 20 / 50 / 100 条，并用「上一页 / 下一页」翻页，左下角显示总人数与当前页码（如「共 5240 位会员 · 每页 50 条」「1 / 105」）。</li>
+            <li>后台只向页面下发当前这一页的会员数据，一次几十条而不是五千多条，页面打开明显更快；底部「卡种人数统计」仍按筛选后的全部会员计算，人数不会因为翻页而变。</li>
+            <li>改搜索条件、卡种筛选、持卡状态或排序后会自动回到第 1 页，避免停在一个已经不存在的页码上。</li>
+          </ul>
+          <figure>
+            <img src="changelog-images/83-members-pagination.png" alt="会员管理分页列表" loading="lazy">
+            <figcaption><b>图 1 · 分页后的会员管理。</b>一页 50 条，底部可直接翻页与调整每页条数。</figcaption>
+          </figure>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">P2</span><h3>表格不再挤成一团</h3><span class="change-tag">已完成</span></div>
+          <ul>
+            <li>会员表格改为固定列宽，列宽不再被内容牵着走；姓名过长时换行显示，不再把后面的列压扁。</li>
+            <li>手机号、购卡价格与到期日期始终保持一行，不会再出现「1376 / 1335 / 436」这样从中间断开的号码。</li>
+            <li>一位会员有多张有效会员卡时，改为逐张小标签排列并自动换行，超过 4 张折叠成「+N」；鼠标悬停可看到全部卡名。</li>
+          </ul>
+          <figure>
+            <img src="changelog-images/84-members-long-names.png" alt="长姓名与多张会员卡换行显示" loading="lazy">
+            <figcaption><b>图 2 · 长姓名与多张卡。</b>姓名换行、手机号保持一行，多张会员卡逐张排列并自动换行。</figcaption>
+          </figure>
+          <figure>
+            <img src="changelog-images/85-member-pagination-bar.png" alt="表格底部的翻页条" loading="lazy">
+            <figcaption><b>图 3 · 底部翻页条。</b>每页条数、总人数与当前页码一目了然。</figcaption>
+          </figure>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">P3</span><h3>会员档案侧边清单可搜索</h3><span class="change-tag">已完成</span></div>
+          <ul>
+            <li>会员档案左侧的会员清单顶部新增搜索框，可按姓名或手机号查找并直接切换到该会员；会员很多时只列出前 40 位，搜索后即可命中。</li>
+            <li>转卡、共享卡时选择对方会员同样使用这个搜索框，不必在几千人里翻找。</li>
+            <li>预约、财务入账与会员通知页改用精简的会员名单（只含姓名、英文名、手机号），不再把整份会员档案拉进页面。</li>
+          </ul>
+        </article>
       </section>
 
       <section id="batch-1126c" class="section">

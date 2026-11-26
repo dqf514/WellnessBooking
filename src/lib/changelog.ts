@@ -2,7 +2,7 @@
 export const APP_VERSION = "1.1.0";
 export const APP_RELEASE_DATE = "2026-11-26";
 export const API_VERSION = "v1.0.0";
-export const API_ENDPOINT_COUNT = 148;
+export const API_ENDPOINT_COUNT = 149;
 
 export interface ChangelogText { zh: string; en: string }
 export interface ChangelogGroup { title: ChangelogText; points: ChangelogText[] }
@@ -41,6 +41,12 @@ export const changelogReleases: ChangelogRelease[] = [
       { title: { zh: "后台导航", en: "Admin navigation" }, points: [
         { zh: "左侧导航栏可一键折叠为图标栏，内容区随之变宽；再点一次展开", en: "The sidebar can be collapsed to icons in one click, giving the content area more room" },
         { zh: "折叠后把鼠标移到分组图标上，子菜单仍以浮层展开；折叠状态会被记住", en: "Hovering a group icon still opens its submenu as a flyout, and the collapsed state is remembered" },
+      ] },
+      { title: { zh: "会员名单分页与排版", en: "Paginated member list" }, points: [
+        { zh: "会员上千后名单按页显示，默认每页 50 条，底部可切换每页条数并翻页，改筛选条件自动回到第 1 页", en: "With thousands of members the list is paginated — 50 per page by default, with a rows-per-page switch and page navigation; changing a filter jumps back to page 1" },
+        { zh: "表格固定列宽：长姓名换行显示，手机号、购卡价格与到期日始终保持一行，不再被挤断", en: "Column widths are fixed: long names wrap, while phone numbers, prices and expiry dates always stay on one line" },
+        { zh: "一位会员有多张有效卡时逐张小标签排列并自动换行，超过 4 张折叠成「+N」", en: "A member with several active cards now shows them as separate chips that wrap, folding to “+N” beyond four" },
+        { zh: "会员档案侧边清单新增搜索框，按姓名或手机号查找即可切换会员；预约、财务与通知页改用精简会员名单，加载更快", en: "The member list beside a profile gained a search box; the bookings, finance and notices pages now use a lightweight member list and load faster" },
       ] },
       { title: { zh: "勤鸟历史数据导入", en: "RocketBird legacy import" }, points: [
         { zh: "后台“系统设置 → 历史数据导入”可上传勤鸟导出的 ZIP，把会员、会员卡、排课、签到、消课与流水整套导入", en: "“Settings → Legacy data import” accepts a ZIP of the RocketBird export and brings in members, cards, sessions, check-ins, consumptions and transactions" },

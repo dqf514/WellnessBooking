@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { Field, Notice } from "@/components/AdminUI";
 import { EntryOptionsFields } from "@/components/EntryOptionsFields";
 import { MemberDocuments } from "@/components/MemberDocuments";
@@ -13,9 +13,9 @@ import { categoryLabel as financeCategoryLabel, canonicalCategory, courseTypeLab
 import { genderLabel } from "@/lib/memberCopy";
 import { type Capability } from "@/lib/permissions";
 import { transactionNote } from "@/lib/transactionCopy";
-import type { Member, MemberCard, MemberDetail, Meta, Product } from "@/types";
+import type { MemberCard, MemberDetail, MemberOption, Meta, Product } from "@/types";
 
-export function MemberProfileDrawer({ detail, members, meta, can, onClose, onSelect, onEdit, onChanged }: { detail: MemberDetail; members: Member[]; meta: Meta | null; can: (capability: Capability) => boolean; onClose: () => void; onSelect: (id: number) => void; onEdit: () => void; onChanged: () => Promise<void> }) {
+export function MemberProfileDrawer({ detail, members, meta, can, onClose, onSelect, onEdit, onChanged }: { detail: MemberDetail; members: MemberOption[]; meta: Meta | null; can: (capability: Capability) => boolean; onClose: () => void; onSelect: (id: number) => void; onEdit: () => void; onChanged: () => Promise<void> }) {
   const { local, language } = useLanguage();
   // 会员档案里的操作按能力细分：改资料、收款、卡权益与跟进记录各自独立授权。
   const canMemberWrite = can("members.write");
@@ -66,7 +66,14 @@ export function MemberProfileDrawer({ detail, members, meta, can, onClose, onSel
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [cardCancelConfirmed, setCardCancelConfirmed] = useState(false);
+  const [switchQuery, setSwitchQuery] = useState("");
   const [confirmState, setConfirmState] = useState<{ title: string; description: string; confirmLabel: string; onConfirm: () => Promise<void> } | null>(null);
+  // 会员上千后侧边清单不再全量渲染：可按姓名或手机号检索，最多列出 40 人。
+  const switchList = useMemo(() => {
+    const keyword = switchQuery.trim().toLowerCase();
+    const pool = keyword ? members.filter((member) => `${member.name} ${member.name_en ?? ""} ${member.phone}`.toLowerCase().includes(keyword)) : members;
+    return pool.slice(0, 40);
+  }, [members, switchQuery]);
   function askConfirm(title: string, description: string, confirmLabel: string, onConfirm: () => Promise<void>) { setConfirmState({ title, description, confirmLabel, onConfirm }); }
   const bookingStatus: Record<string, string> = { booked: local("待上课", "Upcoming"), checked_in: local("已消课", "Completed"), completed: local("已消课", "Completed"), cancelled: local("已取消", "Cancelled"), no_show: local("爽约", "No show") };
   const categoryLabel = (value: string) => value === "all" ? local("全部课程", "All classes") : financeCategoryLabel(value, local);
@@ -203,7 +210,7 @@ export function MemberProfileDrawer({ detail, members, meta, can, onClose, onSel
   return <>
     <Modal drawer className="member-drawer" title={local("会员档案", "Member profile")} onClose={onClose}>
       <div className="member-profile-layout">
-        <aside className="member-switcher" aria-label={local("切换会员", "Switch member")}><label><span>{local("会员清单", "Members")}</span><select value={detail.id} onChange={(event) => onSelect(Number(event.target.value))}>{members.map((member) => <option value={member.id} key={member.id}>{member.name}</option>)}</select></label><div>{members.map((member) => <button type="button" className={member.id === detail.id ? "active" : ""} key={member.id} onClick={() => onSelect(member.id)}>{member.photo_url ? <img className="member-photo" src={member.photo_url} alt={member.name}/> : <span className="user-avatar">{member.name.slice(0, 1)}</span>}<strong>{member.name}</strong></button>)}</div></aside>
+        <aside className="member-switcher" aria-label={local("切换会员", "Switch member")}><input className="member-switcher-search" value={switchQuery} onChange={(event) => setSwitchQuery(event.target.value)} placeholder={local("按姓名或手机号查找会员", "Find a member by name or mobile")}/><label><span>{local("会员清单", "Members")}</span><select value={detail.id} onChange={(event) => onSelect(Number(event.target.value))}>{switchList.map((member) => <option value={member.id} key={member.id}>{member.name}</option>)}</select></label><div>{switchList.map((member) => <button type="button" className={member.id === detail.id ? "active" : ""} key={member.id} onClick={() => onSelect(member.id)}>{member.photo_url ? <img className="member-photo" src={member.photo_url} alt={member.name}/> : <span className="user-avatar">{member.name.slice(0, 1)}</span>}<strong>{member.name}</strong></button>)}</div></aside>
         <div className="member-profile">
           {error && <Notice error message={error}/>} {message && <Notice message={message}/>}
           <div className="profile-actions">{canMemberWrite && <button type="button" onClick={onEdit}><Icon name="settings"/><span>{local("编辑资料", "Edit")}</span></button>}{canMemberWrite && <label className="profile-upload"><Icon name="user" size={16}/><span>{local("上传照片", "Upload photo")}</span><input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => { const file = event.target.files?.[0] ?? null; event.target.value = ""; if (file) setCropFile(file); }}/></label>}{canMemberWrite && detail.photo_url && <button type="button" onClick={() => void removePhoto()}><Icon name="close"/><span>{local("删除照片", "Remove photo")}</span></button>}{canRevenue && <button type="button" onClick={() => openPurchase()}><Icon name="card"/><span>{local("购卡 / 购课", "Buy card")}</span></button>}{canMemberWrite && <button type="button" onClick={() => setReminderOpen(true)}><Icon name="bell"/><span>{local("提醒", "Reminder")}</span></button>}{canCards && <button type="button" onClick={() => setVoucherOpen(true)}><Icon name="plus"/><span>{local("赠体验券", "Offer voucher")}</span></button>}{canMemberWrite && <RecycleDeleteButton resource="members" id={detail.id} label={detail.name} onDeleted={onClose}/>}</div>

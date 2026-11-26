@@ -545,17 +545,24 @@ curl -X POST "$API/api/auth/login" \
 - **响应**：`courses`、`rooms`、`teachers`、`products`、`users` 五个完整数组，包括停用项；另含 `member_sources`（获客来源下拉选项）。
 - 用于表单选项和关联展示；接口含全部员工账号，前端不应把响应暴露给非授权用户。
 
-## 6. 会员档案、会员卡、权益与爽约（22）
+## 6. 会员档案、会员卡、权益与爽约（23）
 
 ### 6.1 查询会员列表
 
 #### GET /api/admin/members
 
 - **权限**：只读。
-- **Query**：`q`（姓名/英文名/手机号模糊搜索）、`category`（卡类别，可多选，用英文逗号分隔，如 `group,private`）、`card_status`（持卡状态：`active` 有有效卡 / `expired` 卡已过期 / `pending` 开卡日期待定 / `none` 未开卡）、`active_only`（默认 `false`）、`sort`（排序：`card` 默认按会员卡种类自动排序 / `name` 按姓名 / `joined` 按入会时间倒序）。
-- **响应**：`{ items: Member[]（含 cards）, total, card_stats }`，`card_stats` 为按卡种统计的人数数组（`product_id`、`name`、`name_en`、`category`、`count`），用于列表底部展示每种会员卡的数量。
+- **Query**：`q`（姓名/英文名/手机号模糊搜索）、`category`（卡类别，可多选，用英文逗号分隔，如 `group,private`）、`card_status`（持卡状态：`active` 有有效卡 / `expired` 卡已过期 / `pending` 开卡日期待定 / `none` 未开卡）、`active_only`（默认 `false`）、`sort`（排序：`card` 默认按会员卡种类自动排序 / `name` 按姓名 / `joined` 按入会时间倒序）、`page`（页码，从 1 开始；**不传则整份返回**，保持旧行为）、`page_size`（每页条数，默认 50，最大 200）。
+- **响应**：`{ items: Member[]（含 cards）, total, page, page_size, pages, card_stats }`，`card_stats` 为按卡种统计的人数数组（`product_id`、`name`、`name_en`、`category`、`count`），用于列表底部展示每种会员卡的数量；统计始终基于筛选后的全部会员，不受分页影响。
+- 传 `page` 时只序列化当前页的会员（会员上千时页面秒开），`total` 为筛选后的总人数，`pages` 为总页数；页码超出范围会自动回落到最后一页。
 - `category` 多选时按业务卡种归类：`group` 团课、`private` 私教与评估、`annual` 年卡与组合套餐；历史 `package` 产品归入 `annual`。
 - `sort=card` 的顺序为：年卡 / 组合套餐 → 团课月卡 → 团课十次卡 → 团课六次卡 → 团课周卡 → 私教 10/20/30 次卡；无有效卡的客户排在最后。
+
+#### GET /api/admin/members/options
+
+- **权限**：只读。
+- **Query**：`q`（姓名/英文名/手机号模糊搜索）、`active_only`（默认 `false`）、`limit`（最多返回条数，默认 200，最大 20000）。
+- **响应**：`{ items: [{ id, name, name_en, phone, active }], total }`；这是下拉选择用的精简名单，不含卡课与档案详情，会员上千时也能秒开。
 
 ### 6.2 新建会员
 

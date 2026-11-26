@@ -4,7 +4,7 @@ import { Badge, Empty, Icon, Modal, ResponsiveTable, Spinner } from "@/component
 import { useLanguage } from "@/context/LanguageContext";
 import { apiFetch, downloadFile } from "@/lib/api";
 import { today } from "@/lib/date";
-import type { Member } from "@/types";
+import type { MemberOption } from "@/types";
 
 interface NoticeRow { id: number; title: string; content: string; send_on: string; scope: string; scope_label: string; member_ids: number[]; status: string; sent_count: number; failed_count: number; created_by: string; created_at: string; sent_at: string }
 const SCOPES = [{ value: "all", zh: "全部会员", en: "All members" }, { value: "card_holders", zh: "已购卡客户", en: "Card holders" }, { value: "selected", zh: "指定会员", en: "Selected members" }];
@@ -14,7 +14,7 @@ const SWITCH_TEMPLATE = { title: "预约系统切换提醒", content: "尊敬的
 export function NoticesPage() {
   const { local } = useLanguage();
   const [items, setItems] = useState<NoticeRow[]>([]);
-  const [members, setMembers] = useState<Member[]>([]);
+  const [members, setMembers] = useState<MemberOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -26,7 +26,7 @@ export function NoticesPage() {
   const load = useCallback(async () => {
     setLoading(true); setError("");
     try {
-      const [noticeResult, memberResult] = await Promise.all([apiFetch<{ items: NoticeRow[] }>("/api/admin/notices"), apiFetch<{ items: Member[] }>("/api/admin/members?active_only=true")]);
+      const [noticeResult, memberResult] = await Promise.all([apiFetch<{ items: NoticeRow[] }>("/api/admin/notices"), apiFetch<{ items: MemberOption[] }>("/api/admin/members/options?active_only=true&limit=20000")]);
       setItems(noticeResult.items); setMembers(memberResult.items);
     } catch (err) { setError(err instanceof Error ? err.message : local("加载失败", "Loading failed")); }
     finally { setLoading(false); }
