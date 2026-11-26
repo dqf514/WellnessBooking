@@ -208,6 +208,24 @@ class ExperienceVoucher(Base, SoftDeleteMixin):
     member: Mapped[Member] = relationship()
 
 
+class MemberNotice(Base):
+    """会员群发通知：可预约发送日期，到点由计划任务自动群发短信。"""
+    __tablename__ = "member_notices"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(String(160))
+    content: Mapped[str] = mapped_column(Text)
+    # 发送日期（YYYY-MM-DD）；范围 all=全部会员 / card_holders=已购卡客户 / selected=指定会员。
+    send_on: Mapped[str] = mapped_column(String(10), default="", index=True)
+    scope: Mapped[str] = mapped_column(String(24), default="all")
+    member_ids: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String(20), default="scheduled")
+    sent_count: Mapped[int] = mapped_column(Integer, default=0)
+    failed_count: Mapped[int] = mapped_column(Integer, default=0)
+    created_by: Mapped[str] = mapped_column(String(80), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
 class MemberReminder(Base, SoftDeleteMixin):
     __tablename__ = "member_reminders"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -230,6 +248,9 @@ class RoomReservation(Base, TimestampMixin, SoftDeleteMixin):
     end_time: Mapped[str] = mapped_column(String(5))
     usage_type: Mapped[str] = mapped_column(String(24), default="internal")
     notes: Mapped[str] = mapped_column(Text, default="")
+    # 从 Outlook 会议室日历导入的占用：external_uid 用于去重，source 标记来源。
+    external_uid: Mapped[str] = mapped_column(String(160), default="", index=True)
+    source: Mapped[str] = mapped_column(String(24), default="")
     status: Mapped[str] = mapped_column(String(20), default="active")
     created_by: Mapped[str] = mapped_column(String(80), default="")
     room: Mapped[Room] = relationship()

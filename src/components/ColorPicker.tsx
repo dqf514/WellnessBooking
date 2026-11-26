@@ -40,6 +40,19 @@ function shade(hex: string, delta: number) {
 // 每一行是一个明度档，每一列是一个色系。
 const paletteRows = steps.map((step) => anchors.map((anchor) => shade(anchor, step)));
 
+// 常用色：客户反馈缺鲜红、黄、金黄、橙、粉、灰、纯白等色，这里直接给出定稿值。
+const commonColors = [
+  { name: "鲜红", hex: "#d92b2b" },
+  { name: "橙", hex: "#f5821f" },
+  { name: "金黄", hex: "#d99a2b" },
+  { name: "黄", hex: "#f2d024" },
+  { name: "粉", hex: "#ef9ab8" },
+  { name: "灰", hex: "#8a8f98" },
+  { name: "深灰", hex: "#4a4f57" },
+  { name: "黑", hex: "#1f2328" },
+  { name: "纯白", hex: "#ffffff" },
+];
+
 export function ColorPicker({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   const { local } = useLanguage();
   const pickerRef = useRef<HTMLInputElement>(null);
@@ -53,14 +66,17 @@ export function ColorPicker({ value, onChange }: { value: string; onChange: (val
     input.click();
   }
   return <div className="color-picker">
-    <div className="color-presets" role="group" aria-label={local("常用颜色", "Preset colors")}>
+    <div className="color-common" role="group" aria-label={local("常用颜色", "Preset colors")}>
+      {commonColors.map((item) => <button key={item.hex} className={value.toLowerCase() === item.hex ? "active" : ""} style={{ "--swatch": item.hex } as React.CSSProperties} type="button" title={`${item.name} ${item.hex}`} aria-label={local(`选择${item.name}`, `Select ${item.hex}`)} aria-pressed={value.toLowerCase() === item.hex} onClick={() => onChange(item.hex)}/>)}
+    </div>
+    <div className="color-presets" role="group" aria-label={local("全部色板", "Full palette")}>
       {paletteRows.map((row, rowIndex) => row.map((color) => <button key={`${rowIndex}-${color}`} className={value.toLowerCase() === color ? "active" : ""} style={{ "--swatch": color } as React.CSSProperties} type="button" title={color} aria-label={local(`选择颜色 ${color}`, `Select ${color}`)} aria-pressed={value.toLowerCase() === color} onClick={() => onChange(color)}/>))}
     </div>
     <div className="custom-color">
-      <button className="custom-color-trigger" type="button" onClick={openCustom} title={local("打开更多颜色", "Open the custom colour picker")} aria-label={local("打开更多颜色", "Open the custom colour picker")}><span style={{ background: value }}/></button>
-      <span>{local("更多颜色", "Custom color")}</span>
+      <button className="custom-color-trigger" type="button" onClick={openCustom} title={local("点击色块选择任意颜色", "Click the swatch to pick any colour")} aria-label={local("点击色块选择任意颜色", "Click the swatch to pick any colour")}><span style={{ background: value }}/></button>
+      <span>{local("点击左边色块可自定义颜色", "Click the swatch on the left to pick a custom colour")}</span>
       <code>{value.toUpperCase()}</code>
-      <input ref={pickerRef} type="color" value={value} onChange={(event) => onChange(event.target.value)} aria-label={local("更多颜色", "Custom color")}/>
+      <input ref={pickerRef} type="color" value={value} onChange={(event) => onChange(event.target.value)} aria-label={local("自定义颜色", "Custom colour")}/>
     </div>
   </div>;
 }

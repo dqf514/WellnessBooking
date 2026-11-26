@@ -101,9 +101,9 @@ X-API-Key: <完整 API Key>
 | scope | 权限范围 |
 | --- | --- |
 | `read` | 后台业务数据、报表与普通操作/短信日志读取 |
-| `members:write` | 会员、会员卡、会员记录（含 `PATCH /api/admin/records/{id}`）、爽约限制与合同文件写入 |
+| `members:write` | 会员、会员卡、会员记录（含 `PATCH /api/admin/records/{id}`）、爽约限制、合同文件与会员群发通知写入 |
 | `bookings:write` | 后台添加预约、签到、取消签到、完成、取消和爽约 |
-| `schedule:write` | 排课、复制周课表与教室占用写入 |
+| `schedule:write` | 排课、复制周课表、教室占用与 Outlook 日历导入写入 |
 | `catalog:write` | 课程、教室和教练基础资料写入 |
 | `finance:write` | 产品、手工入账、退款、电子码核销、会员卡升额与私教消课营收入账 |
 | `settings:write` | 场馆、品牌、员工账号与短信设置写入 |
@@ -353,7 +353,7 @@ curl -X POST "$API/api/auth/login" \
 - 新密码至少 8 位；原密码错误返回 `400`。
 - **响应**：`{ "ok": true }`。只更新当前 Token 对应员工。
 
-## 4. 会员端接口（18）
+## 4. 会员端接口（19）
 
 ### 4.1 会员端初始化数据
 
@@ -516,6 +516,15 @@ curl -X POST "$API/api/auth/login" \
 - `demo_login` 为真时，员工登录页会预填演示账号 `admin / admin123` 并显示账号提示；正式上线前应在后台关闭该开关，或用环境变量 `LOGIN_DEMO_CREDENTIALS=false` 强制关闭。
 - `captcha` 为真时，账号密码登录需要图片验证码。
 
+### 4.19 会员手机端操作指南 PDF
+
+#### GET /api/public/member-guide.pdf
+
+- **权限**：公开；**请求**：无。
+- **响应**：`application/pdf` 文件流，`Content-Disposition: inline`，`Cache-Control: no-store`。
+- 内容为面向会员的手机端图文操作指南：建桌面快捷方式、会员登录、预约团课、取消已预约团课、查看课程介绍、查看老师资料、查看自己的会员卡与预约课程。
+- 前台可在后台「会员通知」页一键下载后转发给会员。
+
 ## 5. 经营概览与基础元数据（2）
 
 ### 5.1 今日经营概览
@@ -543,8 +552,10 @@ curl -X POST "$API/api/auth/login" \
 #### GET /api/admin/members
 
 - **权限**：只读。
-- **Query**：`q`（姓名/英文名/手机号模糊搜索）、`category`（卡类别，可多选，用英文逗号分隔，如 `group,private`）、`card_status`（持卡状态：`active` 有有效卡 / `expired` 卡已过期 / `pending` 开卡日期待定 / `none` 未开卡）、`active_only`（默认 `false`）。
-- **响应**：`{ items: Member[]（含 cards）, total }`，按 ID 倒序。
+- **Query**：`q`（姓名/英文名/手机号模糊搜索）、`category`（卡类别，可多选，用英文逗号分隔，如 `group,private`）、`card_status`（持卡状态：`active` 有有效卡 / `expired` 卡已过期 / `pending` 开卡日期待定 / `none` 未开卡）、`active_only`（默认 `false`）、`sort`（排序：`card` 默认按会员卡种类自动排序 / `name` 按姓名 / `joined` 按入会时间倒序）。
+- **响应**：`{ items: Member[]（含 cards）, total, card_stats }`，`card_stats` 为按卡种统计的人数数组（`product_id`、`name`、`name_en`、`category`、`count`），用于列表底部展示每种会员卡的数量。
+- `category` 多选时按业务卡种归类：`group` 团课、`private` 私教与评估、`annual` 年卡与组合套餐；历史 `package` 产品归入 `annual`。
+- `sort=card` 的顺序为：年卡 / 组合套餐 → 团课月卡 → 团课十次卡 → 团课六次卡 → 团课周卡 → 私教 10/20/30 次卡；无有效卡的客户排在最后。
 
 ### 6.2 新建会员
 
@@ -795,7 +806,7 @@ curl -X POST "$API/api/auth/login" \
 - **权限**：只读；**响应**：原始文件流，`Content-Disposition: inline`。
 - 用于浏览器直接预览 PDF 和图片；Office、CSV 等格式是否可直接显示由浏览器决定。鉴权方式与下载接口相同。
 
-## 8. 排课、预约、教室与目录（29）
+## 8. 排课、预约、教室与目录（30）
 
 ### 8.1 查询后台排课
 
@@ -1059,6 +1070,17 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 
 - **权限**：管理员；**Body**：无。
 - 清空课程的 `image_url` 并删除服务器上的旧文件；**响应**：更新后的 Course。
+
+### 8.30 导入 Outlook 会议室日历
+
+#### POST /api/admin/room-reservations/import-ics
+
+- **权限**：需 `bookings.write`。
+- **Body**：`ics`（string，必填，ICS 文本内容）、`room_id`（integer，可选；为 0 或缺省时按日程 `LOCATION` 自动匹配教室）。
+- **响应**：`{ ok, created, skipped, total }`，`skipped` 为跳过原因数组（如「已经导入过」「与课程冲突」「未指定教室」）。
+- 解析 Outlook 导出的 `.ics`：支持 `DTSTART;TZID=Asia/Shanghai`、UTC（`Z`）、全天事件与 `RRULE:FREQ=WEEKLY` 每周重复。
+- 每条日程按 `UID` 去重，重复导入不会产生重复占用；导入的占用 `usage_type` 与 `source` 均为 `outlook`，在教室总览里以「Outlook 会议」标注。
+- 与已有课程或占用冲突的日程会跳过，不覆盖已有排课。
 
 ## 9. 产品、财务与报表（15）
 
@@ -1479,10 +1501,11 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 #### GET /api/admin/export/members.xlsx
 
 - **权限**：需 `members.view`；API Key 需 `read` 范围。
-- **Query**：`scope` 取 `all`（全部会员）、`new`（当月新进会员）、`renew_pending`（当月未续会会员），默认 `all`；`month` 为统计月份 `YYYY-MM`，`scope=all` 时忽略。
+- **Query**：`scope` 取 `all`（全部会员）、`new`（当月新进会员）、`renew_pending`（当月未续会会员），默认 `all`；`month` 为统计月份 `YYYY-MM`，`scope=all` 时忽略；`categories` 为卡种多选（英文逗号分隔，如 `group,private,annual`，为空表示不限）；`only_cards` 默认 `true`，只导出真正买过卡的客户，设为 `false` 才包含未开卡的散客。
 - **响应**：`application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` 文件流，`Content-Disposition: attachment`。
 - 工作表名为“会员列表”，中文表头：会员姓名、照片、手机号码、生日、性别、会员卡类别、合同总金额、购买时间、到期时间、会籍归属、会员时长、备注；首行冻结。
 - 会员照片直接嵌入“照片”列单元格（无照片留空），其余列取该会员当前有效会员卡的汇总数据。
+- `categories` 与 `GET /api/admin/members` 的卡种口径一致：`group` 团课、`private` 私教与评估、`annual` 年卡与组合套餐。
 
 ## 14. 典型业务调用顺序
 
@@ -1663,3 +1686,41 @@ const dashboard = await api("/api/admin/dashboard", {
 - **响应**：单页 **75 × 145 mm** 小票；待核销或已取消记录返回 `400`。
 - 包含 Octave/自定义品牌 Logo、健康管理 Wellness、日期时间、项目、金额、入账类型、客户、结账方式、备注、入账人、6% 增值税与去税金额、签字栏及场馆地址电话。
 - 去税金额按“含税金额 ÷ 1.06”计算，增值税为含税金额减去去税金额；退款或冲销记录以负数展示。
+
+## 18. 会员群发通知（4）
+
+面向全体会员或指定会员的短信群发通知，可指定发送日期，到点由后台计划任务自动发送；也可立即发送或取消。
+
+### 18.1 通知列表
+
+#### GET /api/admin/notices
+
+- **权限**：需 `members.view`。
+- **响应**：`{ items: Notice[] }`，按发送日期与 ID 倒序。
+- 每条通知含 `title`、`content`、`send_on`（计划发送日期）、`scope`（`all` 全部会员 / `card_holders` 已购卡客户 / `selected` 指定会员）、`member_ids`（指定会员 ID 数组）、`status`（`scheduled` 待发送 / `sent` 已发送 / `cancelled` 已取消）、`sent_count`、`failed_count`、`created_by`、`created_at`、`sent_at`。
+
+### 18.2 新建通知
+
+#### POST /api/admin/notices
+
+- **权限**：需 `members.write`。
+- **Body 必填**：`title`（不超过 100 字）、`content`（不超过 500 字）、`send_on`（`YYYY-MM-DD`）、`scope`（`all` / `card_holders` / `selected`）。
+- **Body 可选**：`member_ids`（`scope=selected` 时必填，为会员 ID 数组）。
+- **响应**：新建的 Notice，初始 `status=scheduled`。
+- `send_on` 为今天或更早的日期时，计划任务会在下一轮轮询（约 20 秒）自动群发。
+
+### 18.3 立即发送通知
+
+#### POST /api/admin/notices/{notice_id}/send
+
+- **权限**：需 `members.write`；**Body**：无。
+- **响应**：`{ ok, sent, failed, notice }`。
+- 按通知范围选出收件人并逐条发送短信，失败不中断整体流程；发送后 `status=sent`，并记录 `sent_at` 与成功/失败条数。已发送的通知不能重复发送。
+- 短信通道未启用或未配置账号时返回 `400`，通知保持 `scheduled` 状态不变，等通道开启后仍可按计划发出。
+
+### 18.4 取消通知
+
+#### POST /api/admin/notices/{notice_id}/cancel
+
+- **权限**：需 `members.write`；**Body**：无。
+- **响应**：`{ ok: true, notice }`，`status=cancelled`，不再发送。

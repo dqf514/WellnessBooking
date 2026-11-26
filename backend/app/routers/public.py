@@ -69,6 +69,15 @@ def app_config(db: Session = Depends(get_db)):
     return {"demo_login": demo_login_enabled(db), "captcha": True if settings is None else bool(settings.captcha_enabled)}
 
 
+@router.get("/member-guide.pdf")
+def member_guide():
+    """会员手机端操作指南 PDF：前台可直接下载后转发给会员。"""
+    from ..member_guide_service import member_guide_pdf
+
+    content = member_guide_pdf()
+    return Response(content=content, media_type="application/pdf", headers={"Content-Disposition": 'inline; filename="yinyu-member-guide.pdf"', "Cache-Control": "no-store"})
+
+
 @router.get("/sessions")
 def public_sessions(date_from: str = Query(default=""), date_to: str = Query(default=""), course_type: str = Query(default=""), db: Session = Depends(get_db), member: Member | None = Depends(optional_member)):
     start = valid_date(date_from or today())

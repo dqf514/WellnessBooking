@@ -4,6 +4,7 @@ from datetime import datetime
 
 from .database import SessionLocal
 from .models import BackupPlanSettings
+from .notice_service import send_due_notices
 from .sms_service import send_due_reminders
 
 logger = logging.getLogger(__name__)
@@ -25,6 +26,7 @@ def start_scheduler(stop_event: threading.Event) -> threading.Thread:
                         cleanup_backups(plan.keep_last)
                         logger.info("自动备份完成：%s", path.name)
                 send_due_reminders(db)
+                send_due_notices(db)
             except Exception as exc:
                 db.rollback()
                 logger.warning("后台计划任务异常：%s", exc)

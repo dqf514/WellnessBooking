@@ -1,6 +1,6 @@
 # 音昱 Wellness OS 更新日志（开发者版）
 
-**更新周期：** 2026-11-09 至 2026-11-22
+**更新周期：** 2026-11-09 至 2026-11-26
 **交付范围：** 会员端、员工及管理后台、后端服务、开放 API、短信与数据运维、帮助文档
 **提交规模：** 14 次 Git 提交
 **最终版本：** `2d110f8`
@@ -899,3 +899,50 @@
 - `npm run build` 通过（`tsc -b` 无报错）。
 - 接口级：错误验证码 / 缺验证码均返回 `400 图片验证码错误或已过期`；正确验证码登录成功；开启 MFA 后登录返回 `mfa_required`，错误验证码 `400`，正确验证码换取令牌 `200`。
 - CDP 实测：登录页自动带出验证码图片与演示账号 → 输入验证码 → 进入工作台；开启 MFA 后页面切换到「二次验证」并显示掩码手机号，输入短信验证码后进入工作台；后台「登录安全」开关渲染与保存正常。
+
+## 二十九、需求修订批次：名单卡种、评估独立、通知群发与 Outlook 导入（2026-11-26）
+
+依据 `modify1125.pdf`（6 页 12 条修订）实现，覆盖前端、后台接口、计划任务与文档。
+
+### 1. 会员名单与导出按卡种筛选
+
+- `finance_service` 新增 `category_matches_any(category, wanted_list)`，复用既有 `CATEGORY_ALIASES`（`assessment→private`、`package→annual`），使列表筛选、导出筛选、排序与统计四处的卡种口径完全一致。
+- `GET /api/admin/members` 新增 `sort` 参数（`card` 默认 / `name` / `joined`），响应新增 `card_stats`（按卡种统计人数）。`category` 多选改用 `category_matches_any`。
+- `export_service` 新增 `member_card_sort_key` 与 `member_card_stats`；`GET /api/admin/export/members.xlsx` 新增 `categories`（卡种多选）与 `only_cards`（默认 `true`，只导出真正买过卡的客户）参数，`scope=new|renew_pending` 同样受此约束。
+- 前端 `MembersPage` 增加排序下拉、导出弹窗（范围 + 月份 + 仅导出已购卡客户 + 卡种多选）、卡种人数统计条；「新建会员」改称「新建客户」，「套餐」改称「年卡/组合套餐」。
+
+### 2. 评估预约独立与会员档案直达
+
+- `BookingsPage` 支持 `assessment` 路由类型：课程查询用 `course_type=assessment`，签到只匹配卡权益里的评估项，避免误扣私教次数；新增「评估预约」侧边栏入口与 `/admin/bookings/assessment` 路由（`/admin/schedule/assessment` 旧路径重定向）。
+- 私教/评估名单中的会员名改为按钮，点击直接打开 `MemberProfileDrawer`（可同时编辑姓名、英文名、手机号、性别、生日、备注，保存后刷新名单）。
+- `MemberProfileDrawer` 档案头部样式整体放大（照片 96px、标题 30px、事实项最小列宽 190px，auto-fit 自动折行）。
+
+### 3. 购卡与升卡的入账口径可逐单选择
+
+- `POST /api/admin/members/{id}/cards` 与 `POST /api/admin/cards/{id}/upgrade` 统一改为「系统默认口径 + 前台逐单调整」：请求可传 `record_cash`、`revenue_mode`、`revenue_start_on`、`revenue_days`，未传时回落到 `resolve_purchase_revenue_mode` 的设置值。
+- 均摊模式下校验 `revenue_days`（1–3650）与 `revenue_start_on`；升级流水的 `cash_basis` 现在随选项写入，审计详情补充 `record_cash` 与 `revenue_mode`。
+- 前端购卡与升卡弹窗恢复 `EntryOptionsFields`，并显示当前默认口径与「系统设置 → 财务口径」提示。
+
+### 4. 会员群发通知（新增 `member_notices`）
+
+- `models.py` 新增 `MemberNotice`（`title`、`content`、`send_on`、`scope`、`member_ids`、`status`、`sent_count`、`failed_count`、`sent_at` 等），`create_all` 自动建表。
+- `notice_service.py`：`SCOPE_LABELS`、`notice_dict`、`_target_members`、`send_notice`（走 `sms_service.deliver`，失败不中断）、`send_due_notices`。
+- `routers/admin_notices.py`：`GET/POST /api/admin/notices`、`POST /api/admin/notices/{id}/send`、`POST /api/admin/notices/{id}/cancel`，均带能力门与 `audit()`。
+- `scheduler.py` 在 20 秒轮询里于 `send_due_reminders` 之后调用 `send_due_notices`；`deps.required_api_key_scope` 把 `/api/admin/notices` 归入 `members:write`。
+- 前端新增 `NoticesPage`：列表、创建（标题/内容/日期/范围/指定会员多选）、立即发送、取消，内置「预约系统切换」模板与「下载会员操作指南」按钮。
+
+### 5. 会员手机端操作指南 PDF
+
+- `member_guide_service.py`：7 个章节（桌面快捷方式、登录、预约团课、取消团课、课程介绍、老师资料、会员卡与预约），`PhoneScreen` 自绘示意图 + 步骤表 + 提示框，A4 纵向、`STSong-Light` 中文字体。
+- 新增 `GET /api/public/member-guide.pdf`（公开、`inline`、不缓存）；前端在通知页一键下载。
+
+### 6. Outlook 会议室日历导入
+
+- `ics_service.py`：手写 ICS 解析，支持折行展开、`DTSTART;TZID=`、UTC（`Z` 转 +8）、全天事件与 `RRULE:FREQ=WEEKLY` 重复展开（上限 60 条）。
+- `POST /api/admin/room-reservations/import-ics`：按 `room_id` 或 `LOCATION` 匹配教室，按 `UID` 去重，冲突跳过；`room_reservations` 新增 `external_uid`、`source` 两列（同步写入 `ensure_schema()` 的 `additions`），导入的占用 `usage_type="outlook"`。
+- 前端 `RoomsPage` 新增「导入 Outlook 日历」弹窗（导出说明、教室选择、.ics 选择、冲突提示），占用类型新增「Outlook 会议」与图例。
+
+### 7. 其他修正
+
+- `ColorPicker` 移除无法展开的「更多颜色」，改为提示点击左侧色块，并补齐常用色。
+- `docs/API.md` 新增第 4.19、8.30、18 节并更新成员列表 / 导出参数与 API Key scope 描述；`python docs/build_api_docs.py` 重新生成 `public/api-docs.html`（18 章 / 146 个接口）；`API_ENDPOINT_COUNT` 同步为 146。

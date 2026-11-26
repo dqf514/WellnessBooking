@@ -73,24 +73,29 @@
           <li><a href="#member-site">会员端</a></li>
 </ul>
       </nav>
-      <p class="sidebar-note">本文所有界面截图均取自实际运行版本（2026-11-23），按“需求 → 实现 → 画面”逐条对照，便于业务方核对。本页文件名固定为 <span class="code">changelog-details.html</span>，后续每次更新都在这一页上追加，不另建新文件。</p>
+      <p class="sidebar-note">本文所有界面截图均取自实际运行版本（2026-11-26），按“需求 → 实现 → 画面”逐条对照，便于业务方核对。本页文件名固定为 <span class="code">changelog-details.html</span>，后续每次更新都在这一页上追加，不另建新文件。</p>
     </aside>
 
     <main>
       <section class="hero">
-        <p class="hero-eyebrow">CHANGELOG · 2026-11-17 → 2026-11-23</p>
-        <h1>会员端全面改版，<br>报表与财务口径再收紧</h1>
-        <p class="hero-description">11 月 22 日与 23 日又推进六个批次：照片上传新增裁剪窗口，选图后可拖动取景、按页面显示比例保存；会员新增照片字段（会员端自己拍照上传，后台也能代为更换）并支持名单导出 Excel；会员卡新增编辑、续卡、请假停卡与跨类目升卡，购卡可选择“开卡日期待定”，营收口径收归系统设置由管理员统一选择；报表页升级为报表中心，销售、财务、管理、总经理各有预设，维度与指标可自由组合，全部改为导出 Excel；财务入账新增结账方式多选筛选，合计金额改名为流水总额、营收总额与退款总额；会员端登录简化为手机号加验证码、预约后按钮变“已约”可直接取消、手机端教室总览一次看全所有教室；11 月 23 日会员端在手机上改为多页模式，底部五个按钮切换首页、预约、引导者、卡课与我的，电脑端保持整页滚动不变。</p>
+        <p class="hero-eyebrow">CHANGELOG · 2026-11-17 → 2026-11-26</p>
+        <h1>名单只留真客户、<br>评估单列、通知群发与日历导入</h1>
+        <p class="hero-description">11 月 26 日推进第 17 个批次：会员列表、报表导出和「当月新进会员」只统计真正买过卡的客户，导出前可按团课 / 私教 / 年卡·组合套餐多选，列表按卡种自动排序并在底部显示每种卡的人数；健康评估从私教中独立成「评估预约」，签到只扣评估权益，私教与评估名单里点会员名字即可直接打开会员档案；购卡与升卡恢复「入流水 / 入营收 / 营收每日均摊」逐单选择；后台新增「会员通知」可预约群发短信，并提供会员手机端操作指南 PDF；教室页新增 Outlook 会议室日历导入。此前 11 月 22 日与 23 日推进的批次包括：照片上传新增裁剪窗口，选图后可拖动取景、按页面显示比例保存；会员新增照片字段（会员端自己拍照上传，后台也能代为更换）并支持名单导出 Excel；会员卡新增编辑、续卡、请假停卡与跨类目升卡，购卡可选择“开卡日期待定”，营收口径收归系统设置由管理员统一选择；报表页升级为报表中心，销售、财务、管理、总经理各有预设，维度与指标可自由组合，全部改为导出 Excel；财务入账新增结账方式多选筛选，合计金额改名为流水总额、营收总额与退款总额；会员端登录简化为手机号加验证码、预约后按钮变“已约”可直接取消、手机端教室总览一次看全所有教室；11 月 23 日会员端在手机上改为多页模式，底部五个按钮切换首页、预约、引导者、卡课与我的，电脑端保持整页滚动不变。</p>
         <p class="hero-description">本次更新分批推进：11 月 17 日按《MODIFY1117》需求完成财务与运营侧改造，把“流水”和“营收”彻底分开，并补齐导出与小票；11 月 18 日重构后台导航，把课程库提升为独立页面，并建立角色能力矩阵——菜单可见性、页面可达性与操作权限统一由服务端下发的能力清单决定；同日再补一批会员自助能力，姓名与生日开放自助维护，换手机号需原号与新号双验证，后台获客来源统一为下拉选项；同日再补一批教室总览的浏览体验：表格顶部增加左右滚动按键与按排课着色的教室色块，教室列宽压缩，一屏可见更多教室，横向滚动时左侧时间轴保持可见；同日再收一遍会员档案的头部：姓名中英文并排一行，个人信息改为一行铺满，备注直接显示在头部，整体压低高度，把下面的会员卡与记录表空间让出来；同日再推出全屏大屏排课表，所有教室一次铺开、日期与实时时钟居中、浏览器一并全屏隐藏工具栏，左右键换日期、Esc 退出、Ctrl+P 直接打印，排课块高度覆盖所在时间段；同日再把经营概览改为“今日安排”，教室占用一并列出，“完整课表”直接打开教室大屏。同日再把教室总览的日期选择并入左上角（两侧加上一日/下一日箭头），全屏按钮移到右上角按钮区，中间那一行整行移除，表格行高压缩到 44px，同屏可见的时段明显增多。同日再给全屏排课表加了深色模式，标题栏右上角一键切换，晚上投屏不刺眼。</p>
-        <p class="hero-note">共 14 项 1117 需求全部落地 · 19 项角色能力 · 后台接口总数 140 个 · 16 个交付批次</p>
+        <p class="hero-note">共 14 项 1117 需求全部落地 · 19 项角色能力 · 后台接口总数 146 个 · 17 个交付批次</p>
       </section>
 
       <section id="overview">
         <div class="stats">
-          <div class="stat"><small>REQUIREMENTS</small><strong>14 / 14</strong><span>《MODIFY1117》全部 14 条需求已落地并逐条对照</span></div>
+          <div class="stat"><small>REQUIREMENTS</small><strong>14 + 12</strong><span>《MODIFY1117》14 条 + 《MODIFY1125》12 条需求已落地并逐条对照</span></div>
           <div class="stat"><small>CAPABILITIES</small><strong>19</strong><span>角色能力项，覆盖 5 种员工角色</span></div>
-          <div class="stat"><small>ENDPOINTS</small><strong>140</strong><span>后台接口总数，11-22 起新增 10 个、调整多项</span></div>
+          <div class="stat"><small>ENDPOINTS</small><strong>146</strong><span>后台接口总数，11-26 新增 6 个（会员通知 4、Outlook 导入 1、会员指南 1）</span></div>
           <div class="stat"><small>FIXES</small><strong>12</strong><span>数据一致性、并发、权限与显示对齐缺陷修复</span></div>
+        </div>
+        <div class="batch">
+          <small>BATCH 17 · 2026-11-26</small>
+          <h2>名单只留真客户、评估单列、通知群发与 Outlook 日历导入</h2>
+          <p>按《MODIFY1125》的 12 条修订逐条落地：会员列表、报表导出与「当月新进会员」只统计真正买过卡的客户，导出前可按团课 / 私教 / 年卡·组合套餐多选，列表按卡种自动排序并显示每种卡的人数，「套餐」改称「年卡/组合套餐」、「新建会员」改称「新建客户」；健康评估独立成「评估预约」，签到只扣评估权益，私教与评估名单里点名字即可直达会员档案；会员档案头部整体放大，常用颜色补全并去掉点不开的「更多颜色」；购卡与升卡都可逐单选择入账方式；后台新增「会员通知」按日期自动群发短信，并提供会员手机端操作指南 PDF；教室页可导入 Outlook 会议室日历。</p>
         </div>
         <div class="batch">
           <small>BATCH 16 · 2026-11-23</small>
@@ -172,6 +177,103 @@
           <h2>1117 需求：财务、报表与运营效率</h2>
           <p>核心是把“现金实收”和“确认营收”拆成两件事：私教按消课确认营收、年卡按天均摊、团课购卡即确认；购卡与手动入账都提供“入流水 / 入营收 / 营收每日均摊”三个可选项。同时补齐教室总览次日导出、财务与课程报表导出、品牌账单小票（14.5cm × 7.5cm），并统一课程与卡课产品的中文类目。</p>
         </div>
+      </section>
+
+      <section id="batch-1126" class="section">
+        <span class="section-kicker">BATCH 17</span>
+        <h2>2026-11-26 · 名单只留真客户、评估单列、通知群发与 Outlook 日历导入</h2>
+        <p class="section-intro">本次按《MODIFY1125》的 12 条修订逐条落地：名单口径、评估消课、入账选择、会员通知与日历导入，都是直接影响日常操作的地方。</p>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">N1</span><h3>名单与导出只统计真正买过卡的客户</h3><span class="change-tag">已完成</span></div>
+          <ul>
+            <li>会员列表导出、「当月新进会员」和「当月未续会会员」默认只包含真正买过会员卡的客户，没买卡的客人不再混进表格。</li>
+            <li>导出窗口新增卡种多选：团课、私教、年卡/组合套餐；不勾选表示不限卡种。导出的 Excel 另附一页「卡种统计」。</li>
+            <li>「套餐」统一改称「年卡/组合套餐」，「新建会员」改称「新建客户」。</li>
+          </ul>
+          <figure>
+            <img src="changelog-images/72-member-export.png" alt="会员名单导出窗口：范围、仅导出已购卡客户与卡种多选" loading="lazy">
+            <figcaption><b>图 1 · 导出窗口先选范围，再按卡种多选。</b>默认只导出已购卡客户。</figcaption>
+          </figure>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">N2</span><h3>会员列表按卡种排序并统计每种卡的人数</h3><span class="change-tag">已完成</span></div>
+          <ul>
+            <li>列表默认按会员卡种类自动排序：年卡 / 组合套餐 → 团课月卡 → 团课十次卡 → 团课六次卡 → 团课周卡 → 私教 10/20/30 次卡；没开卡的客户排在最后。</li>
+            <li>列表底部新增「卡种人数统计」条，一眼看到每种卡各有多少人；排序方式可改为按姓名或按入会时间。</li>
+          </ul>
+          <figure>
+            <img src="changelog-images/73-member-card-stats.png" alt="会员列表按卡种排序，底部显示每种会员卡的人数" loading="lazy">
+            <figcaption><b>图 2 · 按卡种排序的会员列表与卡种人数统计。</b></figcaption>
+          </figure>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">N3</span><h3>健康评估独立成「评估预约」，不再误扣私教次数</h3><span class="change-tag">已完成</span></div>
+          <ul>
+            <li>侧边栏新增「评估预约」，健康评估从私教里独立出来；评估课签到只扣评估权益，年度身心套餐里的私教次数不会被误用。</li>
+            <li>私教与评估的签到名单里，会员名字变为可点击按钮，点开就是该会员的完整档案，可顺手修改姓名、手机号、性别、生日与备注。</li>
+          </ul>
+          <figure>
+            <img src="changelog-images/74-assessment-bookings.png" alt="后台新增的评估预约页面" loading="lazy">
+            <figcaption><b>图 3 · 评估预约与签到独立成页。</b></figcaption>
+          </figure>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">N4</span><h3>购卡与升卡都能逐单选择入账方式</h3><span class="change-tag">已完成</span></div>
+          <ul>
+            <li>购卡与升卡窗口恢复「入流水 / 入营收 / 营收每日均摊」三个选项，与「手动入账」口径完全一致。</li>
+            <li>窗口下方显示当前系统的默认口径（在「系统设置 → 财务口径」修改），本单可临时调整；私教与评估卡只能入流水，需在实际消课后确认营收。</li>
+          </ul>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">N5</span><h3>会员档案头部放大、常用颜色补全</h3><span class="change-tag">已完成</span></div>
+          <ul>
+            <li>会员档案头部的照片、姓名与个人信息整体放大，一行放不下自动折成两到三行。</li>
+            <li>课程颜色补齐常用色，去掉点不开的「更多颜色」按钮，改为提示点击左边的色块直接选择。</li>
+          </ul>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">N6</span><h3>后台新增「会员通知」，可预约群发短信</h3><span class="change-tag">已完成</span></div>
+          <ul>
+            <li>支持全部会员、已购卡客户或指定会员三种范围；填写发送日期后由计划任务自动群发，也可以立即发送或取消。</li>
+            <li>内置「预约系统切换」通知模板，用于 11 月 28 日通知会员 12 月 1 日起启用新的预约系统。</li>
+            <li>同一页面可一键下载「会员手机端操作指南 PDF」转发给会员。</li>
+          </ul>
+          <figure>
+            <img src="changelog-images/71-member-notices.png" alt="后台会员通知页面" loading="lazy">
+            <figcaption><b>图 4 · 会员通知页。</b>可下载会员操作指南或新建群发通知。</figcaption>
+          </figure>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">N7</span><h3>会员手机端操作指南 PDF</h3><span class="change-tag">已完成</span></div>
+          <ul>
+            <li>七步图文：把会员端添加到手机桌面、会员登录、预约团课、取消已预约的团课、查看课程介绍、查看老师资料、查看自己的会员卡与预约课程。</li>
+            <li>A4 四页、带示意图与温馨提示，前台下载后直接转发即可。</li>
+          </ul>
+          <figure>
+            <img src="changelog-images/76-member-guide-p1.png" alt="会员手机端操作指南 PDF 首页" loading="lazy">
+            <figcaption><b>图 5 · 会员手机端操作指南（第一页）。</b>桌面快捷方式与会员登录。</figcaption>
+          </figure>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">N8</span><h3>导入 Outlook 会议室日历</h3><span class="change-tag">已完成</span></div>
+          <ul>
+            <li>教室总览新增「导入 Outlook 日历」：在 Outlook 里导出会议室日历为 .ics 后上传，系统自动生成教室占用。</li>
+            <li>可指定教室，也可按日程地点自动匹配；同一日程重复导入不会重复占用，与已有课程冲突的时间段会跳过，不会覆盖现有排课。</li>
+            <li>导入的占用在教室总览里标注为「Outlook 会议」，并有独立的图例颜色。</li>
+          </ul>
+          <figure>
+            <img src="changelog-images/75-outlook-import.png" alt="导入 Outlook 会议室日历窗口" loading="lazy">
+            <figcaption><b>图 6 · 导入 Outlook 会议室日历。</b>可按地点自动匹配教室。</figcaption>
+          </figure>
+        </article>
       </section>
 
       <section id="batch-1125" class="section">

@@ -23,7 +23,7 @@ def _active_card(db: Session, card_id: int) -> MemberCard:
 
 @router.post("/cards/{card_id}/upgrade")
 def upgrade_card(card_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_revenue)):
-    from ..finance_service import resolve_purchase_revenue_mode
+    from ..finance_service import REVENUE_MODES, resolve_entry_options, resolve_purchase_revenue_mode
 
     card = _active_card(db, card_id)
     product = db.get(CardProduct, as_int(payload.get("product_id", 0), "升级产品"))
@@ -40,10 +40,20 @@ def upgrade_card(card_id: int, payload: dict = Body(...), db: Session = Depends(
     card.version += 1
 
     starts_on = valid_date(str(payload.get("starts_on") or today()), "开卡日期")
-    mode = resolve_purchase_revenue_mode(db, product)
+    # 入账方式默认按系统设置判定，前台可逐单选择「入流水 / 入营收 / 营收每日均摊」。
+    policy_mode = resolve_purchase_revenue_mode(db, product)
+    requested_mode = str(payload.get("revenue_mode") or "").strip()
+    record_cash, mode = resolve_entry_options(payload, product, revenue_mode=requested_mode if requested_mode in REVENUE_MODES else policy_mode)
+    if mode == "amortized":
+        revenue_days = as_int(payload.get("revenue_days") or product.validity_days, "营收均摊天数")
+        if not 1 <= revenue_days <= 3650:
+            raise HTTPException(400, "营收均摊天数需在 1 至 3650 天之间")
+        revenue_start_on = valid_date(str(payload.get("revenue_start_on") or starts_on), "营收均摊开始日期")
+    else:
+        revenue_start_on, revenue_days = "", 0
     new_card = issue_card(db, member=card.member, product=product, price=product.price, payment_method=str(payload.get("payment_method", "wechat")), starts_on=starts_on, note=f"由原卡 {old_no} 补差升级", record_transaction=False)
-    db.add(Transaction(member_id=card.member_id, member_card_id=new_card.id, product_id=product.id, category=product.category, kind="upgrade", amount=difference, payment_method=str(payload.get("payment_method", "wechat")), status="paid", revenue_mode=mode, revenue_start_on=starts_on if mode == "amortized" else "", revenue_days=product.validity_days if mode == "amortized" else 0, created_by=user.full_name or user.username, note=f"原卡 {old_no} 升级为 {product.name}"))
-    audit(db, user, "member_card", "upgrade", "member_card", card_id, {"new_card_id": new_card.id, "difference": difference})
+    db.add(Transaction(member_id=card.member_id, member_card_id=new_card.id, product_id=product.id, category=product.category, kind="upgrade", amount=difference, payment_method=str(payload.get("payment_method", "wechat")), status="paid", cash_basis=record_cash, revenue_mode=mode, revenue_start_on=revenue_start_on, revenue_days=revenue_days, created_by=user.full_name or user.username, note=f"原卡 {old_no} 升级为 {product.name}"))
+    audit(db, user, "member_card", "upgrade", "member_card", card_id, {"new_card_id": new_card.id, "difference": difference, "record_cash": record_cash, "revenue_mode": mode})
     db.commit()
     return {"old_card": card_dict(card), "card": card_dict(new_card), "difference": difference}
 

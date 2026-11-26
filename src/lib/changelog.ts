@@ -1,14 +1,45 @@
 // 系统版本与更新日志：后台“系统设置 → 更新日志”展示，按日期为分界列出主要内容。
 export const APP_VERSION = "1.1.0";
-export const APP_RELEASE_DATE = "2026-11-23";
+export const APP_RELEASE_DATE = "2026-11-26";
 export const API_VERSION = "v1.0.0";
-export const API_ENDPOINT_COUNT = 140;
+export const API_ENDPOINT_COUNT = 146;
 
 export interface ChangelogText { zh: string; en: string }
 export interface ChangelogGroup { title: ChangelogText; points: ChangelogText[] }
 export interface ChangelogRelease { date: string; version: string; title: ChangelogText; summary: ChangelogText; groups: ChangelogGroup[] }
 
 export const changelogReleases: ChangelogRelease[] = [
+  {
+    date: "2026-11-26",
+    version: APP_VERSION,
+    title: { zh: "会员名单只留真客户、评估单列、通知群发与 Outlook 日历导入", en: "Member lists keep only real card holders, assessments split out, notices and Outlook calendar import" },
+    summary: { zh: "会员列表与导出只统计真正买过卡的客户，可按卡种多选；评估预约独立成页，签到后可直接点进会员档案；后台新增会员群发通知与 Outlook 会议室日历导入，并准备了会员手机端操作指南 PDF。", en: "Member lists and exports now count only people who actually bought a card and can be filtered by card type; assessment bookings have their own page and the roster links straight into a member profile; the admin gains scheduled member notices, Outlook room-calendar import, and a ready-to-send member app guide PDF." },
+    groups: [
+      { title: { zh: "名单与导出", en: "Lists and exports" }, points: [
+        { zh: "会员列表、报表导出和“当月新进会员”只显示真正买过卡的客户，散客不再混进来", en: "Member lists, report exports and “new this month” only include people who actually bought a card" },
+        { zh: "导出前可按卡种多选：团课、私教、年卡/组合套餐", en: "Before exporting you can pick card types: group classes, private training, annual / package" },
+        { zh: "会员列表默认按会员卡种类自动排序，底部显示每种卡的人数", en: "The member list sorts by card type by default and shows how many people hold each card" },
+        { zh: "“套餐”统一改称“年卡/组合套餐”，“新建会员”改称“新建客户”", en: "“Package” is now “annual / package”, and “New member” is now “New customer”" },
+      ] },
+      { title: { zh: "评估与会员档案", en: "Assessments and member profiles" }, points: [
+        { zh: "健康评估从私教中独立出来，后台新增“评估预约”，签到时只扣评估权益", en: "Health assessments now stand apart from private training; a new “Assessment bookings” page consumes only the assessment benefit" },
+        { zh: "私教/评估签到名单里点会员名字可直接打开会员档案，不用再回会员列表里找", en: "Tap a name in the private/assessment roster to open that member’s profile right away" },
+        { zh: "会员档案头部的照片、姓名与信息整体放大，一行放不下自动折行", en: "The member profile header is enlarged and wraps onto extra lines when needed" },
+        { zh: "常用颜色补全，去掉点不开的“更多颜色”，改为提示点击左边色块选择", en: "Common colours are completed; the broken “more colours” button is replaced by a hint to tap the swatches" },
+      ] },
+      { title: { zh: "入账方式与通知", en: "Revenue options and notices" }, points: [
+        { zh: "购卡与升卡都可以像手动入账一样选择“入流水 / 入营收 / 营收每日均摊”，并提示系统默认口径", en: "Buying and upgrading cards can now choose “cash only / recognise revenue / spread daily”, with the system default shown" },
+        { zh: "后台新增“会员通知”，可预约发送日期，到点自动群发短信，也能一键取消", en: "A new “Member notices” page can schedule a date and send SMS automatically, or be cancelled" },
+        { zh: "内置“预约系统切换”通知模板，填入 12 月 1 日启用新系统的说明即可", en: "A built-in “system switch” template is ready for announcing the new booking system" },
+        { zh: "会员手机端操作指南 PDF 可在通知页一键下载后转发给会员", en: "The member app guide PDF can be downloaded from the notices page and forwarded to members" },
+      ] },
+      { title: { zh: "Outlook 日历", en: "Outlook calendar" }, points: [
+        { zh: "教室页可导入 Outlook 会议室日历（.ics），自动生成教室占用", en: "The rooms page can import an Outlook room calendar (.ics) and create the room bookings for you" },
+        { zh: "按日程地点自动匹配教室，也可手动指定；同一日程重复导入不会重复占用", en: "Rooms are matched from the event location or picked manually; re-importing the same event creates no duplicate" },
+        { zh: "与已有课程冲突的日程会跳过，不会覆盖现有排课", en: "Events that clash with existing classes are skipped rather than overwriting them" },
+      ] },
+    ],
+  },
   {
     date: "2026-11-23",
     version: APP_VERSION,

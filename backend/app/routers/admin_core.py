@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session, joinedload
 from ..card_service import issue_card
 from ..database import get_db
 from ..deps import require_cards_write, require_catalog_view, require_dashboard, require_members_view, require_members_write, require_records_write, require_revenue
-from ..finance_service import recognized_revenue
+from ..export_service import member_card_sort_key, member_card_stats
+from ..finance_service import category_matches_any, recognized_revenue
 from ..log_util import audit
 from ..membership_service import MEMBER_SOURCE_OPTIONS, due_reminders, normalize_member_source, reminder_dict, voucher_dict
 from ..models import Booking, CardProduct, ClassSession, Course, ExperienceVoucher, Member, MemberCard, MemberCardShare, MemberRecord, MemberReminder, Room, Teacher, Transaction, User
@@ -74,7 +75,7 @@ def meta(db: Session = Depends(get_db), user: User = Depends(require_catalog_vie
 
 
 @router.get("/members")
-def list_members(q: str = Query(""), category: str = Query(""), card_status: str = Query(""), active_only: bool = Query(False), db: Session = Depends(get_db), _: User = Depends(require_members_view)):
+def list_members(q: str = Query(""), category: str = Query(""), card_status: str = Query(""), active_only: bool = Query(False), sort: str = Query("card"), db: Session = Depends(get_db), _: User = Depends(require_members_view)):
     query = db.query(Member).options(joinedload(Member.advisor), joinedload(Member.cards).joinedload(MemberCard.product)).filter(Member.deleted_at.is_(None))
     if q.strip():
         term = f"%{q.strip()}%"
@@ -84,7 +85,7 @@ def list_members(q: str = Query(""), category: str = Query(""), card_status: str
     rows = query.order_by(Member.id.desc()).all()
     categories = [item for item in category.split(",") if item]
     if categories:
-        rows = [row for row in rows if any(card.product and card.product.category in categories and card.deleted_at is None for card in row.cards)]
+        rows = [row for row in rows if any(card.product and category_matches_any(card.product.category, categories) and card.deleted_at is None for card in row.cards)]
     statuses = [item for item in card_status.split(",") if item]
     if statuses:
         current = today()
@@ -100,7 +101,13 @@ def list_members(q: str = Query(""), category: str = Query(""), card_status: str
                 return True
             return False
         rows = [row for row in rows if matches(row)]
-    return {"items": [member_dict(row, include_cards=True) for row in rows], "total": len(rows)}
+    if sort == "card":
+        rows = sorted(rows, key=member_card_sort_key)
+    elif sort == "name":
+        rows = sorted(rows, key=lambda row: (row.name, row.id))
+    elif sort == "joined":
+        rows = sorted(rows, key=lambda row: (-(row.created_at.timestamp() if row.created_at else 0), row.id))
+    return {"items": [member_dict(row, include_cards=True) for row in rows], "total": len(rows), "card_stats": member_card_stats(rows)}
 
 
 @router.post("/members")
@@ -190,7 +197,7 @@ def update_member(member_id: int, payload: dict = Body(...), db: Session = Depen
 
 @router.post("/members/{member_id}/cards")
 def purchase_card(member_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_revenue)):
-    from ..finance_service import resolve_entry_options, resolve_purchase_revenue_mode
+    from ..finance_service import REVENUE_MODES, resolve_entry_options, resolve_purchase_revenue_mode
 
     member = db.get(Member, member_id)
     product = db.get(CardProduct, int(payload.get("product_id", 0)))
@@ -207,11 +214,17 @@ def purchase_card(member_id: int, payload: dict = Body(...), db: Session = Depen
     note = str(payload.get("note", ""))
     if is_renewal and not note.startswith("续卡"):
         note = f"续卡 · {note}".strip(" ·")
-    # 营收口径以系统设置为准，前端不再逐单选择。
-    revenue_mode = resolve_purchase_revenue_mode(db, product)
-    record_cash, revenue_mode = resolve_entry_options(payload, product, revenue_mode=revenue_mode)
-    revenue_start_on = "" if start_pending else starts_on
-    revenue_days = product.validity_days if revenue_mode == "amortized" else 0
+    # 营收口径默认按系统设置判定，前台可逐单选择「入流水 / 入营收 / 营收每日均摊」。
+    policy_mode = resolve_purchase_revenue_mode(db, product)
+    requested_mode = str(payload.get("revenue_mode") or "").strip()
+    record_cash, revenue_mode = resolve_entry_options(payload, product, revenue_mode=requested_mode if requested_mode in REVENUE_MODES else policy_mode)
+    if revenue_mode == "amortized":
+        revenue_days = as_int(payload.get("revenue_days") or product.validity_days, "营收均摊天数")
+        if not 1 <= revenue_days <= 3650:
+            raise HTTPException(400, "营收均摊天数需在 1 至 3650 天之间")
+        revenue_start_on = "" if start_pending else valid_date(str(payload.get("revenue_start_on") or starts_on), "营收均摊开始日期")
+    else:
+        revenue_start_on, revenue_days = "", 0
     card = issue_card(db, member=member, product=product, price=price, payment_method=str(payload.get("payment_method", "cash")), starts_on=starts_on, note=note, record_cash=record_cash, revenue_mode=revenue_mode, created_by=user.full_name or user.username, is_renewal=is_renewal, start_pending=start_pending)
     transaction = db.query(Transaction).filter(Transaction.member_card_id == card.id, Transaction.kind == "purchase").first()
     if transaction:

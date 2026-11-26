@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#173f35">
-  <meta name="description" content="音昱 Wellness 完整 API 对接文档，覆盖 140 个接口、权限、字段、业务规则与示例。">
+  <meta name="description" content="音昱 Wellness 完整 API 对接文档，覆盖 146 个接口、权限、字段、业务规则与示例。">
   <meta name="generator" content="docs/build_api_docs.py">
   <link id="api-favicon" rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Crect width='36' height='36' rx='18' fill='%23173f35'/%3E%3Cpath d='M28 6C15 7 8 13 8 23c7 1 15-2 20-17ZM8 29c3-8 8-12 16-17' fill='none' stroke='%23e9efe7' stroke-width='1.5'/%3E%3C/svg%3E">
   <title>API 对接文档 · 音昱 Wellness</title>
@@ -33,15 +33,15 @@
     <aside class="sidebar" aria-label="API 文档目录">
       <label class="search-label"><span>搜索接口、字段或业务规则</span><input class="search-input" id="api-search" type="search" placeholder="例如：签到、退款、bookings" autocomplete="off"><span class="search-hint">按 / 快速搜索，Esc 清空</span></label>
       <p class="search-results" id="search-results" aria-live="polite"></p>
-      <p class="toc-title">API REFERENCE · 140 ENDPOINTS</p>
+      <p class="toc-title">API REFERENCE · 146 ENDPOINTS</p>
       <nav><ul class="toc-list"><li><a href="#1-接入基础">1. 接入基础</a></li>
 <li><a href="#2-通用数据结构">2. 通用数据结构</a></li>
 <li><a href="#3-健康检查与员工认证-9">3. 健康检查与员工认证（9）</a></li>
-<li><a href="#4-会员端接口-18">4. 会员端接口（18）</a></li>
+<li><a href="#4-会员端接口-19">4. 会员端接口（19）</a></li>
 <li><a href="#5-经营概览与基础元数据-2">5. 经营概览与基础元数据（2）</a></li>
 <li><a href="#6-会员档案-会员卡-权益与爽约-22">6. 会员档案、会员卡、权益与爽约（22）</a></li>
 <li><a href="#7-会员合同与评估文件-7">7. 会员合同与评估文件（7）</a></li>
-<li><a href="#8-排课-预约-教室与目录-29">8. 排课、预约、教室与目录（29）</a></li>
+<li><a href="#8-排课-预约-教室与目录-30">8. 排课、预约、教室与目录（30）</a></li>
 <li><a href="#9-产品-财务与报表-15">9. 产品、财务与报表（15）</a></li>
 <li><a href="#10-场馆-品牌与账号-9">10. 场馆、品牌与账号（9）</a></li>
 <li><a href="#11-短信与审计日志-5">11. 短信与审计日志（5）</a></li>
@@ -50,18 +50,19 @@
 <li><a href="#14-典型业务调用顺序">14. 典型业务调用顺序</a></li>
 <li><a href="#15-对接检查清单">15. 对接检查清单</a></li>
 <li><a href="#16-回收站与-180-天保留-4">16. 回收站与 180 天保留（4）</a></li>
-<li><a href="#17-品牌-pdf-导出与账单-3">17. 品牌 PDF 导出与账单（3）</a></li></ul></nav>
+<li><a href="#17-品牌-pdf-导出与账单-3">17. 品牌 PDF 导出与账单（3）</a></li>
+<li><a href="#18-会员群发通知-4">18. 会员群发通知（4）</a></li></ul></nav>
       <div class="sidebar-bottom"><a href="/openapi.json" target="_blank" rel="noreferrer">下载 OpenAPI JSON ↗</a><a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md" target="_blank" rel="noreferrer">GitHub Markdown 源文档 ↗</a><a href="/help.html">← 返回系统操作指南</a></div>
     </aside>
     <main class="docs-main" id="api-content">
       <label class="section-jump"><span>跳转到文档章节</span><select id="mobile-jump"><option value="1-接入基础">1. 接入基础</option>
 <option value="2-通用数据结构">2. 通用数据结构</option>
 <option value="3-健康检查与员工认证-9">3. 健康检查与员工认证（9）</option>
-<option value="4-会员端接口-18">4. 会员端接口（18）</option>
+<option value="4-会员端接口-19">4. 会员端接口（19）</option>
 <option value="5-经营概览与基础元数据-2">5. 经营概览与基础元数据（2）</option>
 <option value="6-会员档案-会员卡-权益与爽约-22">6. 会员档案、会员卡、权益与爽约（22）</option>
 <option value="7-会员合同与评估文件-7">7. 会员合同与评估文件（7）</option>
-<option value="8-排课-预约-教室与目录-29">8. 排课、预约、教室与目录（29）</option>
+<option value="8-排课-预约-教室与目录-30">8. 排课、预约、教室与目录（30）</option>
 <option value="9-产品-财务与报表-15">9. 产品、财务与报表（15）</option>
 <option value="10-场馆-品牌与账号-9">10. 场馆、品牌与账号（9）</option>
 <option value="11-短信与审计日志-5">11. 短信与审计日志（5）</option>
@@ -70,7 +71,8 @@
 <option value="14-典型业务调用顺序">14. 典型业务调用顺序</option>
 <option value="15-对接检查清单">15. 对接检查清单</option>
 <option value="16-回收站与-180-天保留-4">16. 回收站与 180 天保留（4）</option>
-<option value="17-品牌-pdf-导出与账单-3">17. 品牌 PDF 导出与账单（3）</option></select></label>
+<option value="17-品牌-pdf-导出与账单-3">17. 品牌 PDF 导出与账单（3）</option>
+<option value="18-会员群发通知-4">18. 会员群发通知（4）</option></select></label>
       <div class="search-empty" id="search-empty" hidden>没有匹配的接口。可尝试“预约”“卡”“settings”或清空搜索。</div>
       <h1 id="音昱-wellness-api-对接文档">音昱 Wellness API 对接文档<a class="anchor" href="#音昱-wellness-api-对接文档" aria-label="链接到此节">#</a></h1>
 <aside class="callout">版本：API v1.0.0 · 基于 FastAPI · 本文覆盖当前后端全部 <strong>137 个 HTTP 接口</strong>。 文档更新：2026-11-22 · 功能基线：预约排课、动态二维码签到、购卡申请取消、会员权益与营收业务闭环、角色能力矩阵与课程库独立接口。 在线交互文档：<code>/docs</code>（Swagger UI）、<code>/redoc</code>（ReDoc）；原始 OpenAPI 3 定义：<code>/openapi.json</code>。接口路径、方法、参数和实时响应结构以同版本 <code>/openapi.json</code> 为最终依据。</aside>
@@ -140,9 +142,9 @@
 <thead><tr><th>scope</th><th>权限范围</th></tr></thead>
 <tbody>
 <tr><td><code>read</code></td><td>后台业务数据、报表与普通操作/短信日志读取</td></tr>
-<tr><td><code>members:write</code></td><td>会员、会员卡、会员记录（含 <code>PATCH /api/admin/records/{id}</code>）、爽约限制与合同文件写入</td></tr>
+<tr><td><code>members:write</code></td><td>会员、会员卡、会员记录（含 <code>PATCH /api/admin/records/{id}</code>）、爽约限制、合同文件与会员群发通知写入</td></tr>
 <tr><td><code>bookings:write</code></td><td>后台添加预约、签到、取消签到、完成、取消和爽约</td></tr>
-<tr><td><code>schedule:write</code></td><td>排课、复制周课表与教室占用写入</td></tr>
+<tr><td><code>schedule:write</code></td><td>排课、复制周课表、教室占用与 Outlook 日历导入写入</td></tr>
 <tr><td><code>catalog:write</code></td><td>课程、教室和教练基础资料写入</td></tr>
 <tr><td><code>finance:write</code></td><td>产品、手工入账、退款、电子码核销、会员卡升额与私教消课营收入账</td></tr>
 <tr><td><code>settings:write</code></td><td>场馆、品牌、员工账号与短信设置写入</td></tr>
@@ -326,7 +328,7 @@
 <h4 id="post-api-auth-change-password"><span class="method method-post">POST</span><a href="#post-api-auth-change-password" class="route">/api/auth/change-password</a></h4>
 <ul><li><strong>权限</strong>：员工；<strong>Body</strong>：<code>old_password</code>、<code>new_password</code>。</li><li>新密码至少 8 位；原密码错误返回 <code>400</code>。</li><li><strong>响应</strong>：<code>{ &quot;ok&quot;: true }</code>。只更新当前 Token 对应员工。</li></ul>
 </section>
-<h2 id="4-会员端接口-18">4. 会员端接口（18）<a class="anchor" href="#4-会员端接口-18" aria-label="链接到此节">#</a></h2>
+<h2 id="4-会员端接口-19">4. 会员端接口（19）<a class="anchor" href="#4-会员端接口-19" aria-label="链接到此节">#</a></h2>
 <h3 id="4-1-会员端初始化数据">4.1 会员端初始化数据<a class="anchor" href="#4-1-会员端初始化数据" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/public/bootstrap">
 <h4 id="get-api-public-bootstrap"><span class="method method-get">GET</span><a href="#get-api-public-bootstrap" class="route">/api/public/bootstrap</a></h4>
@@ -418,6 +420,11 @@
 <h4 id="get-api-public-app-config"><span class="method method-get">GET</span><a href="#get-api-public-app-config" class="route">/api/public/app-config</a></h4>
 <ul><li><strong>权限</strong>：公开；<strong>请求</strong>：无。</li><li><strong>响应</strong>：<code>{ demo_login: bool, captcha: bool }</code>。</li><li><code>demo_login</code> 为真时，员工登录页会预填演示账号 <code>admin / admin123</code> 并显示账号提示；正式上线前应在后台关闭该开关，或用环境变量 <code>LOGIN_DEMO_CREDENTIALS=false</code> 强制关闭。</li><li><code>captcha</code> 为真时，账号密码登录需要图片验证码。</li></ul>
 </section>
+<h3 id="4-19-会员手机端操作指南-pdf">4.19 会员手机端操作指南 PDF<a class="anchor" href="#4-19-会员手机端操作指南-pdf" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="get /api/public/member-guide.pdf">
+<h4 id="get-api-public-member-guide-pdf"><span class="method method-get">GET</span><a href="#get-api-public-member-guide-pdf" class="route">/api/public/member-guide.pdf</a></h4>
+<ul><li><strong>权限</strong>：公开；<strong>请求</strong>：无。</li><li><strong>响应</strong>：<code>application/pdf</code> 文件流，<code>Content-Disposition: inline</code>，<code>Cache-Control: no-store</code>。</li><li>内容为面向会员的手机端图文操作指南：建桌面快捷方式、会员登录、预约团课、取消已预约团课、查看课程介绍、查看老师资料、查看自己的会员卡与预约课程。</li><li>前台可在后台「会员通知」页一键下载后转发给会员。</li></ul>
+</section>
 <h2 id="5-经营概览与基础元数据-2">5. 经营概览与基础元数据（2）<a class="anchor" href="#5-经营概览与基础元数据-2" aria-label="链接到此节">#</a></h2>
 <h3 id="5-1-今日经营概览">5.1 今日经营概览<a class="anchor" href="#5-1-今日经营概览" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/dashboard">
@@ -433,7 +440,7 @@
 <h3 id="6-1-查询会员列表">6.1 查询会员列表<a class="anchor" href="#6-1-查询会员列表" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/members">
 <h4 id="get-api-admin-members"><span class="method method-get">GET</span><a href="#get-api-admin-members" class="route">/api/admin/members</a></h4>
-<ul><li><strong>权限</strong>：只读。</li><li><strong>Query</strong>：<code>q</code>（姓名/英文名/手机号模糊搜索）、<code>category</code>（卡类别，可多选，用英文逗号分隔，如 <code>group,private</code>）、<code>card_status</code>（持卡状态：<code>active</code> 有有效卡 / <code>expired</code> 卡已过期 / <code>pending</code> 开卡日期待定 / <code>none</code> 未开卡）、<code>active_only</code>（默认 <code>false</code>）。</li><li><strong>响应</strong>：<code>{ items: Member[]（含 cards）, total }</code>，按 ID 倒序。</li></ul>
+<ul><li><strong>权限</strong>：只读。</li><li><strong>Query</strong>：<code>q</code>（姓名/英文名/手机号模糊搜索）、<code>category</code>（卡类别，可多选，用英文逗号分隔，如 <code>group,private</code>）、<code>card_status</code>（持卡状态：<code>active</code> 有有效卡 / <code>expired</code> 卡已过期 / <code>pending</code> 开卡日期待定 / <code>none</code> 未开卡）、<code>active_only</code>（默认 <code>false</code>）、<code>sort</code>（排序：<code>card</code> 默认按会员卡种类自动排序 / <code>name</code> 按姓名 / <code>joined</code> 按入会时间倒序）。</li><li><strong>响应</strong>：<code>{ items: Member[]（含 cards）, total, card_stats }</code>，<code>card_stats</code> 为按卡种统计的人数数组（<code>product_id</code>、<code>name</code>、<code>name_en</code>、<code>category</code>、<code>count</code>），用于列表底部展示每种会员卡的数量。</li><li><code>category</code> 多选时按业务卡种归类：<code>group</code> 团课、<code>private</code> 私教与评估、<code>annual</code> 年卡与组合套餐；历史 <code>package</code> 产品归入 <code>annual</code>。</li><li><code>sort=card</code> 的顺序为：年卡 / 组合套餐 → 团课月卡 → 团课十次卡 → 团课六次卡 → 团课周卡 → 私教 10/20/30 次卡；无有效卡的客户排在最后。</li></ul>
 </section>
 <h3 id="6-2-新建会员">6.2 新建会员<a class="anchor" href="#6-2-新建会员" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/members">
@@ -601,7 +608,7 @@
 <h4 id="get-api-admin-documents-document-id-view"><span class="method method-get">GET</span><a href="#get-api-admin-documents-document-id-view" class="route">/api/admin/documents/{document_id}/view</a></h4>
 <ul><li><strong>权限</strong>：只读；<strong>响应</strong>：原始文件流，<code>Content-Disposition: inline</code>。</li><li>用于浏览器直接预览 PDF 和图片；Office、CSV 等格式是否可直接显示由浏览器决定。鉴权方式与下载接口相同。</li></ul>
 </section>
-<h2 id="8-排课-预约-教室与目录-29">8. 排课、预约、教室与目录（29）<a class="anchor" href="#8-排课-预约-教室与目录-29" aria-label="链接到此节">#</a></h2>
+<h2 id="8-排课-预约-教室与目录-30">8. 排课、预约、教室与目录（30）<a class="anchor" href="#8-排课-预约-教室与目录-30" aria-label="链接到此节">#</a></h2>
 <h3 id="8-1-查询后台排课">8.1 查询后台排课<a class="anchor" href="#8-1-查询后台排课" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/sessions">
 <h4 id="get-api-admin-sessions"><span class="method method-get">GET</span><a href="#get-api-admin-sessions" class="route">/api/admin/sessions</a></h4>
@@ -776,6 +783,11 @@
 <section class="endpoint" data-search="delete /api/admin/courses/{course_id}/image">
 <h4 id="delete-api-admin-courses-course-id-image"><span class="method method-delete">DELETE</span><a href="#delete-api-admin-courses-course-id-image" class="route">/api/admin/courses/{course_id}/image</a></h4>
 <ul><li><strong>权限</strong>：管理员；<strong>Body</strong>：无。</li><li>清空课程的 <code>image_url</code> 并删除服务器上的旧文件；<strong>响应</strong>：更新后的 Course。</li></ul>
+</section>
+<h3 id="8-30-导入-outlook-会议室日历">8.30 导入 Outlook 会议室日历<a class="anchor" href="#8-30-导入-outlook-会议室日历" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="post /api/admin/room-reservations/import-ics">
+<h4 id="post-api-admin-room-reservations-import-ics"><span class="method method-post">POST</span><a href="#post-api-admin-room-reservations-import-ics" class="route">/api/admin/room-reservations/import-ics</a></h4>
+<ul><li><strong>权限</strong>：需 <code>bookings.write</code>。</li><li><strong>Body</strong>：<code>ics</code>（string，必填，ICS 文本内容）、<code>room_id</code>（integer，可选；为 0 或缺省时按日程 <code>LOCATION</code> 自动匹配教室）。</li><li><strong>响应</strong>：<code>{ ok, created, skipped, total }</code>，<code>skipped</code> 为跳过原因数组（如「已经导入过」「与课程冲突」「未指定教室」）。</li><li>解析 Outlook 导出的 <code>.ics</code>：支持 <code>DTSTART;TZID=Asia/Shanghai</code>、UTC（<code>Z</code>）、全天事件与 <code>RRULE:FREQ=WEEKLY</code> 每周重复。</li><li>每条日程按 <code>UID</code> 去重，重复导入不会产生重复占用；导入的占用 <code>usage_type</code> 与 <code>source</code> 均为 <code>outlook</code>，在教室总览里以「Outlook 会议」标注。</li><li>与已有课程或占用冲突的日程会跳过，不覆盖已有排课。</li></ul>
 </section>
 <h2 id="9-产品-财务与报表-15">9. 产品、财务与报表（15）<a class="anchor" href="#9-产品-财务与报表-15" aria-label="链接到此节">#</a></h2>
 <h3 id="9-1-产品列表">9.1 产品列表<a class="anchor" href="#9-1-产品列表" aria-label="链接到此节">#</a></h3>
@@ -1024,7 +1036,7 @@
 <h3 id="13-11-导出会员名单-excel">13.11 导出会员名单 Excel<a class="anchor" href="#13-11-导出会员名单-excel" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/export/members.xlsx">
 <h4 id="get-api-admin-export-members-xlsx"><span class="method method-get">GET</span><a href="#get-api-admin-export-members-xlsx" class="route">/api/admin/export/members.xlsx</a></h4>
-<ul><li><strong>权限</strong>：需 <code>members.view</code>；API Key 需 <code>read</code> 范围。</li><li><strong>Query</strong>：<code>scope</code> 取 <code>all</code>（全部会员）、<code>new</code>（当月新进会员）、<code>renew_pending</code>（当月未续会会员），默认 <code>all</code>；<code>month</code> 为统计月份 <code>YYYY-MM</code>，<code>scope=all</code> 时忽略。</li><li><strong>响应</strong>：<code>application/vnd.openxmlformats-officedocument.spreadsheetml.sheet</code> 文件流，<code>Content-Disposition: attachment</code>。</li><li>工作表名为“会员列表”，中文表头：会员姓名、照片、手机号码、生日、性别、会员卡类别、合同总金额、购买时间、到期时间、会籍归属、会员时长、备注；首行冻结。</li><li>会员照片直接嵌入“照片”列单元格（无照片留空），其余列取该会员当前有效会员卡的汇总数据。</li></ul>
+<ul><li><strong>权限</strong>：需 <code>members.view</code>；API Key 需 <code>read</code> 范围。</li><li><strong>Query</strong>：<code>scope</code> 取 <code>all</code>（全部会员）、<code>new</code>（当月新进会员）、<code>renew_pending</code>（当月未续会会员），默认 <code>all</code>；<code>month</code> 为统计月份 <code>YYYY-MM</code>，<code>scope=all</code> 时忽略；<code>categories</code> 为卡种多选（英文逗号分隔，如 <code>group,private,annual</code>，为空表示不限）；<code>only_cards</code> 默认 <code>true</code>，只导出真正买过卡的客户，设为 <code>false</code> 才包含未开卡的散客。</li><li><strong>响应</strong>：<code>application/vnd.openxmlformats-officedocument.spreadsheetml.sheet</code> 文件流，<code>Content-Disposition: attachment</code>。</li><li>工作表名为“会员列表”，中文表头：会员姓名、照片、手机号码、生日、性别、会员卡类别、合同总金额、购买时间、到期时间、会籍归属、会员时长、备注；首行冻结。</li><li>会员照片直接嵌入“照片”列单元格（无照片留空），其余列取该会员当前有效会员卡的汇总数据。</li><li><code>categories</code> 与 <code>GET /api/admin/members</code> 的卡种口径一致：<code>group</code> 团课、<code>private</code> 私教与评估、<code>annual</code> 年卡与组合套餐。</li></ul>
 </section>
 <h2 id="14-典型业务调用顺序">14. 典型业务调用顺序<a class="anchor" href="#14-典型业务调用顺序" aria-label="链接到此节">#</a></h2>
 <h3 id="14-1-会员预约闭环">14.1 会员预约闭环<a class="anchor" href="#14-1-会员预约闭环" aria-label="链接到此节">#</a></h3>
@@ -1141,7 +1153,29 @@ const dashboard = await api(&quot;/api/admin/dashboard&quot;, {
 <h4 id="get-api-admin-transactions-transaction-id-receipt-pdf"><span class="method method-get">GET</span><a href="#get-api-admin-transactions-transaction-id-receipt-pdf" class="route">/api/admin/transactions/{transaction_id}/receipt.pdf</a></h4>
 <ul><li><strong>权限</strong>：财务查看（<code>finance.view</code>）。</li><li><strong>响应</strong>：单页 <strong>75 × 145 mm</strong> 小票；待核销或已取消记录返回 <code>400</code>。</li><li>包含 Octave/自定义品牌 Logo、健康管理 Wellness、日期时间、项目、金额、入账类型、客户、结账方式、备注、入账人、6% 增值税与去税金额、签字栏及场馆地址电话。</li><li>去税金额按“含税金额 ÷ 1.06”计算，增值税为含税金额减去去税金额；退款或冲销记录以负数展示。</li></ul>
 </section>
-      <footer class="docs-footer"><span>音昱 Wellness · API v1.0.0 · 140 个业务接口</span><span><a href="/help.html">系统操作指南</a> · <a href="/openapi.json">OpenAPI 3</a> · 文档源：<a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md">docs/API.md</a></span></footer>
+<h2 id="18-会员群发通知-4">18. 会员群发通知（4）<a class="anchor" href="#18-会员群发通知-4" aria-label="链接到此节">#</a></h2>
+<p>面向全体会员或指定会员的短信群发通知，可指定发送日期，到点由后台计划任务自动发送；也可立即发送或取消。</p>
+<h3 id="18-1-通知列表">18.1 通知列表<a class="anchor" href="#18-1-通知列表" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="get /api/admin/notices">
+<h4 id="get-api-admin-notices"><span class="method method-get">GET</span><a href="#get-api-admin-notices" class="route">/api/admin/notices</a></h4>
+<ul><li><strong>权限</strong>：需 <code>members.view</code>。</li><li><strong>响应</strong>：<code>{ items: Notice[] }</code>，按发送日期与 ID 倒序。</li><li>每条通知含 <code>title</code>、<code>content</code>、<code>send_on</code>（计划发送日期）、<code>scope</code>（<code>all</code> 全部会员 / <code>card_holders</code> 已购卡客户 / <code>selected</code> 指定会员）、<code>member_ids</code>（指定会员 ID 数组）、<code>status</code>（<code>scheduled</code> 待发送 / <code>sent</code> 已发送 / <code>cancelled</code> 已取消）、<code>sent_count</code>、<code>failed_count</code>、<code>created_by</code>、<code>created_at</code>、<code>sent_at</code>。</li></ul>
+</section>
+<h3 id="18-2-新建通知">18.2 新建通知<a class="anchor" href="#18-2-新建通知" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="post /api/admin/notices">
+<h4 id="post-api-admin-notices"><span class="method method-post">POST</span><a href="#post-api-admin-notices" class="route">/api/admin/notices</a></h4>
+<ul><li><strong>权限</strong>：需 <code>members.write</code>。</li><li><strong>Body 必填</strong>：<code>title</code>（不超过 100 字）、<code>content</code>（不超过 500 字）、<code>send_on</code>（<code>YYYY-MM-DD</code>）、<code>scope</code>（<code>all</code> / <code>card_holders</code> / <code>selected</code>）。</li><li><strong>Body 可选</strong>：<code>member_ids</code>（<code>scope=selected</code> 时必填，为会员 ID 数组）。</li><li><strong>响应</strong>：新建的 Notice，初始 <code>status=scheduled</code>。</li><li><code>send_on</code> 为今天或更早的日期时，计划任务会在下一轮轮询（约 20 秒）自动群发。</li></ul>
+</section>
+<h3 id="18-3-立即发送通知">18.3 立即发送通知<a class="anchor" href="#18-3-立即发送通知" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="post /api/admin/notices/{notice_id}/send">
+<h4 id="post-api-admin-notices-notice-id-send"><span class="method method-post">POST</span><a href="#post-api-admin-notices-notice-id-send" class="route">/api/admin/notices/{notice_id}/send</a></h4>
+<ul><li><strong>权限</strong>：需 <code>members.write</code>；<strong>Body</strong>：无。</li><li><strong>响应</strong>：<code>{ ok, sent, failed, notice }</code>。</li><li>按通知范围选出收件人并逐条发送短信，失败不中断整体流程；发送后 <code>status=sent</code>，并记录 <code>sent_at</code> 与成功/失败条数。已发送的通知不能重复发送。</li></ul>
+</section>
+<h3 id="18-4-取消通知">18.4 取消通知<a class="anchor" href="#18-4-取消通知" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="post /api/admin/notices/{notice_id}/cancel">
+<h4 id="post-api-admin-notices-notice-id-cancel"><span class="method method-post">POST</span><a href="#post-api-admin-notices-notice-id-cancel" class="route">/api/admin/notices/{notice_id}/cancel</a></h4>
+<ul><li><strong>权限</strong>：需 <code>members.write</code>；<strong>Body</strong>：无。</li><li><strong>响应</strong>：<code>{ ok: true, notice }</code>，<code>status=cancelled</code>，不再发送。</li></ul>
+</section>
+      <footer class="docs-footer"><span>音昱 Wellness · API v1.0.0 · 146 个业务接口</span><span><a href="/help.html">系统操作指南</a> · <a href="/openapi.json">OpenAPI 3</a> · 文档源：<a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md">docs/API.md</a></span></footer>
     </main>
   </div>
   <script>

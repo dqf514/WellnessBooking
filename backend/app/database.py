@@ -51,6 +51,7 @@ def ensure_schema():
             "rooms": {"floor": "VARCHAR(30) DEFAULT '1F'", "sort_order": "INTEGER DEFAULT 0"},
             "bookings": {"experience_voucher_id": "INTEGER REFERENCES experience_vouchers(id)"},
             "member_documents": {"category": "VARCHAR(24) DEFAULT 'contract'"},
+            "room_reservations": {"external_uid": "VARCHAR(160) DEFAULT ''", "source": "VARCHAR(24) DEFAULT ''"},
             "transactions": {
                 "cancelled_at": "DATETIME",
                 "cancelled_by": "VARCHAR(80) DEFAULT ''",

@@ -37,11 +37,15 @@ def export_transactions(date_from: str = Query(""), date_to: str = Query(""), ca
 
 
 @router.get("/export/members.xlsx")
-def export_members_xlsx(scope: str = Query("all"), month: str = Query(""), db: Session = Depends(get_db), _: User = Depends(require_members_view)):
-    """会员列表 Excel 导出：中文表头并嵌入会员照片；scope = all / new / renew_pending。"""
+def export_members_xlsx(scope: str = Query("all"), month: str = Query(""), categories: str = Query(""), only_cards: bool = Query(True), db: Session = Depends(get_db), _: User = Depends(require_members_view)):
+    """会员列表 Excel 导出：中文表头并嵌入会员照片；scope = all / new / renew_pending。
+
+    categories 支持多选卡种（团课 / 私教 / 年卡-组合套餐），only_cards 只导出真正买过卡的客户。
+    """
     if scope not in {"all", "new", "renew_pending"}:
         raise HTTPException(400, "不支持的导出范围")
-    content = build_member_workbook(db, scope, month)
+    wanted = [item for item in categories.split(",") if item]
+    content = build_member_workbook(db, scope, month, wanted, only_cards)
     filename = f"wellness-members-{scope}-{month or today()}.xlsx"
     return Response(content=content, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": f'attachment; filename="{filename}"', "Cache-Control": "no-store"})
 

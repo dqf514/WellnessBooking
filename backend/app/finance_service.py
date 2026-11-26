@@ -79,6 +79,11 @@ def category_matches(category: str, wanted: str) -> bool:
     return normalized_category(category) in CATEGORY_ALIASES.get(wanted, {wanted})
 
 
+def category_matches_any(category: str, wanted_list: list[str]) -> bool:
+    """多选卡种筛选：命中任意一项即算匹配。"""
+    return any(category_matches(category, item) for item in wanted_list if item)
+
+
 def _amortized_amount(row: Transaction, card: MemberCard | None, product: CardProduct | None, start: str, end: str) -> float:
     if card is not None and card.start_pending:
         # 开卡日期待定：尚未开卡，不确认营收，开卡后再按实际开始日均摊。

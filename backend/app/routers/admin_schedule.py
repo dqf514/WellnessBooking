@@ -12,6 +12,7 @@ from ..booking_service import create_booking, transition_booking
 from ..config import UPLOAD_DIR
 from ..database import get_db
 from ..deps import require_bookings_view, require_bookings_write, require_catalog_view, require_catalog_write
+from ..ics_service import parse_ics
 from ..log_util import audit
 from ..membership_service import due_reminders
 from ..models import Booking, ClassSession, Course, Member, Room, RoomReservation, Teacher, User
@@ -286,6 +287,54 @@ def reserve_room(payload: dict = Body(...), db: Session = Depends(get_db), user:
     audit(db, user, "room", "reserve", "room", room.id, {"created": created, "repeat_weeks": repeat, "skipped": skipped})
     db.commit()
     return {"ok": True, "created": created, "skipped": skipped}
+
+
+@router.post("/room-reservations/import-ics")
+def import_room_reservations_ics(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_bookings_write)):
+    """导入 Outlook 会议室日历：解析 ICS 文本并生成教室占用记录。
+
+    指定 room_id 时全部归到该教室；不指定时按日程里的地点自动匹配教室名称。
+    """
+    text = str(payload.get("ics") or "")
+    if not text.strip():
+        raise HTTPException(400, "请上传 Outlook 导出的 .ics 日历文件")
+    events = parse_ics(text)
+    if not events:
+        raise HTTPException(400, "没有解析到有效日程，请确认文件是日历导出（.ics）")
+    rooms = {row.id: row for row in db.query(Room).filter(Room.deleted_at.is_(None)).all()}
+    default_room_id = as_int(payload.get("room_id", 0), "教室")
+    usage_type = str(payload.get("usage_type") or "outlook")
+    created = 0
+    skipped: list[str] = []
+    pending: list[tuple[int, str, str, str]] = []
+    for event in events:
+        room = rooms.get(default_room_id)
+        if not room:
+            for candidate in rooms.values():
+                if candidate.name and event["location"] and candidate.name in event["location"]:
+                    room = candidate
+                    break
+        if not room:
+            skipped.append(f"{event['date']} {event['summary']}：未指定教室")
+            continue
+        if event["uid"] and db.query(RoomReservation).filter(RoomReservation.external_uid == event["uid"], RoomReservation.deleted_at.is_(None)).first():
+            skipped.append(f"{event['date']} {event['summary']}：已经导入过")
+            continue
+        conflict = next((item for item in pending if item[0] == room.id and item[1] == event["date"] and overlaps(event["start_time"], event["end_time"], item[2], item[3])), None)
+        if conflict:
+            skipped.append(f"{event['date']} {event['start_time']}-{event['end_time']}：与本次导入的其他日程重叠")
+            continue
+        try:
+            _validate_room_reservation(db, room, event["date"], event["start_time"], event["end_time"])
+        except HTTPException as exc:
+            skipped.append(f"{event['date']} {event['start_time']}-{event['end_time']}：{exc.detail}")
+            continue
+        db.add(RoomReservation(room_id=room.id, title=event["summary"][:160], reservation_date=event["date"], start_time=event["start_time"], end_time=event["end_time"], usage_type=usage_type, notes=event["description"][:500], external_uid=event["uid"][:160], source="outlook", created_by=user.username))
+        pending.append((room.id, event["date"], event["start_time"], event["end_time"]))
+        created += 1
+    audit(db, user, "room", "import_ics", "room", default_room_id, {"created": created, "skipped": len(skipped)})
+    db.commit()
+    return {"ok": True, "created": created, "skipped": skipped, "total": len(events)}
 
 
 @router.patch("/room-reservations/{reservation_id}")
