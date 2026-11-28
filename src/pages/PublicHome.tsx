@@ -8,7 +8,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { apiFetch, downloadFile, getToken } from "@/lib/api";
 import { addDays, isoDate, money, shortDate, today, weekday, weekStart } from "@/lib/date";
 import { useSwipeNavigation } from "@/lib/useSwipeNavigation";
-import type { Booking, Bootstrap, CourseType, MemberMe, Product, Session, Transaction } from "@/types";
+import type { Booking, Bootstrap, CourseType, MemberBooking, MemberMe, Product, Session, Transaction } from "@/types";
 
 type ScheduleView = "day" | "week" | "month";
 type SeatStatus = "available" | "limited" | "full";
@@ -49,6 +49,7 @@ export function PublicHome() {
   const [meOpen, setMeOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [meTab, setMeTab] = useState<"profile" | "bookings" | "cards" | "orders" | "checkin">("profile");
+  const [bookingLimit, setBookingLimit] = useState(30);
   const [me, setMe] = useState<MemberMe | null>(null);
   const [phone, setPhone] = useState(() => localStorage.getItem(PHONE_KEY) ?? "");
   const [code, setCode] = useState("");
@@ -113,7 +114,7 @@ export function PublicHome() {
 
   const loadMe = useCallback(async () => {
     if (!getToken("member")) return;
-    try { setMe(await apiFetch<MemberMe>("/api/public/me", { tokenKind: "member" })); }
+    try { setMe(await apiFetch<MemberMe>("/api/public/me", { tokenKind: "member" })); setBookingLimit(30); }
     catch { localStorage.removeItem("wellness_member_token"); setMe(null); }
   }, []);
 
@@ -182,7 +183,7 @@ export function PublicHome() {
   function mePanel() {
     return <>
       <div className="me-tabs"><button className={meTab === "profile" ? "active" : ""} onClick={() => setMeTab("profile")} type="button"><Icon name="user" size={16}/>{local("个人信息", "Profile")}</button><button className={meTab === "bookings" ? "active" : ""} onClick={() => setMeTab("bookings")} type="button">{t("myBookings")}</button><button className={meTab === "cards" ? "active" : ""} onClick={() => setMeTab("cards")} type="button">{t("myCards")}</button><button className={meTab === "orders" ? "active" : ""} onClick={() => setMeTab("orders")} type="button">{t("myOrders")}</button><button className={meTab === "checkin" ? "active" : ""} onClick={() => setMeTab("checkin")} type="button"><Icon name="qr" size={16}/>{local("到店签到", "Check in")}</button><button className="logout-link" type="button" onClick={() => setLogoutOpen(true)}>{t("logout")}</button></div>
-      {meTab === "bookings" && <div className="me-list">{!me?.bookings.length ? <Empty>{t("noBookings")}</Empty> : me.bookings.map((booking) => { const session = booking.session; if (!session) return null; return <article key={booking.id} className={booking.status === "cancelled" ? "muted" : ""}><div><span className={`status-dot status-${booking.status}`}/><h3>{local(session.course.name, session.course.name_en)}</h3><p>{session.session_date} · {session.start_time}–{session.end_time}</p><small>{local(session.teacher.name, session.teacher.name_en)} · {local(session.room.name, session.room.name_en)}</small></div><div><span className="booking-status">{statusLabel(booking.status)}</span>{booking.status === "booked" && <><button className="text-button" type="button" onClick={() => void downloadFile(`/api/public/bookings/${booking.id}/calendar.ics`, `booking-${booking.id}.ics`, "member")}>{t("addCalendar")}</button><button className="text-button danger" type="button" onClick={() => void cancelBooking(booking)}>{t("cancel")}</button></>}</div></article>; })}</div>}
+      {meTab === "bookings" && <div className="me-list">{!me?.bookings.length ? <Empty>{t("noBookings")}</Empty> : <>{me.bookings.slice(0, bookingLimit).map((booking) => <article key={booking.id} className={booking.status === "cancelled" ? "muted" : ""}><div><span className={`status-dot status-${booking.status}`}/><h3>{local(booking.course_name, booking.course_name_en)}</h3><p>{booking.session_date} · {booking.start_time}–{booking.end_time}</p><small>{local(booking.teacher_name, booking.teacher_name_en)} · {local(booking.room_name, booking.room_name_en)}</small></div><div><span className="booking-status">{statusLabel(booking.status)}</span>{booking.status === "booked" && <><button className="text-button" type="button" onClick={() => void downloadFile(`/api/public/bookings/${booking.id}/calendar.ics`, `booking-${booking.id}.ics`, "member")}>{t("addCalendar")}</button><button className="text-button danger" type="button" onClick={() => void cancelBooking(booking)}>{t("cancel")}</button></>}</div></article>)}<div className="me-list-more">{me.bookings.length > bookingLimit ? <button className="button button-outline" type="button" onClick={() => setBookingLimit((value) => value + 30)}>{local(`查看更多（还有 ${me.bookings.length - bookingLimit} 条）`, `Show more (${me.bookings.length - bookingLimit} left)`)}</button> : <small>{local(`共 ${me.bookings.length} 条记录`, `${me.bookings.length} records in total`)}</small>}</div></>}</div>}
       {meTab === "cards" && <div className="member-card-grid">{!me?.cards.length ? <Empty>{t("noCards")}</Empty> : me.cards.map((card) => <article className="member-pass" key={card.id}><span>{card.card_no}</span><h3>{local(card.product_name, card.product_name_en)}</h3><strong>{card.remaining_sessions ?? t("unlimited")}<small>{card.remaining_sessions !== null ? ` ${t("sessions")}` : ""}</small></strong><p>{card.start_pending ? local("开卡日期待定", "Starts on the first check-in") : `${t("expires")} ${card.expires_on}`}</p><div className="pass-benefits">{card.benefits.map((benefit) => <span key={benefit.course_type}>{t(benefit.course_type as CourseType)} {benefit.remaining ?? benefit.quantity}</span>)}</div></article>)}</div>}
       {meTab === "orders" && <div className="me-list">{!me?.transactions.length ? <Empty>{local("暂无购卡申请", "No card requests yet")}</Empty> : me.transactions.map((order) => <article key={order.id} className={order.status === "cancelled" ? "muted" : ""}><div><h3>{local(order.product_name || order.note, order.product_name_en)}</h3><p>{order.occurred_at} · {orderStatusLabel(order.status)}</p>{order.cancelled_at && <small>{local("取消于", "Cancelled at")} {order.cancelled_at}</small>}{order.redemption_code && <strong className="redeem-code">{order.redemption_code}</strong>}{order.status === "pending" && <small>{local("到店支付并出示此码核销；未核销前可取消。", "Pay in store and show this code. You can cancel before redemption.")}</small>}</div><div><strong>{money(order.amount)}</strong>{order.status === "pending" && <button className="text-button danger" type="button" disabled={busy} onClick={() => setCancelOrderTarget(order)}>{local("取消申请", "Cancel request")}</button>}</div></article>)}</div>}
       {meTab === "checkin" && <MemberCheckInPanel onChecked={loadMe}/>}
@@ -268,7 +269,7 @@ export function PublicHome() {
     setLogoutOpen(false);
   }
 
-  async function cancelBooking(booking: Booking) {
+  async function cancelBooking(booking: MemberBooking) {
     if (!window.confirm(language === "zh" ? "确认取消这次预约？" : "Cancel this booking?")) return;
     setError("");
     try {

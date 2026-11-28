@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#173f35">
-  <meta name="description" content="音昱 Wellness 完整 API 对接文档，覆盖 156 个接口、权限、字段、业务规则与示例。">
+  <meta name="description" content="音昱 Wellness 完整 API 对接文档，覆盖 157 个接口、权限、字段、业务规则与示例。">
   <meta name="generator" content="docs/build_api_docs.py">
   <link id="api-favicon" rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Crect width='36' height='36' rx='18' fill='%23173f35'/%3E%3Cpath d='M28 6C15 7 8 13 8 23c7 1 15-2 20-17ZM8 29c3-8 8-12 16-17' fill='none' stroke='%23e9efe7' stroke-width='1.5'/%3E%3C/svg%3E">
   <title>API 对接文档 · 音昱 Wellness</title>
@@ -33,7 +33,7 @@
     <aside class="sidebar" aria-label="API 文档目录">
       <label class="search-label"><span>搜索接口、字段或业务规则</span><input class="search-input" id="api-search" type="search" placeholder="例如：签到、退款、bookings" autocomplete="off"><span class="search-hint">按 / 快速搜索，Esc 清空</span></label>
       <p class="search-results" id="search-results" aria-live="polite"></p>
-      <p class="toc-title">API REFERENCE · 156 ENDPOINTS</p>
+      <p class="toc-title">API REFERENCE · 157 ENDPOINTS</p>
       <nav><ul class="toc-list"><li><a href="#1-接入基础">1. 接入基础</a></li>
 <li><a href="#2-通用数据结构">2. 通用数据结构</a></li>
 <li><a href="#3-健康检查与员工认证-9">3. 健康检查与员工认证（9）</a></li>
@@ -353,7 +353,7 @@
 <h3 id="4-5-会员个人中心">4.5 会员个人中心<a class="anchor" href="#4-5-会员个人中心" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/public/me">
 <h4 id="get-api-public-me"><span class="method method-get">GET</span><a href="#get-api-public-me" class="route">/api/public/me</a></h4>
-<ul><li><strong>权限</strong>：会员；<strong>请求</strong>：无。</li><li><strong>响应</strong>：<code>{ member, cards, bookings, transactions }</code>。</li><li><code>bookings</code> 按预约时间倒序，<code>transactions</code> 按发生时间倒序，只返回当前会员数据。</li></ul>
+<ul><li><strong>权限</strong>：会员；<strong>请求</strong>：无。</li><li><strong>响应</strong>：<code>{ member, cards, bookings, transactions }</code>。</li><li><code>bookings</code> 按预约时间倒序，<code>transactions</code> 按发生时间倒序，只返回当前会员数据。</li><li><code>bookings</code> 为<strong>精简记录</strong>（<code>member_booking_dict</code>）：只含 <code>id</code>、<code>session_id</code>、<code>status</code>、<code>card_name</code>、<code>booked_at</code>、<code>cancelled_at</code>、<code>checked_in_at</code>、<code>consumed</code> 以及摊平的 <code>session_date</code> / <code>start_time</code> / <code>end_time</code> / <code>course_name</code> / <code>teacher_name</code> / <code>room_name</code>（含 <code>_en</code> 版本），不再内嵌会员资料、课程简介与教练简介。老会员上千条记录时该接口体积从 6.5 MB 降到约 700 KB，数据库查询从 1526 次降到 1 次。</li></ul>
 </section>
 <h3 id="4-6-会员自主预约">4.6 会员自主预约<a class="anchor" href="#4-6-会员自主预约" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/public/bookings">
@@ -441,7 +441,7 @@
 <h3 id="6-1-查询会员列表">6.1 查询会员列表<a class="anchor" href="#6-1-查询会员列表" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/members">
 <h4 id="get-api-admin-members"><span class="method method-get">GET</span><a href="#get-api-admin-members" class="route">/api/admin/members</a></h4>
-<ul><li><strong>权限</strong>：只读。</li><li><strong>Query</strong>：<code>q</code>（姓名/英文名/手机号模糊搜索）、<code>category</code>（卡类别，可多选，用英文逗号分隔，如 <code>group,private</code>）、<code>card_status</code>（持卡状态，可多选，用英文逗号分隔，如 <code>active,none</code>；取值：<code>active</code> 有效卡 / <code>pending</code> 未激活 / <code>expired</code> 已过期 / <code>used_up</code> 已用完 / <code>none</code> 无会员卡）、<code>active_only</code>（默认 <code>false</code>）、<code>sort</code>（排序：<code>card</code> 默认按会员卡种类自动排序 / <code>name</code> 按姓名 / <code>joined</code> 按入会时间倒序）、<code>page</code>（页码，从 1 开始；<strong>不传则整份返回</strong>，保持旧行为）、<code>page_size</code>（每页条数，默认 50，最大 200）。</li><li><strong>响应</strong>：<code>{ items: Member[]（含 cards）, total, page, page_size, pages, card_stats }</code>，<code>card_stats</code> 为按卡种统计的人数数组（<code>product_id</code>、<code>name</code>、<code>name_en</code>、<code>category</code>、<code>count</code>），用于列表底部展示每种会员卡的数量；统计始终基于筛选后的全部会员，不受分页影响。</li><li>传 <code>page</code> 时只序列化当前页的会员（会员上千时页面秒开），<code>total</code> 为筛选后的总人数，<code>pages</code> 为总页数；页码超出范围会自动回落到最后一页。</li><li><code>card_status</code> 多选之间是<strong>或</strong>的关系：传 <code>active,none</code> 表示“持有有效卡<strong>或</strong>完全没有卡”的会员；同一会员命中任意一项即被选中。</li><li><code>category</code> 多选时按业务卡种归类：<code>group</code> 团课、<code>private</code> 私教与评估、<code>annual</code> 年卡与组合套餐；历史 <code>package</code> 产品归入 <code>annual</code>。</li><li><code>sort=card</code> 的顺序为：年卡 / 组合套餐 → 团课月卡 → 团课十次卡 → 团课六次卡 → 团课周卡 → 私教 10/20/30 次卡；无有效卡的客户排在最后。</li></ul>
+<ul><li><strong>权限</strong>：只读。</li><li><strong>Query</strong>：<code>q</code>（姓名/英文名/手机号模糊搜索）、<code>category</code>（卡类别，可多选，用英文逗号分隔，如 <code>group,private</code>）、<code>card_status</code>（持卡状态，可多选，用英文逗号分隔，如 <code>active,none</code>；取值：<code>active</code> 有效卡 / <code>pending</code> 未激活 / <code>expired</code> 已过期 / <code>used_up</code> 已用完 / <code>none</code> 无会员卡）、<code>active_only</code>（默认 <code>false</code>）、<code>sort</code>（排序：<code>card</code> 默认按会员卡种类自动排序 / <code>name</code> 按姓名 / <code>joined</code> 按入会时间倒序）、<code>page</code>（页码，从 1 开始；<strong>不传则整份返回</strong>，保持旧行为）、<code>page_size</code>（每页条数，默认 50，最大 200）。</li><li><strong>响应</strong>：<code>{ items: Member[]（含 cards）, total, page, page_size, pages, card_stats }</code>，<code>card_stats</code> 为按卡种统计的人数数组（<code>product_id</code>、<code>name</code>、<code>name_en</code>、<code>category</code>、<code>count</code>），用于列表底部展示每种会员卡的数量；统计始终基于筛选后的全部会员，不受分页影响。</li><li>传 <code>page</code> 时只序列化当前页的会员（会员上千时页面秒开），<code>total</code> 为筛选后的总人数，<code>pages</code> 为总页数；页码超出范围会自动回落到最后一页。</li><li><code>card_status</code> 多选之间是<strong>或</strong>的关系：传 <code>active,none</code> 表示“持有有效卡<strong>或</strong>完全没有卡”的会员；同一会员命中任意一项即被选中。</li><li><code>category</code> 多选时按业务卡种归类：<code>group</code> 团课、<code>private</code> 私教与评估、<code>annual</code> 年卡与组合套餐；历史 <code>package</code> 产品归入 <code>annual</code>。</li><li><code>sort=card</code> 的顺序为：年卡 / 组合套餐 → 团课月卡 → 团课十次卡 → 团课六次卡 → 团课周卡 → 私教 10/20/30 次卡；无有效卡的客户排在最后。</li><li>名单里的 <code>cards</code> 是<strong>摘要</strong>（<code>id</code>、<code>product_name</code>、<code>product_name_en</code>、<code>category</code>、<code>status</code>、<code>display_status</code>、<code>purchase_price</code>、<code>starts_on</code>、<code>expires_on</code>、<code>total_sessions</code>、<code>remaining_sessions</code>、<code>start_pending</code>），不含权益明细、共享名单、卡号与备注；完整卡信息请用 6.3 的会员档案接口。</li></ul>
 </section>
 <section class="endpoint" data-search="get /api/admin/members/options">
 <h4 id="get-api-admin-members-options"><span class="method method-get">GET</span><a href="#get-api-admin-members-options" class="route">/api/admin/members/options</a></h4>
@@ -455,7 +455,11 @@
 <h3 id="6-3-会员完整档案">6.3 会员完整档案<a class="anchor" href="#6-3-会员完整档案" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/members/{member_id}">
 <h4 id="get-api-admin-members-member-id"><span class="method method-get">GET</span><a href="#get-api-admin-members-member-id" class="route">/api/admin/members/{member_id}</a></h4>
-<ul><li><strong>权限</strong>：只读；<strong>请求</strong>：无 Body。</li><li><strong>响应</strong>：Member（含 <code>cards</code>）并增加 <code>shared_cards</code>、<code>bookings</code>、<code>records</code>、<code>transactions</code>、<code>vouchers</code>、<code>reminders</code>、<code>reminder_alerts</code>。</li><li><code>shared_cards</code> 是其他会员共享给当前会员、可用于预约签到的卡；<code>cards[].shared_with</code> 则列出当前会员卡的共享对象。</li><li><code>records[]</code> 含 <code>id</code>、<code>record_type</code>、<code>title</code>、<code>content</code>、<code>record_date</code>、<code>teacher_name</code>；合同和评估附件通过第 7 章接口单独查询。</li><li><code>reminders</code> 仅含有效提醒，<code>reminder_alerts</code> 是已到期提醒及生日前 7 天提示的字符串数组；未来提醒保留在 <code>reminders</code> 中，但不会提前弹出。</li></ul>
+<ul><li><strong>权限</strong>：只读；<strong>请求</strong>：无 Body。</li><li><strong>响应</strong>：Member（含 <code>cards</code>）并增加 <code>shared_cards</code>、<code>records</code>、<code>transactions</code>、<code>vouchers</code>、<code>reminders</code>、<code>reminder_alerts</code>、<code>bookings_total</code>。</li><li><code>shared_cards</code> 是其他会员共享给当前会员、可用于预约签到的卡；<code>cards[].shared_with</code> 则列出当前会员卡的共享对象。</li><li><code>records[]</code> 含 <code>id</code>、<code>record_type</code>、<code>title</code>、<code>content</code>、<code>record_date</code>、<code>teacher_name</code>；合同和评估附件通过第 7 章接口单独查询。</li><li><code>reminders</code> 仅含有效提醒，<code>reminder_alerts</code> 是已到期提醒及生日前 7 天提示的字符串数组；未来提醒保留在 <code>reminders</code> 中，但不会提前弹出。</li><li><strong>上课记录不再随档案一次性返回</strong>：<code>bookings</code> 恒为空数组，记录条数见 <code>bookings_total</code>；上课记录改用下面的分页接口。老会员有上千条记录，一次性返回会把接口撑到几 MB，档案页要等很久才打得开。</li></ul>
+</section>
+<section class="endpoint" data-search="get /api/admin/members/{member_id}/bookings">
+<h4 id="get-api-admin-members-member-id-bookings"><span class="method method-get">GET</span><a href="#get-api-admin-members-member-id-bookings" class="route">/api/admin/members/{member_id}/bookings</a></h4>
+<ul><li><strong>权限</strong>：只读。</li><li><strong>Query</strong>：<code>page</code>（页码，从 1 开始，默认 1）、<code>page_size</code>（每页条数，默认 20，最大 100）、<code>course_type</code>（课程类型，可多选，用英文逗号分隔，如 <code>group</code> 或 <code>private,assessment,workshop</code>；不传返回全部课种）。</li><li><strong>响应</strong>：<code>{ items, total, page, pages, page_size }</code>，按预约时间倒序。</li><li><code>items[]</code> 是精简行：<code>id</code>、<code>status</code>、<code>booked_at</code>、<code>checked_in_at</code>、<code>cancelled_at</code>、<code>consumed</code>、<code>card_name</code>、<code>session_date</code>、<code>start_time</code>、<code>end_time</code>、<code>course_type</code>、<code>course_name</code>、<code>course_name_en</code>、<code>teacher_name</code>、<code>teacher_name_en</code>；不重复携带会员资料与课程简介，20 条约 8 KB。</li></ul>
 </section>
 <h3 id="6-4-修改会员">6.4 修改会员<a class="anchor" href="#6-4-修改会员" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="patch /api/admin/members/{member_id}">
@@ -1233,7 +1237,7 @@ const dashboard = await api(&quot;/api/admin/dashboard&quot;, {
 <h4 id="post-api-admin-notices-notice-id-cancel"><span class="method method-post">POST</span><a href="#post-api-admin-notices-notice-id-cancel" class="route">/api/admin/notices/{notice_id}/cancel</a></h4>
 <ul><li><strong>权限</strong>：需 <code>members.write</code>；<strong>Body</strong>：无。</li><li><strong>响应</strong>：<code>{ ok: true, notice }</code>，<code>status=cancelled</code>，不再发送。</li></ul>
 </section>
-      <footer class="docs-footer"><span>音昱 Wellness · API v1.0.0 · 156 个业务接口</span><span><a href="/help.html">系统操作指南</a> · <a href="/openapi.json">OpenAPI 3</a> · 文档源：<a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md">docs/API.md</a></span></footer>
+      <footer class="docs-footer"><span>音昱 Wellness · API v1.0.0 · 157 个业务接口</span><span><a href="/help.html">系统操作指南</a> · <a href="/openapi.json">OpenAPI 3</a> · 文档源：<a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md">docs/API.md</a></span></footer>
     </main>
   </div>
   <script>

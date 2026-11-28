@@ -102,6 +102,7 @@
           <ul>
             <li data-zh="手机上打开会员端，底部有五个按钮：首页、预约、引导者、卡课、我的，点哪个就显示哪个页面，不用再一屏一屏往下拉。" data-en="On a phone the member site shows five buttons at the bottom — Home, Book, Guides, Cards and Me. Tap one to open that page instead of scrolling through everything.">手机上打开会员端，底部有五个按钮：首页、预约、引导者、卡课、我的，点哪个就显示哪个页面，不用再一屏一屏往下拉。</li>
             <li data-zh="“我的”是独立页面，含个人信息、我的预约、我的会员卡、购卡记录与到店签到；未登录时点开是登录窗口。" data-en="“Me” is a page of its own, with profile, bookings, membership cards, card orders and check-in; when signed out it opens the sign-in window instead.">“我的”是独立页面，含个人信息、我的预约、我的会员卡、购卡记录与到店签到；未登录时点开是登录窗口。</li>
+            <li data-zh="“我的预约”一次先显示最近 30 条，历史记录很多时底部会出现“查看更多（还有 N 条）”按钮，点一次再往下追加 30 条；不影响取消预约与加日历。" data-en="“My bookings” shows the latest 30 rows first. With a long history a “Show more (N left)” button appears at the bottom and adds 30 more rows each time; cancelling and calendar export are unaffected.">“我的预约”一次先显示最近 30 条，历史记录很多时底部会出现“查看更多（还有 N 条）”按钮，点一次再往下追加 30 条；不影响取消预约与加日历。</li>
             <li data-zh="电脑版仍是完整的一整页，从上往下依次浏览，不显示底部按钮；点右上角头像会弹出“我的”窗口，两边功能一致。" data-en="On the desktop the site stays one long scrolling page with no bottom bar; the avatar in the top right opens the “Me” dialog, with the same content on both.">电脑版仍是完整的一整页，从上往下依次浏览，不显示底部按钮；点右上角头像会弹出“我的”窗口，两边功能一致。</li>
           </ul>
           <h3 data-zh="1. 手机号登录" data-en="1. Sign in with your mobile number">1. 手机号登录</h3>
@@ -290,7 +291,14 @@
             <li data-zh="备注字号已加大，内容超出时在备注框内上下滚动，不会把档案拉得很长。" data-en="The notes are now larger; when the text is long it scrolls inside the note box instead of stretching the profile.">备注字号已加大，内容超出时在备注框内上下滚动，不会把档案拉得很长。</li>
             <li data-zh="卡片上不再显示红色“删除”按钮：作废一张卡请用卡操作里的“销卡”，误删的卡还可以从回收站恢复。" data-en="The red “Delete” button is gone from cards: cancel a card with “Cancel card” in the card actions, and a mistaken removal can still be restored from the recycle bin.">卡片上不再显示红色“删除”按钮：作废一张卡请用卡操作里的“销卡”，误删的卡还可以从回收站恢复。</li>
           </ul>
-          <h3 data-zh="5. 会员卡操作速查" data-en="5. Card actions at a glance">5. 会员卡操作速查</h3>
+                    <h3 data-zh="5. 上课记录分页加载" data-en="5. Class history loads page by page">5. 上课记录分页加载</h3>
+          <p data-zh="会员档案里的「团课预约记录」与「私教预约记录」改为按需加载：点开标签页才取这一类记录，每次先显示最近 20 条，表格下方有「已显示 X / 共 Y 条」和「加载更多」按钮，往下翻再点一次即可继续加载。" data-en="“Group bookings” and “PT bookings” in a member profile now load on demand: the records are fetched when you open the tab, twenty at a time, with “X of Y shown” and a “Load more” button underneath.">会员档案里的「团课预约记录」与「私教预约记录」改为按需加载：点开标签页才取这一类记录，每次先显示最近 20 条，表格下方有「已显示 X / 共 Y 条」和「加载更多」按钮，往下翻再点一次即可继续加载。</p>
+          <ul>
+            <li data-zh="以前打开档案会把全部上课记录一次取回来：老会员上千条记录时接口体积达到几 MB，档案页要等很久才打得开。现在只取当前标签页需要的那一类。" data-en="Opening a profile used to fetch every class record at once: for members with a thousand bookings the response reached several megabytes and the profile took a long time to open. Now only the records of the tab you are viewing are fetched.">以前打开档案会把全部上课记录一次取回来：老会员上千条记录时接口体积达到几 MB，档案页要等很久才打得开。现在只取当前标签页需要的那一类。</li>
+            <li data-zh="表格底部显示「已显示 20 / 共 1403 条」这样的计数，一眼知道还有多少历史记录没翻到。" data-en="The footer shows a count such as “20 of 1403 shown”, so you always know how much history is left.">表格底部显示「已显示 20 / 共 1403 条」这样的计数，一眼知道还有多少历史记录没翻到。</li>
+            <li data-zh="点「加载更多」会在现有记录后面继续追加，不会清空已经看到的部分。" data-en="“Load more” appends the next page to what is already listed; it does not clear the rows you have seen.">点「加载更多」会在现有记录后面继续追加，不会清空已经看到的部分。</li>
+          </ul>
+<h3 data-zh="6. 会员卡操作速查" data-en="6. Card actions at a glance">6. 会员卡操作速查</h3>
           <p data-zh="在会员档案的会员卡列表里点击卡片，打开“卡操作”窗口，从“操作”下拉框选择动作。" data-en="Select a card in the member profile to open the “Manage card” dialog, then pick the action from the dropdown.">在会员档案的会员卡列表里点击卡片，打开“卡操作”窗口，从“操作”下拉框选择动作。</p>
           <div class="status-grid">
             <article class="status-card"><strong data-zh="续卡" data-en="Renew">续卡</strong><p data-zh="续卡等于重新购卡：直接进入购卡窗口选产品、结账方式和入账方式，系统开一张新卡并入账，旧卡保持原状。需要延长有效期请用“编辑卡片”改到期日。" data-en="Renewing means buying again: the purchase dialog opens, and a new card is issued and posted while the old one stays as it is. To extend validity, use “Edit card” and change the expiry date.">续卡等于重新购卡：直接进入购卡窗口选产品、结账方式和入账方式，系统开一张新卡并入账，旧卡保持原状。需要延长有效期请用“编辑卡片”改到期日。</p></article>
@@ -298,7 +306,7 @@
             <article class="status-card"><strong data-zh="跨类目升卡" data-en="Upgrade across categories">跨类目升卡</strong><p data-zh="升卡可选择任意类目的产品（例如团课卡升为年卡），系统按差价生成升级流水，结账方式与<b>入账方式都可与购卡一致</b>逐单选择。" data-en="Upgrades can target any category (a group card to an annual card, for example). The difference creates an upgrade ledger entry; both the payment method and the <b>revenue option can be chosen per upgrade</b>, exactly as when buying.">升卡可选择任意类目的产品（例如团课卡升为年卡），系统按差价生成升级流水，结账方式与<b>入账方式都可与购卡一致</b>逐单选择。</p></article>
             <article class="status-card"><strong data-zh="未激活（开卡日期待定）" data-en="Not activated (start date pending)">未激活（开卡日期待定）</strong><p data-zh="购卡时勾选“开卡日期待定”，或事后用“编辑卡片”打开该开关，系统会在会员首次签到时自动起算有效期与剩余次数。卡上会显示“未激活”标记（黄色），便于识别。" data-en="Tick “Start date pending” at purchase, or switch it on later with “Edit card”. Validity and remaining sessions then start counting from the member’s first check-in. The card carries an amber “Not activated” badge so it is easy to spot.">购卡时勾选“开卡日期待定”，或事后用“编辑卡片”打开该开关，系统会在会员首次签到时自动起算有效期与剩余次数。卡上会显示“未激活”标记（黄色），便于识别。</p></article>
           </div>
-          <h3 data-zh="6. 导出会员名单" data-en="6. Export member lists">6. 导出会员名单</h3>
+          <h3 data-zh="7. 导出会员名单" data-en="7. Export member lists">7. 导出会员名单</h3>
           <ul>
             <li data-zh="在“会员管理”右上角点“导出 → 导出会员名单（Excel，含照片）”，弹出导出窗口：先选范围（全部会员 / 当月新进会员 / 当月未续会会员），再按需选择统计月份。" data-en="Select “Export → Export member list (Excel)” at the top right of “Members”: pick the scope (all members, new this month, not renewed this month) and, where relevant, the month.">在“会员管理”右上角点“导出 → 导出会员名单（Excel，含照片）”，弹出导出窗口：先选范围（全部会员 / 当月新进会员 / 当月未续会会员），再按需选择统计月份。</li>
             <li data-zh="默认<b>只导出真正买过卡的客户</b>，没买卡的散客不会混进来；如需包含所有人，取消勾选“仅导出已购卡客户（团课 / 私教 / 年卡·组合套餐）”。" data-en="By default <b>only people who actually bought a card</b> are exported, so walk-in guests no longer creep in. Untick “Only members who purchased a card” to include everyone.">默认<b>只导出真正买过卡的客户</b>，没买卡的散客不会混进来；如需包含所有人，取消勾选“仅导出已购卡客户（团课 / 私教 / 年卡·组合套餐）”。</li>

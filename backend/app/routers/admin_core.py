@@ -15,7 +15,7 @@ from ..log_util import audit
 from ..membership_service import MEMBER_SOURCE_OPTIONS, due_reminders, normalize_member_source, reminder_dict, voucher_dict
 from ..models import Booking, CardProduct, ClassSession, Course, ExperienceVoucher, Member, MemberCard, MemberCardShare, MemberRecord, MemberReminder, Room, Teacher, Transaction, User
 from ..permissions import has_capability
-from ..serializers import booking_dict, card_dict, course_dict, member_dict, product_dict, room_dict, session_dict, teacher_dict, transaction_dict, user_dict
+from ..serializers import booking_dict, card_dict, course_dict, member_dict, product_dict, profile_booking_dict, room_dict, session_dict, teacher_dict, transaction_dict, user_dict
 from ..upload_service import image_size, remove_upload, save_image
 from ..utils import add_days, as_bool, as_float, as_int, clean_payload, today, valid_benefits, valid_date, valid_phone
 
@@ -111,7 +111,7 @@ def list_members(q: str = Query(""), category: str = Query(""), card_status: str
     rows = db.query(Member).options(joinedload(Member.advisor), joinedload(Member.cards).joinedload(MemberCard.product)).filter(Member.id.in_(window_ids)).all() if window_ids else []
     by_id = {row.id: row for row in rows}
     window = [by_id[member_id] for member_id in window_ids if member_id in by_id]
-    return {"items": [member_dict(row, include_cards=True) for row in window], "total": total, "page": current, "page_size": page_size, "pages": pages, "card_stats": _card_stats(db, member_ids)}
+    return {"items": [member_dict(row, include_cards=True, cards_summary=True) for row in window], "total": total, "page": current, "page_size": page_size, "pages": pages, "card_stats": _card_stats(db, member_ids)}
 
 
 def _member_id_order(db: Session, member_ids, sort: str) -> list[int]:
@@ -207,16 +207,48 @@ def delete_member_photo(member_id: int, db: Session = Depends(get_db), user: Use
 
 @router.get("/members/{member_id}")
 def get_member(member_id: int, db: Session = Depends(get_db), _: User = Depends(require_members_view)):
-    row = db.get(Member, member_id)
+    """会员档案主体：资料、会员卡、体验券与提醒。
+
+    上课记录单独走 GET /members/{id}/bookings 分页接口——老会员有上千条记录，
+    一次性返回会把接口撑到几 MB，档案页要等很久才打得开。
+    """
+    row = db.query(Member).options(
+        joinedload(Member.advisor),
+        joinedload(Member.cards).joinedload(MemberCard.product),
+        joinedload(Member.cards).joinedload(MemberCard.shares).joinedload(MemberCardShare.member),
+    ).filter(Member.id == member_id).first()
     if not row or row.deleted_at is not None:
         raise HTTPException(404, "会员不存在")
-    bookings = db.query(Booking).filter(Booking.member_id == member_id, Booking.deleted_at.is_(None)).order_by(Booking.booked_at.desc()).all()
-    records = db.query(MemberRecord).filter(MemberRecord.member_id == member_id, MemberRecord.deleted_at.is_(None)).order_by(MemberRecord.record_date.desc()).all()
+    records = db.query(MemberRecord).options(joinedload(MemberRecord.teacher)).filter(MemberRecord.member_id == member_id, MemberRecord.deleted_at.is_(None)).order_by(MemberRecord.record_date.desc()).all()
     transactions = db.query(Transaction).filter(Transaction.member_id == member_id, Transaction.deleted_at.is_(None)).order_by(Transaction.occurred_at.desc()).all()
     vouchers = db.query(ExperienceVoucher).filter(ExperienceVoucher.member_id == member_id, ExperienceVoucher.deleted_at.is_(None)).order_by(ExperienceVoucher.id.desc()).all()
     reminders = db.query(MemberReminder).filter(MemberReminder.member_id == member_id, MemberReminder.active.is_(True), MemberReminder.deleted_at.is_(None)).order_by(MemberReminder.remind_on, MemberReminder.id).all()
-    shared_cards = db.query(MemberCard).join(MemberCardShare, MemberCardShare.card_id == MemberCard.id).filter(MemberCardShare.member_id == member_id, MemberCardShare.deleted_at.is_(None), MemberCard.deleted_at.is_(None)).all()
-    return {**member_dict(row, include_cards=True), "shared_cards": [card_dict(card) for card in shared_cards], "bookings": [booking_dict(item) for item in bookings], "records": [{"id": item.id, "record_type": item.record_type, "title": item.title, "content": item.content, "record_date": item.record_date, "teacher_name": item.teacher.name if item.teacher else ""} for item in records], "transactions": [transaction_dict(item) for item in transactions], "vouchers": [voucher_dict(item) for item in vouchers], "reminders": [reminder_dict(item) for item in reminders], "reminder_alerts": due_reminders(db, row)}
+    shared_cards = db.query(MemberCard).options(joinedload(MemberCard.product), joinedload(MemberCard.shares).joinedload(MemberCardShare.member)).join(MemberCardShare, MemberCardShare.card_id == MemberCard.id).filter(MemberCardShare.member_id == member_id, MemberCardShare.deleted_at.is_(None), MemberCard.deleted_at.is_(None)).all()
+    bookings_total = db.query(func.count()).select_from(Booking).where(Booking.member_id == member_id, Booking.deleted_at.is_(None)).scalar() or 0
+    return {**member_dict(row, include_cards=True), "shared_cards": [card_dict(card) for card in shared_cards], "bookings": [], "bookings_total": bookings_total, "records": [{"id": item.id, "record_type": item.record_type, "title": item.title, "content": item.content, "record_date": item.record_date, "teacher_name": item.teacher.name if item.teacher else ""} for item in records], "transactions": [transaction_dict(item) for item in transactions], "vouchers": [voucher_dict(item) for item in vouchers], "reminders": [reminder_dict(item) for item in reminders], "reminder_alerts": due_reminders(db, row)}
+
+
+@router.get("/members/{member_id}/bookings")
+def list_member_bookings(member_id: int, page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100), course_type: str = Query(""), db: Session = Depends(get_db), _: User = Depends(require_members_view)):
+    """会员档案的上课记录：分页返回精简行，避免一次几千条把档案接口撑爆。
+
+    `course_type` 支持逗号分隔，例如 group 或 private,assessment,workshop。
+    """
+    if not db.get(Member, member_id):
+        raise HTTPException(404, "会员不存在")
+    query = db.query(Booking).filter(Booking.member_id == member_id, Booking.deleted_at.is_(None))
+    types = [item for item in course_type.split(",") if item]
+    if types:
+        query = query.join(ClassSession, Booking.session_id == ClassSession.id).join(Course, ClassSession.course_id == Course.id).filter(Course.course_type.in_(types))
+    total = query.count()
+    pages = max(1, (total + page_size - 1) // page_size)
+    current = min(page, pages)
+    rows = query.options(
+        joinedload(Booking.session).joinedload(ClassSession.course),
+        joinedload(Booking.session).joinedload(ClassSession.teacher),
+        joinedload(Booking.member_card).joinedload(MemberCard.product),
+    ).order_by(Booking.booked_at.desc(), Booking.id.desc()).offset((current - 1) * page_size).limit(page_size).all()
+    return {"items": [profile_booking_dict(row) for row in rows], "total": total, "page": current, "pages": pages, "page_size": page_size}
 
 
 @router.patch("/members/{member_id}")

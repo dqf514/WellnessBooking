@@ -2,13 +2,37 @@
 export const APP_VERSION = "1.1.0";
 export const APP_RELEASE_DATE = "2026-11-28";
 export const API_VERSION = "v1.0.0";
-export const API_ENDPOINT_COUNT = 156;
+export const API_ENDPOINT_COUNT = 157;
 
 export interface ChangelogText { zh: string; en: string }
 export interface ChangelogGroup { title: ChangelogText; points: ChangelogText[] }
 export interface ChangelogRelease { date: string; version: string; title: ChangelogText; summary: ChangelogText; groups: ChangelogGroup[] }
 
 export const changelogReleases: ChangelogRelease[] = [
+  {
+    date: "2026-11-28",
+    version: APP_VERSION,
+    title: { zh: "会员档案打开不再卡，上课记录分页加载", en: "Member profiles open instantly, class history loads page by page" },
+    summary: { zh: "会员卡多、上课记录多的老会员，以前打开档案要等很久：档案接口把这位会员的全部上课记录一次取回来，每条记录里还重复带了一份会员资料（含备注）和课程简介，一位有 1461 条记录的会员接口体积达到 6.9 MB。现在上课记录改为按标签页懒加载并分页——点开标签页才取这一类，每次 20 条，底部显示「已显示 X / 共 Y 条」并提供「加载更多」；接口体积降到 117 KB，服务端处理时间 380 毫秒降到 35 毫秒，重复查询从 1572 次降到 8 次。会员名单的卡片也改成只带摘要，名单接口从 214 KB 降到 143 KB。会员端的「我的预约」是同一个毛病，一并修掉：接口体积从 6.5 MB 降到 700 KB、查询从 1526 次降到 1 次，列表先渲染最近 30 条，点「查看更多」再往下追加。", en: "Members with many cards and a long class history used to make the profile slow to open: the profile endpoint returned every booking at once, and each booking repeated the member record (notes included) plus the full course and instructor details — for a member with 1,461 bookings the response reached 6.9 MB. Class history now loads on demand and page by page: open a tab to fetch that kind, twenty rows at a time, with “X of Y shown” and a “Load more” button underneath. The response drops to 117 KB, server time from 380 ms to 35 ms, and the N+1 queries from 1,572 to 8. Cards in the member list are now sent as summaries too, taking the list from 214 KB to 143 KB. The member site’s booking list had the same problem and is fixed here: 6.5 MB → 700 KB, 1,526 queries → 1, and the list renders 30 rows at a time with a “Show more” button." },
+    groups: [
+      { title: { zh: "上课记录分页加载", en: "Paged class history" }, points: [
+        { zh: "「团课预约记录」与「私教预约记录」改为按需加载：点开标签页才取这一类记录", en: "Group bookings and PT bookings are fetched when their tab is opened" },
+        { zh: "每次先显示最近 20 条，底部显示「已显示 X / 共 Y 条」", en: "Twenty rows at a time, with an “X of Y shown” counter underneath" },
+        { zh: "点「加载更多」在现有记录后继续追加；切换会员时自动重新拉取", en: "“Load more” appends the next page, and switching members reloads the list" },
+      ] },
+      { title: { zh: "接口瘦身", en: "Leaner payloads" }, points: [
+        { zh: "上课记录不再重复携带会员资料与课程简介，只返回表格用得到的字段", en: "Bookings no longer repeat the member record and course details; only the fields the table needs are returned" },
+        { zh: "一位有 1461 条记录、40 张卡的会员：接口体积 6.9 MB → 117 KB，服务端 380 毫秒 → 35 毫秒", en: "For a member with 1,461 bookings and 40 cards: 6.9 MB → 117 KB and 380 ms → 35 ms" },
+        { zh: "打开一次档案的数据库查询从 1572 次降到 8 次，会员卡与共享名单一次性取回", en: "Opening a profile now runs 8 queries instead of 1,572; cards and shares are fetched in one go" },
+        { zh: "会员名单里的卡片改成摘要，名单接口 214 KB → 143 KB", en: "Cards in the member list are now summaries: 214 KB → 143 KB" },
+      ] },
+      { title: { zh: "会员端同步提速", en: "The member site gets the same fix" }, points: [
+        { zh: "会员端「我的预约」的接口也从 6.5 MB 降到 700 KB，数据库查询从 1526 次降到 1 次", en: "The member site’s booking list drops from 6.5 MB to 700 KB, and from 1,526 queries to 1" },
+        { zh: "列表先渲染最近 30 条，底部「查看更多（还有 N 条）」每次再追加 30 条", en: "The list renders the latest 30 rows first; “Show more (N left)” adds 30 at a time" },
+        { zh: "课程名、教练、教室、时间与取消预约、加日历均保持不变", en: "Course, instructor, room, time, cancelling and calendar export all stay the same" },
+      ] },
+    ],
+  },
   {
     date: "2026-11-28",
     version: APP_VERSION,

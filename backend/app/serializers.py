@@ -8,10 +8,12 @@ def user_dict(row: User) -> dict:
     return {"id": row.id, "username": row.username, "full_name": row.full_name, "phone": row.phone or "", "role": row.role, "active": row.active, "created_at": dt(row.created_at), "capabilities": role_capabilities(row.role)}
 
 
-def member_dict(row: Member, include_cards: bool = False) -> dict:
+def member_dict(row: Member, include_cards: bool = False, cards_summary: bool = False) -> dict:
     data = {"id": row.id, "name": row.name, "name_en": row.name_en, "phone": row.phone, "gender": row.gender, "id_number": row.id_number, "birth_date": row.birth_date, "source": row.source, "advisor_id": row.advisor_id, "advisor_name": row.advisor.full_name if row.advisor else "", "emergency_phone": row.emergency_phone, "wechat": row.wechat, "photo_url": row.photo_url, "notes": row.notes, "no_show_blocked_until": row.no_show_blocked_until, "active": row.active, "created_at": dt(row.created_at)}
     if include_cards:
-        data["cards"] = [card_dict(card) for card in sorted(row.cards, key=lambda item: item.id, reverse=True) if card.deleted_at is None]
+        # 名单只显示卡片摘要，不带权益明细、共享名单与备注，体积小一个数量级。
+        build = card_summary_dict if cards_summary else card_dict
+        data["cards"] = [build(card) for card in sorted(row.cards, key=lambda item: item.id, reverse=True) if card.deleted_at is None]
     return data
 
 
@@ -35,6 +37,37 @@ def card_dict(row: MemberCard) -> dict:
     expired = bool(row.expires_on and row.expires_on < today())
     shares = [share for share in getattr(row, "shares", []) if share.deleted_at is None]
     return {"id": row.id, "member_id": row.member_id, "product_id": row.product_id, "product_name": row.product.name, "product_name_en": row.product.name_en, "category": row.product.category, "card_no": row.card_no, "purchase_price": row.purchase_price, "purchased_at": row.purchased_at, "starts_on": row.starts_on, "expires_on": row.expires_on, "total_sessions": row.total_sessions, "remaining_sessions": row.remaining_sessions, "benefits": json_loads(row.benefits_json, []), "status": "expired" if expired and row.status == "active" else row.status, "display_status": card_display_status(row), "frozen_from": row.frozen_from, "frozen_until": row.frozen_until, "is_renewal": bool(row.is_renewal), "start_pending": bool(row.start_pending), "note": row.note, "version": row.version, "shared_with": [{"id": share.member_id, "name": share.member.name, "phone": share.member.phone} for share in shares]}
+
+
+def card_summary_dict(row: MemberCard) -> dict:
+    """会员名单用的精简卡信息：不含权益明细、共享名单、卡号与备注。"""
+    return {"id": row.id, "member_id": row.member_id, "product_id": row.product_id, "product_name": row.product.name, "product_name_en": row.product.name_en, "category": row.product.category, "status": row.status, "display_status": card_display_status(row), "purchase_price": row.purchase_price, "starts_on": row.starts_on, "expires_on": row.expires_on, "total_sessions": row.total_sessions, "remaining_sessions": row.remaining_sessions, "start_pending": bool(row.start_pending)}
+
+
+def profile_booking_dict(row: Booking) -> dict:
+    """会员档案里的上课记录：只保留表格要用的字段。
+
+    完整 booking_dict 会把会员资料（含备注）与课程/教练资料在每条记录里重复一遍，
+    一位有上千条记录的会员会让档案接口膨胀到几 MB，这里只取表格需要的字段。
+    """
+    session = row.session
+    course = session.course if session else None
+    teacher = session.teacher if session else None
+    return {"id": row.id, "status": row.status, "booked_at": dt(row.booked_at), "checked_in_at": dt(row.checked_in_at), "cancelled_at": dt(row.cancelled_at), "consumed": bool(row.consumed), "card_name": row.member_card.product.name if row.member_card else "免费体验券" if row.experience_voucher_id else "", "session_date": session.session_date if session else "", "start_time": session.start_time if session else "", "end_time": session.end_time if session else "", "course_type": course.course_type if course else "", "course_name": course.name if course else "", "course_name_en": course.name_en if course else "", "teacher_name": teacher.name if teacher else "", "teacher_name_en": teacher.name_en if teacher else ""}
+
+
+def member_booking_dict(row: Booking) -> dict:
+    """会员端「我的预约」用的精简记录。
+
+    完整 booking_dict 会带上课程简介、教练简介并重复一次会员资料，
+    老会员上千条记录时会让 /api/public/me 膨胀到几 MB，这里只留列表要用的字段，
+    并把课程、教练、房间摊平，避免嵌套对象把 JSON 键名重复上千遍。
+    """
+    session = row.session
+    course = session.course if session else None
+    teacher = session.teacher if session else None
+    room = session.room if session else None
+    return {"id": row.id, "session_id": row.session_id, "status": row.status, "card_name": row.member_card.product.name if row.member_card else "免费体验券" if row.experience_voucher_id else "", "booked_at": dt(row.booked_at), "cancelled_at": dt(row.cancelled_at), "checked_in_at": dt(row.checked_in_at), "consumed": bool(row.consumed), "session_date": session.session_date if session else "", "start_time": session.start_time if session else "", "end_time": session.end_time if session else "", "course_type": course.course_type if course else "", "course_name": course.name if course else "", "course_name_en": course.name_en if course else "", "teacher_name": teacher.name if teacher else "", "teacher_name_en": teacher.name_en if teacher else "", "room_name": room.name if room else "", "room_name_en": room.name_en if room else ""}
 
 
 def session_dict(row: ClassSession, detailed: bool = False) -> dict:

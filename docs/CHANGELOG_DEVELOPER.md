@@ -1276,3 +1276,56 @@
 
 - 服务端不是瓶颈：已把会员列表等接口从「整表 ORM 读出 + Python 过滤」改为 SQL 层过滤，实测单次 0.222 s → 0.09～0.15 s；不再有整表实例化开销。
 - 剩余等待来自**静态资源的带宽与代理链路**：前端产物含约 742 KB + 375 KB 的 JS 与 733 KB 的 CSS，公司网络带宽受限或需走代理时首屏等待明显。建议站点域名绕过代理、开启 gzip 与静态资源缓存；骨架屏属于可选的前端体验优化，本批未做。
+
+## 三十八、会员档案性能优化：上课记录分页加载与接口瘦身（2026-11-28）
+
+起因：会员反馈「会员卡信息超长时打开会员档案很慢」。实测发现瓶颈**不在卡**（40 张卡只有 22 KB），而在上课记录。
+
+### 1. 根因定位（.shot/profile_member2.py 采样会员 5238 韩露）
+
+- 该会员有 **1461 条 bookings**，档案接口返回体积 **6.97 MB**：
+  - `booking_dict` 内嵌 `member_dict(row.member)`（含 857 字备注）→ 每条重复一遍，合计 **3.65 MB**；
+  - 内嵌 `session_dict(row.session)`（含课程简介 1.30 MB + 教练简介 0.56 MB）→ 合计 **2.47 MB**；
+  - 40 张卡合计仅 22 KB。
+- 服务端 **1572 条 SQL**（每条 booking 惰性加载 member / member_card / session / course / teacher / room），首次调用 378 ms。
+- 结论：与用户直觉一致的方向是「分页 / 按需加载」，但根因是**载荷重复**，必须同时做服务端瘦身与前端分页。
+
+### 2. 服务端改动
+
+- `backend/app/serializers.py`：
+  - 新增 `card_summary_dict()`：名单用的精简卡（不含 `benefits` / `shared_with` / `note` / `card_no`）。
+  - 新增 `profile_booking_dict()`：档案用的精简上课记录（只保留 `session_date`、`start_time`、`course_name`、`course_type`、`teacher_name`、`card_name`、`status`、`booked_at` 等表格字段，不再内嵌会员与课程资料）。
+  - `member_dict()` 增加 `cards_summary` 参数：名单走摘要、档案走完整卡。
+- `backend/app/routers/admin_core.py`：
+  - `GET /api/admin/members` 改用 `cards_summary=True`。
+  - `GET /api/admin/members/{member_id}`：移除全量 `bookings` 查询，改为 `joinedload` 预取 `Member.cards → MemberCard.product / shares → MemberCardShare.member` 与 `MemberRecord.teacher`，并返回 `bookings_total`；`bookings` 恒为空数组（保持字段存在，兼容旧客户端）。
+  - 新增 `GET /api/admin/members/{member_id}/bookings`：`page`（默认 1）、`page_size`（默认 20，上限 100）、`course_type`（逗号分隔多选）；`joinedload(Booking.session → course/teacher)` 与 `joinedload(Booking.member_card → product)` 消除 N+1；返回 `{ items, total, page, pages, page_size }`。
+- 结果：档案接口 **1572 → 8 条 SQL、378 → 35 ms、6.97 MB → 117 KB**；名单接口 **324 → 5 条 SQL、114 → 41 ms、214 → 143 KB**；上课记录分页接口 2 条 SQL / 8 KB 每页。
+
+### 3. 前端改动
+
+- `src/types.ts`：新增 `ProfileBooking`；`MemberDetail.bookings` 改为可选并新增 `bookings_total`。
+- `src/components/MemberProfileDrawer.tsx`：上课记录改为**标签页懒加载 + 分页**——
+  - `bookingType` 由当前 `tab` 推导（`group` / `private,assessment,workshop`），`useEffect` 依赖 `[detail.id, bookingType, language]`（**不能用 `local`**，它在 `LanguageContext` 里每次渲染都是新函数，会造成无限请求循环）；
+  - `loadMoreBookings()` 追加下一页，表格底部渲染 `.profile-records-footer`（计数 + 「加载更多」按钮）；
+  - `bookingTable()` 改用精简字段渲染。
+- `src/styles.css`：新增 `.profile-records-footer`。
+
+### 4. 文档与验证
+
+- `docs/API.md`：6.3 补充「上课记录不再随档案一次性返回」与 `bookings_total`，新增 `#### GET /api/admin/members/{member_id}/bookings`；6.1 说明名单里的 `cards` 为摘要。`python docs/build_api_docs.py` 重新生成 `public/api-docs.html`（18 章 / **157** 个接口）。
+- `public/help.html`：会员章节新增「5. 上课记录分页加载」，原 5、6 节顺延为 6、7。
+- `public/changelog-details.html` 追加 BATCH 26（2 张界面截图，图 105–106）；`docs/CHANGELOG_CLIENT.md`、`docs/CHANGELOG_DEVELOPER.md`、`src/lib/changelog.ts`（`API_ENDPOINT_COUNT` 156 → 157）同步。
+- 验证：`npm run build` 通过；HTTP 实测档案接口 72 ms / 117 KB、分页接口 46 ms / 7.8 KB（total 1403、pages 71，第 1、2 页无重叠）；截图确认「团课预约记录 20 / 1403 条」「私教预约记录 20 / 58 条」与「加载更多」按钮工作正常。
+
+### 5. 会员端 `GET /api/public/me` 同步瘦身
+
+会员端「我的预约」用的是同一个 `/api/public/me`，根因与后台档案一致（`booking_dict` 内嵌会员资料与课程简介 + N+1 惰性加载）。
+
+- `backend/app/serializers.py`：新增 `member_booking_dict()` —— 会员端专用的**扁平**精简记录，只含 `id` / `session_id` / `status` / `card_name` / `booked_at` / `cancelled_at` / `checked_in_at` / `consumed`，以及摊平的 `session_date` / `start_time` / `end_time` / `course_type` / `course_name` / `teacher_name` / `room_name`（含 `_en`）。摊平是为了避免嵌套对象把 JSON 键名重复上千遍。
+- `backend/app/routers/public.py`：`member_me()` 改用 `joinedload(Booking.session → course/teacher/room)`、`joinedload(Booking.member_card → product)`；会员卡改用 `own_cards` 显式查询 + `selectinload(MemberCard.shares)`，避免 `card_dict` 逐卡惰性加载。
+- `src/types.ts`：新增 `MemberBooking`，`MemberMe.bookings` 改为 `MemberBooking[]`。
+- `src/pages/PublicHome.tsx`：`bookingLimit` 状态（默认 30），「我的预约」标签页用 `me.bookings.slice(0, bookingLimit)` 渲染，底部 `.me-list-more` 提供「查看更多（还有 N 条）」按钮（每次 +30），`loadMe()` 后重置为 30。
+- `src/styles.css`：新增 `.me-list-more`。
+- 实测：同一会员 1461 条记录，接口体积 **6.53 MB → 704 KB**，SQL **1526 → 1 条**，HTTP 端到端 317 ms → 145 ms；页面首屏只渲染 30 条（原来 1461 条 DOM 节点）。
+- `docs/API.md` 4.5 补充 `bookings` 为精简记录及字段清单；`public/api-docs.html` 重新生成（仍为 157 个接口）。

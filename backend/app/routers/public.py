@@ -4,7 +4,7 @@ from datetime import date, datetime
 
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, Response, UploadFile
 from fastapi.security import HTTPAuthorizationCredentials
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from ..booking_service import create_booking, transition_booking
 from ..database import get_db
@@ -14,7 +14,7 @@ from ..membership_service import voucher_dict
 from ..models import AppSettings, Booking, CardProduct, ClassSession, Course, ExperienceVoucher, Member, MemberCard, MemberCardShare, Teacher, Transaction
 from ..runtime_flags import demo_login_enabled
 from ..security import create_access_token
-from ..serializers import booking_dict, card_dict, course_dict, member_dict, product_dict, session_dict, teacher_dict, transaction_dict
+from ..serializers import booking_dict, card_dict, course_dict, member_booking_dict, member_dict, product_dict, session_dict, teacher_dict, transaction_dict
 from ..sms_service import notify_booking, send_otp, verify_otp
 from ..upload_service import remove_upload, save_image
 from ..utils import add_days, as_int, clean_payload, session_datetime, today, valid_date, valid_phone
@@ -118,11 +118,19 @@ def member_login(payload: dict = Body(...), db: Session = Depends(get_db)):
 
 @router.get("/me")
 def member_me(db: Session = Depends(get_db), member: Member = Depends(get_current_member)):
-    bookings = db.query(Booking).filter(Booking.member_id == member.id, Booking.deleted_at.is_(None)).order_by(Booking.booked_at.desc()).all()
+    # 上课记录用精简序列化 + joinedload：老会员上千条记录时，完整 booking_dict 会把会员资料与课程简介重复上千遍，
+    # 还会触发上千次惰性加载查询。
+    bookings = db.query(Booking).options(
+        joinedload(Booking.session).joinedload(ClassSession.course),
+        joinedload(Booking.session).joinedload(ClassSession.teacher),
+        joinedload(Booking.session).joinedload(ClassSession.room),
+        joinedload(Booking.member_card).joinedload(MemberCard.product),
+    ).filter(Booking.member_id == member.id, Booking.deleted_at.is_(None)).order_by(Booking.booked_at.desc()).all()
     transactions = db.query(Transaction).filter(Transaction.member_id == member.id, Transaction.deleted_at.is_(None)).order_by(Transaction.occurred_at.desc()).all()
-    shared = db.query(MemberCard).join(MemberCardShare, MemberCardShare.card_id == MemberCard.id).filter(MemberCardShare.member_id == member.id, MemberCardShare.deleted_at.is_(None), MemberCard.deleted_at.is_(None)).all()
+    shared = db.query(MemberCard).options(joinedload(MemberCard.product), selectinload(MemberCard.shares)).join(MemberCardShare, MemberCardShare.card_id == MemberCard.id).filter(MemberCardShare.member_id == member.id, MemberCardShare.deleted_at.is_(None), MemberCard.deleted_at.is_(None)).all()
     vouchers = db.query(ExperienceVoucher).filter(ExperienceVoucher.member_id == member.id, ExperienceVoucher.status == "active", ExperienceVoucher.deleted_at.is_(None)).all()
-    return {"member": member_dict(member), "cards": [card_dict(card) for card in [*member.cards, *shared]], "vouchers": [voucher_dict(row) for row in vouchers], "bookings": [booking_dict(row) for row in bookings], "transactions": [transaction_dict(row) for row in transactions]}
+    own_cards = db.query(MemberCard).options(joinedload(MemberCard.product), selectinload(MemberCard.shares)).filter(MemberCard.member_id == member.id).all()
+    return {"member": member_dict(member), "cards": [card_dict(card) for card in [*own_cards, *shared]], "vouchers": [voucher_dict(row) for row in vouchers], "bookings": [member_booking_dict(row) for row in bookings], "transactions": [transaction_dict(row) for row in transactions]}
 
 
 @router.patch("/me/profile")

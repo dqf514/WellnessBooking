@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Field, Notice } from "@/components/AdminUI";
 import { EntryOptionsFields } from "@/components/EntryOptionsFields";
 import { MemberDocuments } from "@/components/MemberDocuments";
@@ -15,7 +15,7 @@ import { categoryLabel as financeCategoryLabel, canonicalCategory, courseTypeLab
 import { genderLabel } from "@/lib/memberCopy";
 import { type Capability } from "@/lib/permissions";
 import { transactionNote } from "@/lib/transactionCopy";
-import type { MemberCard, MemberDetail, MemberOption, Meta, Product } from "@/types";
+import type { MemberCard, MemberDetail, MemberOption, Meta, Product, ProfileBooking } from "@/types";
 
 export function MemberProfileDrawer({ detail, members, meta, can, onClose, onSelect, onEdit, onChanged }: { detail: MemberDetail; members: MemberOption[]; meta: Meta | null; can: (capability: Capability) => boolean; onClose: () => void; onSelect: (id: number) => void; onEdit: () => void; onChanged: () => Promise<void> }) {
   const { local, language } = useLanguage();
@@ -25,6 +25,13 @@ export function MemberProfileDrawer({ detail, members, meta, can, onClose, onSel
   const canCards = can("cards.write");
   const canRecords = can("records.write");
   const [tab, setTab] = useState<"bookings" | "private_bookings" | "records" | "transactions" | "assessments" | "contracts">("bookings");
+  // 上课记录单独分页拉取：老会员有上千条记录，一次性取回会把档案接口撑到几 MB。
+  const [bookingRows, setBookingRows] = useState<ProfileBooking[]>([]);
+  const [bookingTotal, setBookingTotal] = useState(0);
+  const [bookingPages, setBookingPages] = useState(1);
+  const [bookingPage, setBookingPage] = useState(1);
+  const [bookingLoading, setBookingLoading] = useState(false);
+  const BOOKING_PAGE_SIZE = 20;
   const [purchaseOpen, setPurchaseOpen] = useState(false);
   const [renewal, setRenewal] = useState(false);
   const [productId, setProductId] = useState("");
@@ -93,6 +100,27 @@ export function MemberProfileDrawer({ detail, members, meta, can, onClose, onSel
     }
     return rows;
   }, [detail.cards, detail.shared_cards, cardFilter, local]);
+  // 上课记录按标签页懒加载 + 分页：切到「团课 / 私教预约记录」时才取第一页，之后点「加载更多」追加。
+  const bookingType = tab === "private_bookings" ? "private,assessment,workshop" : tab === "bookings" ? "group" : "";
+  useEffect(() => {
+    if (!bookingType) return;
+    let stopped = false;
+    setBookingLoading(true); setBookingRows([]); setBookingTotal(0); setBookingPage(1); setBookingPages(1);
+    apiFetch<{ items: ProfileBooking[]; total: number; pages: number }>(`/api/admin/members/${detail.id}/bookings?page=1&page_size=${BOOKING_PAGE_SIZE}&course_type=${encodeURIComponent(bookingType)}`)
+      .then((result) => { if (stopped) return; setBookingRows(result.items); setBookingTotal(result.total); setBookingPages(result.pages); setBookingPage(1); })
+      .catch((err) => { if (!stopped) setError(err instanceof Error ? err.message : local("加载上课记录失败", "Failed to load class history")); })
+      .finally(() => { if (!stopped) setBookingLoading(false); });
+    return () => { stopped = true; };
+  }, [detail.id, bookingType, language]);
+  async function loadMoreBookings() {
+    if (bookingLoading || bookingPage >= bookingPages) return;
+    setBookingLoading(true);
+    try {
+      const next = bookingPage + 1;
+      const result = await apiFetch<{ items: ProfileBooking[]; total: number; pages: number }>(`/api/admin/members/${detail.id}/bookings?page=${next}&page_size=${BOOKING_PAGE_SIZE}&course_type=${encodeURIComponent(bookingType)}`);
+      setBookingRows((previous) => [...previous, ...result.items]); setBookingTotal(result.total); setBookingPages(result.pages); setBookingPage(next);
+    } catch (err) { showError(err, local("加载上课记录失败", "Failed to load class history")); } finally { setBookingLoading(false); }
+  }
   function askConfirm(title: string, description: string, confirmLabel: string, onConfirm: () => Promise<void>) { setConfirmState({ title, description, confirmLabel, onConfirm }); }
   const bookingStatus: Record<string, string> = { booked: local("待上课", "Upcoming"), checked_in: local("已消课", "Completed"), completed: local("已消课", "Completed"), cancelled: local("已取消", "Cancelled"), no_show: local("爽约", "No show") };
   const categoryLabel = (value: string) => value === "all" ? local("全部课程", "All classes") : financeCategoryLabel(value, local);
@@ -222,8 +250,8 @@ export function MemberProfileDrawer({ detail, members, meta, can, onClose, onSel
     catch (err) { showError(err, local("照片删除失败，请稍后重试", "Failed to remove the photo. Please try again later.")); }
     finally { setBusy(false); }
   }
-  function bookingTable(rows: MemberDetail["bookings"]) {
-    return <><ResponsiveTable><table className="data-table"><thead><tr><th>{local("开课时间", "Class time")}</th><th>{local("课程", "Class")}</th><th>{local("教练", "Instructor")}</th><th>{local("预约用卡", "Card used")}</th><th>{local("状态", "Status")}</th><th>{local("预约时间", "Booked at")}</th></tr></thead><tbody>{rows.map((booking) => <tr key={booking.id}><td>{booking.session?.session_date} {booking.session?.start_time}</td><td>{local(booking.session?.course.name ?? "", booking.session?.course.name_en)}</td><td>{local(booking.session?.teacher.name ?? "", booking.session?.teacher.name_en)}</td><td>{booking.card_name || "—"}</td><td>{bookingStatus[booking.status]}</td><td>{formatDateTime(booking.booked_at)}</td></tr>)}</tbody></table></ResponsiveTable>{!rows.length && <Empty>{local("暂无上课记录", "No class history")}</Empty>}</>;
+  function bookingTable(rows: ProfileBooking[]) {
+    return <><ResponsiveTable><table className="data-table"><thead><tr><th>{local("开课时间", "Class time")}</th><th>{local("课程", "Class")}</th><th>{local("教练", "Instructor")}</th><th>{local("预约用卡", "Card used")}</th><th>{local("状态", "Status")}</th><th>{local("预约时间", "Booked at")}</th></tr></thead><tbody>{rows.map((booking) => <tr key={booking.id}><td>{booking.session_date} {booking.start_time}</td><td>{local(booking.course_name ?? "", booking.course_name_en)}</td><td>{local(booking.teacher_name ?? "", booking.teacher_name_en)}</td><td>{booking.card_name || "—"}</td><td>{bookingStatus[booking.status]}</td><td>{formatDateTime(booking.booked_at)}</td></tr>)}</tbody></table></ResponsiveTable>{!rows.length && !bookingLoading && <Empty>{local("暂无上课记录", "No class history")}</Empty>}{bookingRows.length > 0 && <div className="profile-records-footer"><span>{local(`已显示 ${bookingRows.length} / ${bookingTotal} 条`, `${bookingRows.length} of ${bookingTotal} shown`)}</span>{bookingPage < bookingPages && <button className="button button-small button-outline" type="button" disabled={bookingLoading} onClick={() => void loadMoreBookings()}>{bookingLoading ? local("加载中…", "Loading…") : local("加载更多", "Load more")}</button>}</div>}</>;
   }
 
   return <>
@@ -238,8 +266,8 @@ export function MemberProfileDrawer({ detail, members, meta, can, onClose, onSel
           <section className="profile-cards"><header><h3>{local("会员卡", "Membership cards")} <Badge>{(detail.cards?.length ?? 0) + (detail.shared_cards?.length ?? 0)}</Badge></h3><span>{local("升卡、转卡、共享与停卡集中管理", "Upgrade, transfer, share and freeze")}</span></header><div className="profile-card-filters"><button className={cardFilter === "all" ? "active" : ""} type="button" onClick={() => setCardFilter("all")}>{local("全部卡", "All cards")}</button><button className={cardFilter === "active" ? "active" : ""} type="button" onClick={() => setCardFilter("active")}>{local("有效卡", "Valid cards")}</button><button className={cardFilter === "invalid" ? "active" : ""} type="button" onClick={() => setCardFilter("invalid")}>{local("失效卡", "Invalid cards")}</button></div>{cardRows.map((row) => { if (row.type === "group") return <h4 className="profile-card-group" key={row.key}>{row.label} <Badge>{row.count}</Badge></h4>; const card = row.card; return <article key={`${card.member_id}-${card.id}`}><div><strong>{local(card.product_name, card.product_name_en)}{card.member_id !== detail.id && <Badge tone="blue">{local("共享卡", "Shared")}</Badge>}{card.is_renewal && <Badge tone="amber">{local("续卡", "Renewal")}</Badge>}</strong><small>{card.card_no} · {card.purchased_at} {local("购卡", "purchased")}</small>{!!card.shared_with?.length && <small>{local("共享给", "Shared with")} {card.shared_with.map((share) => <span className="shared-member" key={share.id}>{share.name}{canCards && <button type="button" aria-label={local(`取消共享给${share.name}`, `Remove sharing with ${share.name}`)} disabled={busy} onClick={() => askConfirm(local("取消共享？", "Remove sharing?"), local(`将收回 ${share.name} 使用本卡剩余权益的权限。`, `${share.name} will lose access to the remaining benefits on this card.`), local("确认取消共享", "Remove sharing"), async () => { await unshare(card, share.id); })}>×</button>}</span>)}</small>}</div><div><span>{card.total_sessions ? local(`${card.total_sessions} 次，剩余 ${card.remaining_sessions ?? 0} 次`, `${card.total_sessions} sessions, ${card.remaining_sessions ?? 0} remaining`) : local("周期不限次", "Unlimited")}</span>{card.benefits.length > 0 && <small>{card.benefits.map((benefit) => `${courseTypeLabel(benefit.course_type, local)} ${benefit.remaining ?? 0}`).join(" · ")}</small>}</div><div className="profile-card-validity"><span>{card.start_pending ? local("未激活（首次签到自动开卡）", "Not activated — starts on the first check-in") : `${card.starts_on} ~ ${card.expires_on}`}</span>{(card.frozen_until || card.note) && <small>{card.frozen_until ? local(`冻结 ${card.frozen_from ? `${card.frozen_from} ~ ` : ""}${card.frozen_until}`, `Frozen ${card.frozen_from ? `${card.frozen_from} ~ ` : ""}${card.frozen_until}`) : card.note}</small>}</div><Badge tone={cardStatusTone(cardDisplayStatus(card))}>{cardStatusLabel(cardDisplayStatus(card), local)}</Badge>{canCards && card.member_id === detail.id && <div className="table-actions"><button className="button button-small button-outline" type="button" onClick={() => editCard(card)}>{local("卡操作", "Manage")}</button></div>}</article>; })}{!(detail.cards?.length || detail.shared_cards?.length) && <Empty>{local("尚未购卡", "No cards")}</Empty>}</section>
           {!!detail.vouchers?.length && <section className="voucher-list"><header><h3>{local("体验券", "Experience vouchers")}</h3><span>{local("签到时自动优先匹配有效卡，无卡时核销体验券", "Cards are matched first; vouchers are used when no card is available")}</span></header>{detail.vouchers.map((voucher) => <article key={voucher.id}><Badge tone={voucher.status === "active" ? "green" : "neutral"}>{categoryLabel(voucher.course_type)}</Badge><strong>{local(`剩余 ${voucher.remaining_sessions} / ${voucher.total_sessions} 次`, `${voucher.remaining_sessions} / ${voucher.total_sessions} remaining`)}</strong><span>{local("有效期至", "Until")} {voucher.expires_on}</span><small>{voucher.note}</small>{canCards && <div className="table-actions">{voucher.status === "active" && <button className="text-button danger" type="button" onClick={() => askConfirm(local("停用这张体验券？", "Cancel this voucher?"), local("停用后体验券立即失效且无法恢复，如需继续赠送需重新发放。", "The voucher becomes unusable immediately and cannot be restored; issue a new one if the member still needs it."), local("确认停用", "Cancel voucher"), async () => { await revokeVoucher(voucher.id); })}>{local("停用", "Cancel")}</button>}<RecycleDeleteButton resource="vouchers" id={voucher.id} label={`${categoryLabel(voucher.course_type)}体验券 #${voucher.id}`} onDeleted={onChanged}/></div>}</article>)}</section>}
           <div className="me-tabs profile-record-tabs"><button className={tab === "bookings" ? "active" : ""} type="button" onClick={() => setTab("bookings")}>{local("团课预约记录", "Group bookings")}</button><button className={tab === "private_bookings" ? "active" : ""} type="button" onClick={() => setTab("private_bookings")}>{local("私教预约记录", "PT bookings")}</button><button className={tab === "records" ? "active" : ""} type="button" onClick={() => setTab("records")}>{local("私教 / 跟进记录", "PT & notes")}</button><button className={tab === "transactions" ? "active" : ""} type="button" onClick={() => setTab("transactions")}>{local("消费记录", "Transactions")}</button><button className={tab === "assessments" ? "active" : ""} type="button" onClick={() => setTab("assessments")}>{local("体测 / Assessment", "Assessment")}</button><button className={tab === "contracts" ? "active" : ""} type="button" onClick={() => setTab("contracts")}>{local("合同与资料", "Contracts")}</button></div>
-          {tab === "bookings" && <section className="member-resource-section">{bookingTable(detail.bookings.filter((booking) => booking.session?.course.course_type === "group"))}</section>}
-          {tab === "private_bookings" && <section className="member-resource-section">{bookingTable(detail.bookings.filter((booking) => ["private", "assessment", "workshop"].includes(booking.session?.course.course_type ?? "")))}</section>}
+          {tab === "bookings" && <section className="member-resource-section">{bookingTable(bookingRows)}</section>}
+          {tab === "private_bookings" && <section className="member-resource-section">{bookingTable(bookingRows)}</section>}
           {tab === "records" && <><div className="section-action-header"><h3>{local("私教训练与跟进", "PT & follow-up")}</h3>{canRecords && <button className="button button-small button-outline" type="button" onClick={() => openRecordEditor()}><Icon name="plus" size={15}/>{local("新增记录", "Add record")}</button>}</div><div className="record-list">{detail.records.filter((record) => record.record_type !== "assessment").map((record) => <article key={record.id}><span>{record.record_date} · {record.record_type === "pt_diary" ? "PT diary" : "Note"}</span><h3>{record.title}</h3><p>{record.content}</p><small>{record.teacher_name}</small>{canRecords && <div className="table-actions"><button className="text-button" type="button" onClick={() => openRecordEditor(record)}>{local("编辑", "Edit")}</button><RecycleDeleteButton resource="records" id={record.id} label={record.title} onDeleted={onChanged}/></div>}</article>)}{!detail.records.filter((record) => record.record_type !== "assessment").length && <Empty>{local("暂无私教或跟进记录", "No PT or follow-up records")}</Empty>}</div></>}
           {tab === "transactions" && <section className="member-resource-section"><ResponsiveTable><table className="data-table"><thead><tr><th>{local("日期", "Date")}</th><th>{local("类别", "Category")}</th><th>{local("摘要", "Description")}</th><th>{local("支付方式", "Payment")}</th><th>{local("金额", "Amount")}</th></tr></thead><tbody>{detail.transactions.map((row) => <tr key={row.id}><td>{row.occurred_at}</td><td>{financeCategoryLabel(row.category, local)}</td><td>{transactionNote(row, language)}</td><td>{paymentLabel(row.payment_method, local)}</td><td>{money(row.amount)}</td></tr>)}</tbody></table></ResponsiveTable></section>}
           {tab === "assessments" && <MemberDocuments detail={detail} category="assessment" busy={busy} canWrite={canMemberWrite} onChanged={onChanged} onUpload={(file, category) => void uploadDocument(file, category)}/>}

@@ -399,6 +399,7 @@ curl -X POST "$API/api/auth/login" \
 - **权限**：会员；**请求**：无。
 - **响应**：`{ member, cards, bookings, transactions }`。
 - `bookings` 按预约时间倒序，`transactions` 按发生时间倒序，只返回当前会员数据。
+- `bookings` 为**精简记录**（`member_booking_dict`）：只含 `id`、`session_id`、`status`、`card_name`、`booked_at`、`cancelled_at`、`checked_in_at`、`consumed` 以及摊平的 `session_date` / `start_time` / `end_time` / `course_name` / `teacher_name` / `room_name`（含 `_en` 版本），不再内嵌会员资料、课程简介与教练简介。老会员上千条记录时该接口体积从 6.5 MB 降到约 700 KB，数据库查询从 1526 次降到 1 次。
 
 ### 4.6 会员自主预约
 
@@ -561,6 +562,7 @@ curl -X POST "$API/api/auth/login" \
 - `card_status` 多选之间是**或**的关系：传 `active,none` 表示“持有有效卡**或**完全没有卡”的会员；同一会员命中任意一项即被选中。
 - `category` 多选时按业务卡种归类：`group` 团课、`private` 私教与评估、`annual` 年卡与组合套餐；历史 `package` 产品归入 `annual`。
 - `sort=card` 的顺序为：年卡 / 组合套餐 → 团课月卡 → 团课十次卡 → 团课六次卡 → 团课周卡 → 私教 10/20/30 次卡；无有效卡的客户排在最后。
+- 名单里的 `cards` 是**摘要**（`id`、`product_name`、`product_name_en`、`category`、`status`、`display_status`、`purchase_price`、`starts_on`、`expires_on`、`total_sessions`、`remaining_sessions`、`start_pending`），不含权益明细、共享名单、卡号与备注；完整卡信息请用 6.3 的会员档案接口。
 
 #### GET /api/admin/members/options
 
@@ -583,10 +585,18 @@ curl -X POST "$API/api/auth/login" \
 #### GET /api/admin/members/{member_id}
 
 - **权限**：只读；**请求**：无 Body。
-- **响应**：Member（含 `cards`）并增加 `shared_cards`、`bookings`、`records`、`transactions`、`vouchers`、`reminders`、`reminder_alerts`。
+- **响应**：Member（含 `cards`）并增加 `shared_cards`、`records`、`transactions`、`vouchers`、`reminders`、`reminder_alerts`、`bookings_total`。
 - `shared_cards` 是其他会员共享给当前会员、可用于预约签到的卡；`cards[].shared_with` 则列出当前会员卡的共享对象。
 - `records[]` 含 `id`、`record_type`、`title`、`content`、`record_date`、`teacher_name`；合同和评估附件通过第 7 章接口单独查询。
 - `reminders` 仅含有效提醒，`reminder_alerts` 是已到期提醒及生日前 7 天提示的字符串数组；未来提醒保留在 `reminders` 中，但不会提前弹出。
+- **上课记录不再随档案一次性返回**：`bookings` 恒为空数组，记录条数见 `bookings_total`；上课记录改用下面的分页接口。老会员有上千条记录，一次性返回会把接口撑到几 MB，档案页要等很久才打得开。
+
+#### GET /api/admin/members/{member_id}/bookings
+
+- **权限**：只读。
+- **Query**：`page`（页码，从 1 开始，默认 1）、`page_size`（每页条数，默认 20，最大 100）、`course_type`（课程类型，可多选，用英文逗号分隔，如 `group` 或 `private,assessment,workshop`；不传返回全部课种）。
+- **响应**：`{ items, total, page, pages, page_size }`，按预约时间倒序。
+- `items[]` 是精简行：`id`、`status`、`booked_at`、`checked_in_at`、`cancelled_at`、`consumed`、`card_name`、`session_date`、`start_time`、`end_time`、`course_type`、`course_name`、`course_name_en`、`teacher_name`、`teacher_name_en`；不重复携带会员资料与课程简介，20 条约 8 KB。
 
 ### 6.4 修改会员
 
