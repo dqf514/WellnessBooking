@@ -51,6 +51,11 @@ export const changelogReleases: ChangelogRelease[] = [
         { zh: "内容区多出约 80 像素高度，会员资料、会员卡与上课记录表格一屏能多看一截", en: "The content area gains about 80 pixels, so more of the profile, the cards and the booking table fit on screen" },
         { zh: "按钮的权限规则不变，窄屏自动换行或横向滑动，顶栏不会被撑破", en: "The permission rules are unchanged; on narrow screens the buttons wrap or scroll sideways" },
       ] },
+      { title: { zh: "会员卡默认只看有效卡", en: "Cards default to valid only" }, points: [
+        { zh: "打开会员档案时，会员卡区域默认停在「有效卡」上，一进来看到的就是还能用的卡", en: "The card list opens on “Valid cards”, so the first thing you see is the cards that still work" },
+        { zh: "「全部卡」「失效卡」随时可切换，切换只影响显示范围，不动数据", en: "“All cards” and “Invalid cards” are one click away; switching only changes what is shown" },
+        { zh: "标题旁的「会员卡 40」仍是卡总数，不受筛选影响", en: "The count next to the heading is still the total number of cards, whatever is filtered" },
+      ] },
     ],
   },
   {

@@ -1391,3 +1391,10 @@
   - `.modal-drawer` 改为 `display: flex; flex-direction: column`；`.modal-drawer .modal-body` 由写死的 `height: calc(100dvh - 65px)` 改为 `flex: 1 1 auto; height: auto; min-height: 0`，顶栏长高时内容区自动让位。
   - ≤700px：`.modal-header` 允许换行，`.modal-header-actions` 占满整行（`order: 3; flex: 1 0 100%`），操作按钮改为横向滚动一行（`flex-wrap: nowrap; overflow-x: auto`），顶栏高度从 197 像素降到 109 像素。
 - 实测（浏览器实测）：`.profile-actions` 的父节点为 `.modal-header-actions`，内容区内不再有该行；1600×950 下顶栏高 65 像素、内容区高 883 像素、内容第一行（会员资料）起始于 89 像素（改前约 170 像素）；760 像素宽时顶栏自动长到 97 像素，420 像素宽时顶栏 109 像素且页面无横向溢出。
+
+### 11. 会员档案的会员卡默认只看「有效卡」
+
+- `src/components/MemberProfileDrawer.tsx`：`cardFilter` 的初始值由 `"all"` 改为 `"active"`，打开档案时默认列出有效卡（含未激活）与待激活卡；三个筛选按钮本身不变，随时可切到「全部卡」「失效卡」。
+- 同一文件补充空态提示：筛选后一张卡都没有、但该会员确实有卡时，显示「没有有效卡 / 没有失效卡」；一张卡都没有的会员仍显示「尚未购卡」。
+- 「会员卡」标题旁的数字仍取 `detail.cards.length + detail.shared_cards.length`，是卡总数，不随筛选变化。
+- 实测（会员 韩露，共 40 张卡）：默认「有效卡」显示 5 张（团课 1、私教 3、年卡/组合套餐 1），「全部卡」40 张，「失效卡」35 张，5 + 35 = 40 吻合。
