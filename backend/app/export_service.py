@@ -16,8 +16,8 @@ HEADER_FONT = Font(name="微软雅黑", size=11, bold=True, color="3B2314")
 BODY_FONT = Font(name="微软雅黑", size=10)
 THIN = Side(style="thin", color="E0D5C8")
 BORDER = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
-MEMBER_HEADERS = ["会员姓名", "照片", "手机号码", "生日", "性别", "会员卡类别", "合同总金额", "购买时间", "到期时间", "会籍归属", "会员时长", "备注"]
-MEMBER_WIDTHS = [12, 10, 15, 12, 6, 26, 13, 12, 12, 10, 10, 28]
+MEMBER_HEADERS = ["会员姓名", "照片", "手机号码", "生日", "性别", "会员卡类别", "合同总金额", "购买时间", "到期时间", "会籍归属", "会员时长", "备注", "邮件地址"]
+MEMBER_WIDTHS = [12, 10, 15, 12, 6, 26, 13, 12, 12, 10, 10, 28, 24]
 
 # 卡种统计页的排序与中文名：年卡/组合套餐排最前，其次团课、私教、评估。
 CATEGORY_ORDER = {"annual": 0, "package": 1, "group": 2, "private": 3, "assessment": 4, "workshop": 5, "training": 6}
@@ -177,7 +177,7 @@ def build_member_workbook(db: Session, scope: str = "all", month: str = "", cate
         expires = max((card.expires_on for card in cards if card.expires_on), default="")
         if not expires and any(card.start_pending for card in cards):
             expires = "待开卡"
-        values = [member.name, "", member.phone, member.birth_date, member.gender, card_names or "未开卡", round(total, 2), purchased, expires, member.advisor.full_name if member.advisor else "", _member_years(member), member.notes]
+        values = [member.name, "", member.phone, member.birth_date, member.gender, card_names or "未开卡", round(total, 2), purchased, expires, member.advisor.full_name if member.advisor else "", _member_years(member), member.notes, member.email or ""]
         for index, value in enumerate(values, start=1):
             cell = sheet.cell(row=row_index, column=index, value=value)
             cell.font = BODY_FONT
@@ -237,6 +237,14 @@ def build_table_workbook(sheet_title: str, headers: list[str], rows: list[list],
 
 def build_sheets_workbook(sheets: list[dict]) -> bytes:
     """生成多页工作簿：每页含表头与数据行，页签名称不超过 31 字。"""
+    workbook = sheets_to_workbook(sheets)
+    buffer = BytesIO()
+    workbook.save(buffer)
+    return buffer.getvalue()
+
+
+def sheets_to_workbook(sheets: list[dict]) -> Workbook:
+    """把多页数据拼成工作簿对象，供需要再加工的场景（如嵌入照片）继续使用。"""
     workbook = Workbook()
     workbook.remove(workbook.active)
     for index, sheet_data in enumerate(sheets):
@@ -264,6 +272,4 @@ def build_sheets_workbook(sheets: list[dict]) -> bytes:
         sheet.freeze_panes = "A2"
     if not workbook.sheetnames:
         workbook.create_sheet("报表")
-    buffer = BytesIO()
-    workbook.save(buffer)
-    return buffer.getvalue()
+    return workbook

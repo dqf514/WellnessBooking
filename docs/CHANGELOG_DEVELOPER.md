@@ -1348,3 +1348,34 @@
   - 输入框样式选择器由 `.member-switcher > .member-switcher-search` 改为 `.member-switcher-search-bar .member-switcher-search`。
   - 移动端（≤960px）侧栏本身不滚动，搜索条恢复 `position: static`，布局与以前一致。
 - 实测：1600×900 视口下侧栏 `scrollHeight/clientHeight = 2033/835`，滚到底（`scrollTop = 1198`）后输入框 `getBoundingClientRect().top` 仍为 83（吸顶前同为 83），完全可见。
+
+### 8. 客户档案整包导出（多 Sheet Excel）
+
+- 新增 `backend/app/member_export_service.py`：`build_member_profile_workbook(db, member)` 生成 11 张 Sheet 的工作簿并返回 xlsx 字节流。
+  - Sheet：基本信息 / 会员卡 / 团课预约记录 / 私教预约记录 / 其它预约记录 / 私教跟进记录 / 体测评估 / 消费记录 / 体验券 / 提醒 / 合同与资料。
+  - 预约记录按 `ClassSession.course.course_type` 分桶：团课为 `group`，私教桶为 `private` / `assessment` / `workshop`，其余归入「其它预约记录」，保证一条不丢。
+  - 会员卡含本人卡与通过 `member_card_shares` 共享进来的卡，标出「本人 / 共享卡（某某）」归属与共享给名单。
+  - 「基本信息」页汇总持卡数、有效卡数、上课总数、已消课 / 取消 / 爽约次数、团课与私教次数、累计消费金额等。
+- `backend/app/export_service.py`：拆出 `sheets_to_workbook(sheets)` 返回 `Workbook` 对象（`build_sheets_workbook` 改为在其之上保存成字节流），供导出后继续加工（如嵌入照片）。
+- `backend/app/member_export_service.py::_embed_photo()`：把本地照片（`upload_path(member.photo_url, "members")`）嵌到「基本信息」页 D1，尺寸 96×96；远程 URL 或无照片时跳过，单张异常不中断整份导出。
+- `backend/app/routers/admin_exports.py`：新增 `GET /api/admin/members/{member_id}/export.xlsx`，能力门 `require_members_view`（API Key 走 `read` 范围，无需改 `required_api_key_scope`），会员不存在或已软删除返回 404「会员不存在」。
+  - 查询全部使用 `joinedload` / `selectinload` 预加载课程、教练、教室、卡产品与共享关系，避免导出时 N+1。
+- `src/components/MemberProfileDrawer.tsx`：档案操作行新增「导出档案」按钮（`can("members.view")` 可见），调用 `downloadFile("/api/admin/members/{id}/export.xlsx", "{姓名}-客户档案.xlsx")`，导出期间按钮显示「导出中…」并禁用；失败时用 `Notice` 提示「导出失败，请稍后重试」。
+- `docs/API.md` 新增 13.12「导出客户档案 Excel（一张 Excel、多张 Sheet）」，后续小节编号顺延；`public/api-docs.html` 重新生成（157 → 158 个接口）；`src/lib/changelog.ts` 的 `API_ENDPOINT_COUNT` 同步为 158。
+- `public/help.html`「打开完整档案」补充导出说明（中文与英文各一处）。
+- 实测：会员 5238（1461 条上课记录、40 张卡）导出 140,708 字节、11 张 Sheet，团课 1403 行、私教 58 行、私教跟进 103 行、消费 38 行；接口 HTTP 200，`Content-Disposition: attachment; filename="wellness-member-5238-2026-11-28.xlsx"`；无 token 返回 401、会员不存在返回 404。
+
+### 9. 会员资料新增「邮件地址」字段
+
+- 数据层：`backend/app/models.py` 的 `Member` 新增 `email: Mapped[str] = mapped_column(String(160), default="")`；`backend/app/database.py::ensure_schema()` 的 `additions["members"]` 同步补 `"email": "VARCHAR(160) DEFAULT ''"`，已有库启动时自动加列。
+- 接口层：
+  - `backend/app/routers/admin_core.py`：`MEMBER_FIELDS` 增加 `email`；新增 `EMAIL_PATTERN` 与 `_clean_email()`（去首尾空格 + 基本格式校验，不合法抛 400「邮件地址格式不正确」），新建与修改会员两处都调用。
+  - `backend/app/serializers.py::member_dict()` 返回 `email` 字段。
+  - `backend/app/routers/maintenance.py`：会员 CSV 导出列与导入白名单、导入模板均加入 `email`。
+  - `backend/app/export_service.py`：会员名单 Excel 表头末尾增加「邮件地址」列；`backend/app/member_export_service.py`：客户档案导出「基本信息」页增加「邮件地址」项。
+- 前端：
+  - `src/types.ts` 的 `Member` 增加 `email: string`。
+  - `src/pages/admin/MembersPage.tsx`：`MemberForm` 与 `emptyForm` 增加 `email`；编辑时回填 `detail.email`；表单里「微信号 / 紧急联系电话 / 邮件地址」包进 `<div className="form-grid three-columns span-two">`，正好落在备注上面一行；「来源说明」改为 `span-two` 独占一行，避免条件出现时右侧留空格。
+  - `src/components/MemberProfileDrawer.tsx`：`.profile-facts` 末尾追加 `<span className="profile-email"><strong>{detail.email || "—"}</strong></span>`，不渲染标题。
+  - `src/styles.css`：新增 `.profile-facts > span.profile-email { min-width: 0; }` 与 `.profile-facts > span.profile-email strong { min-width: 0; }`，保证长地址省略号截断。
+- 实测：`PATCH /api/admin/members/5238` 传 `{"email":"hailu@example.com"}` 返回 200 且响应含该值；传 `{"email":"abc"}` 返回 400「邮件地址格式不正确」；浏览器实测编辑弹窗内三输入框与备注的纵向位置为 573–644 / 660，档案顶部末格显示邮件地址且无标题。

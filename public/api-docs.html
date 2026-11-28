@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#173f35">
-  <meta name="description" content="音昱 Wellness 完整 API 对接文档，覆盖 157 个接口、权限、字段、业务规则与示例。">
+  <meta name="description" content="音昱 Wellness 完整 API 对接文档，覆盖 158 个接口、权限、字段、业务规则与示例。">
   <meta name="generator" content="docs/build_api_docs.py">
   <link id="api-favicon" rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Crect width='36' height='36' rx='18' fill='%23173f35'/%3E%3Cpath d='M28 6C15 7 8 13 8 23c7 1 15-2 20-17ZM8 29c3-8 8-12 16-17' fill='none' stroke='%23e9efe7' stroke-width='1.5'/%3E%3C/svg%3E">
   <title>API 对接文档 · 音昱 Wellness</title>
@@ -33,7 +33,7 @@
     <aside class="sidebar" aria-label="API 文档目录">
       <label class="search-label"><span>搜索接口、字段或业务规则</span><input class="search-input" id="api-search" type="search" placeholder="例如：签到、退款、bookings" autocomplete="off"><span class="search-hint">按 / 快速搜索，Esc 清空</span></label>
       <p class="search-results" id="search-results" aria-live="polite"></p>
-      <p class="toc-title">API REFERENCE · 157 ENDPOINTS</p>
+      <p class="toc-title">API REFERENCE · 158 ENDPOINTS</p>
       <nav><ul class="toc-list"><li><a href="#1-接入基础">1. 接入基础</a></li>
 <li><a href="#2-通用数据结构">2. 通用数据结构</a></li>
 <li><a href="#3-健康检查与员工认证-9">3. 健康检查与员工认证（9）</a></li>
@@ -200,6 +200,7 @@
 <tr><td><code>gender</code>、<code>id_number</code>、<code>birth_date</code></td><td>string</td><td>性别、证件号、出生日期</td></tr>
 <tr><td><code>source</code>、<code>advisor_id</code>、<code>advisor_name</code></td><td>string / integer / null</td><td>来源、会籍员工 ID 和姓名</td></tr>
 <tr><td><code>emergency_phone</code>、<code>wechat</code>、<code>notes</code></td><td>string</td><td>紧急电话、微信、备注</td></tr>
+<tr><td><code>email</code></td><td>string</td><td>邮件地址，未填写时为空字符串</td></tr>
 <tr><td><code>photo_url</code></td><td>string</td><td>会员照片地址（<code>/uploads/members/...</code>），未上传时为空字符串</td></tr>
 <tr><td><code>no_show_blocked_until</code></td><td>string</td><td>自助预约限制截止日，无限制为空字符串</td></tr>
 <tr><td><code>active</code></td><td>boolean</td><td>是否允许登录与预约</td></tr>
@@ -450,7 +451,7 @@
 <h3 id="6-2-新建会员">6.2 新建会员<a class="anchor" href="#6-2-新建会员" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/members">
 <h4 id="post-api-admin-members"><span class="method method-post">POST</span><a href="#post-api-admin-members" class="route">/api/admin/members</a></h4>
-<ul><li><strong>权限</strong>：前台。</li><li><strong>Body 必填</strong>：<code>name</code>、<code>phone</code>。</li><li><strong>Body 可选</strong>：<code>name_en</code>、<code>gender</code>、<code>id_number</code>、<code>birth_date</code>、<code>source</code>、<code>advisor_id</code>、<code>emergency_phone</code>、<code>wechat</code>、<code>notes</code>、<code>active</code>。</li><li><strong>响应</strong>：Member（含 cards）。手机号须符合 <code>1xxxxxxxxxx</code> 且全库唯一。</li><li><code>source</code> 为获客来源，后台下拉选项来自 <code>GET /api/admin/meta</code> 的 <code>member_sources</code>；允许沿用历史自定义写法，长度不超过 20 字。</li></ul>
+<ul><li><strong>权限</strong>：前台。</li><li><strong>Body 必填</strong>：<code>name</code>、<code>phone</code>。</li><li><strong>Body 可选</strong>：<code>name_en</code>、<code>gender</code>、<code>id_number</code>、<code>birth_date</code>、<code>source</code>、<code>advisor_id</code>、<code>emergency_phone</code>、<code>wechat</code>、<code>email</code>、<code>notes</code>、<code>active</code>。</li><li><code>email</code> 为邮件地址，会去掉首尾空格；填写时校验基本格式，不合法返回 400「邮件地址格式不正确」。</li><li><strong>响应</strong>：Member（含 cards）。手机号须符合 <code>1xxxxxxxxxx</code> 且全库唯一。</li><li><code>source</code> 为获客来源，后台下拉选项来自 <code>GET /api/admin/meta</code> 的 <code>member_sources</code>；允许沿用历史自定义写法，长度不超过 20 字。</li></ul>
 </section>
 <h3 id="6-3-会员完整档案">6.3 会员完整档案<a class="anchor" href="#6-3-会员完整档案" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/members/{member_id}">
@@ -464,7 +465,7 @@
 <h3 id="6-4-修改会员">6.4 修改会员<a class="anchor" href="#6-4-修改会员" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="patch /api/admin/members/{member_id}">
 <h4 id="patch-api-admin-members-member-id"><span class="method method-patch">PATCH</span><a href="#patch-api-admin-members-member-id" class="route">/api/admin/members/{member_id}</a></h4>
-<ul><li><strong>权限</strong>：前台；<strong>Body</strong>：新建接口的任意可选字段及 <code>name</code>、<code>phone</code>，按部分更新处理。</li><li><strong>响应</strong>：更新后的 Member（含 cards）。</li><li>修改手机号时检查格式及与其他会员的冲突；未传字段保持不变。</li></ul>
+<ul><li><strong>权限</strong>：前台；<strong>Body</strong>：新建接口的任意可选字段及 <code>name</code>、<code>phone</code>，按部分更新处理。</li><li><strong>响应</strong>：更新后的 Member（含 cards）。</li><li>修改手机号时检查格式及与其他会员的冲突；未传字段保持不变。</li><li><code>email</code> 的校验规则与新建一致：填写时校验基本格式，不合法返回 400「邮件地址格式不正确」。</li></ul>
 </section>
 <h3 id="6-5-到店购卡并开卡">6.5 到店购卡并开卡<a class="anchor" href="#6-5-到店购卡并开卡" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/members/{member_id}/cards">
@@ -1059,12 +1060,12 @@
 <h3 id="13-8-导出-csv">13.8 导出 CSV<a class="anchor" href="#13-8-导出-csv" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/maintenance/export/{kind}.csv">
 <h4 id="get-api-admin-maintenance-export-kind-csv"><span class="method method-get">GET</span><a href="#get-api-admin-maintenance-export-kind-csv" class="route">/api/admin/maintenance/export/{kind}.csv</a></h4>
-<ul><li>路径 <code>kind</code>：<code>members</code>、<code>bookings</code>、<code>transactions</code>；其他值 <code>404</code>。</li><li><strong>权限</strong>：按导出类型判定——<code>members</code> 需 <code>members.view</code>，<code>bookings</code> 需 <code>bookings.view</code>，<code>transactions</code> 需 <code>finance.view</code>；API Key 需 <code>maintenance:write</code>。</li><li><strong>响应</strong>：带 UTF-8 BOM 的 <code>text/csv</code>，可直接用 Excel 打开；导出全部记录，无日期筛选。</li><li>会员列：<code>id,name,name_en,phone,gender,birth_date,source,wechat,emergency_phone,notes,created_at</code>。</li><li>预约列：<code>id,member,phone,course,teacher,room,date,start_time,end_time,status,source,booked_at,cancelled_at,cancelled_by</code>。</li><li>流水列：<code>id,member,category,kind,amount,payment_method,status,occurred_at,note,redemption_code</code>。</li></ul>
+<ul><li>路径 <code>kind</code>：<code>members</code>、<code>bookings</code>、<code>transactions</code>；其他值 <code>404</code>。</li><li><strong>权限</strong>：按导出类型判定——<code>members</code> 需 <code>members.view</code>，<code>bookings</code> 需 <code>bookings.view</code>，<code>transactions</code> 需 <code>finance.view</code>；API Key 需 <code>maintenance:write</code>。</li><li><strong>响应</strong>：带 UTF-8 BOM 的 <code>text/csv</code>，可直接用 Excel 打开；导出全部记录，无日期筛选。</li><li>会员列：<code>id,name,name_en,phone,gender,birth_date,source,wechat,email,emergency_phone,notes,created_at</code>。</li><li>预约列：<code>id,member,phone,course,teacher,room,date,start_time,end_time,status,source,booked_at,cancelled_at,cancelled_by</code>。</li><li>流水列：<code>id,member,category,kind,amount,payment_method,status,occurred_at,note,redemption_code</code>。</li></ul>
 </section>
 <h3 id="13-9-下载会员导入模板">13.9 下载会员导入模板<a class="anchor" href="#13-9-下载会员导入模板" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/maintenance/members-template.csv">
 <h4 id="get-api-admin-maintenance-members-template-csv"><span class="method method-get">GET</span><a href="#get-api-admin-maintenance-members-template-csv" class="route">/api/admin/maintenance/members-template.csv</a></h4>
-<ul><li><strong>请求</strong>：无；<strong>响应</strong>：UTF-8 BOM CSV。</li><li>列：<code>name,name_en,phone,gender,birth_date,source,wechat,emergency_phone,notes</code>，含一行示例。</li></ul>
+<ul><li><strong>请求</strong>：无；<strong>响应</strong>：UTF-8 BOM CSV。</li><li>列：<code>name,name_en,phone,gender,birth_date,source,wechat,email,emergency_phone,notes</code>，含一行示例。</li></ul>
 </section>
 <h3 id="13-10-导入会员-csv">13.10 导入会员 CSV<a class="anchor" href="#13-10-导入会员-csv" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/maintenance/members/import.csv">
@@ -1074,19 +1075,24 @@
 <h3 id="13-11-导出会员名单-excel">13.11 导出会员名单 Excel<a class="anchor" href="#13-11-导出会员名单-excel" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/export/members.xlsx">
 <h4 id="get-api-admin-export-members-xlsx"><span class="method method-get">GET</span><a href="#get-api-admin-export-members-xlsx" class="route">/api/admin/export/members.xlsx</a></h4>
-<ul><li><strong>权限</strong>：需 <code>members.view</code>；API Key 需 <code>read</code> 范围。</li><li><strong>Query</strong>：<code>scope</code> 取 <code>all</code>（全部会员）、<code>new</code>（当月新进会员）、<code>renew_pending</code>（当月未续会会员），默认 <code>all</code>；<code>month</code> 为统计月份 <code>YYYY-MM</code>，<code>scope=all</code> 时忽略；<code>categories</code> 为卡种多选（英文逗号分隔，如 <code>group,private,annual</code>，为空表示不限）；<code>only_cards</code> 默认 <code>true</code>，只导出真正买过卡的客户，设为 <code>false</code> 才包含未开卡的散客。</li><li><strong>响应</strong>：<code>application/vnd.openxmlformats-officedocument.spreadsheetml.sheet</code> 文件流，<code>Content-Disposition: attachment</code>。</li><li>工作表名为“会员列表”，中文表头：会员姓名、照片、手机号码、生日、性别、会员卡类别、合同总金额、购买时间、到期时间、会籍归属、会员时长、备注；首行冻结。</li><li>会员照片直接嵌入“照片”列单元格（无照片留空），其余列取该会员当前有效会员卡的汇总数据。</li><li><code>categories</code> 与 <code>GET /api/admin/members</code> 的卡种口径一致：<code>group</code> 团课、<code>private</code> 私教与评估、<code>annual</code> 年卡与组合套餐。</li></ul>
+<ul><li><strong>权限</strong>：需 <code>members.view</code>；API Key 需 <code>read</code> 范围。</li><li><strong>Query</strong>：<code>scope</code> 取 <code>all</code>（全部会员）、<code>new</code>（当月新进会员）、<code>renew_pending</code>（当月未续会会员），默认 <code>all</code>；<code>month</code> 为统计月份 <code>YYYY-MM</code>，<code>scope=all</code> 时忽略；<code>categories</code> 为卡种多选（英文逗号分隔，如 <code>group,private,annual</code>，为空表示不限）；<code>only_cards</code> 默认 <code>true</code>，只导出真正买过卡的客户，设为 <code>false</code> 才包含未开卡的散客。</li><li><strong>响应</strong>：<code>application/vnd.openxmlformats-officedocument.spreadsheetml.sheet</code> 文件流，<code>Content-Disposition: attachment</code>。</li><li>工作表名为“会员列表”，中文表头：会员姓名、照片、手机号码、生日、性别、会员卡类别、合同总金额、购买时间、到期时间、会籍归属、会员时长、备注、邮件地址；首行冻结。</li><li>会员照片直接嵌入“照片”列单元格（无照片留空），其余列取该会员当前有效会员卡的汇总数据。</li><li><code>categories</code> 与 <code>GET /api/admin/members</code> 的卡种口径一致：<code>group</code> 团课、<code>private</code> 私教与评估、<code>annual</code> 年卡与组合套餐。</li></ul>
 </section>
-<h3 id="13-12-上传勤鸟导出压缩包导入历史数据">13.12 上传勤鸟导出压缩包导入历史数据<a class="anchor" href="#13-12-上传勤鸟导出压缩包导入历史数据" aria-label="链接到此节">#</a></h3>
+<h3 id="13-12-导出客户档案-excel-一张-excel-多张-sheet">13.12 导出客户档案 Excel（一张 Excel、多张 Sheet）<a class="anchor" href="#13-12-导出客户档案-excel-一张-excel-多张-sheet" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="get /api/admin/members/{member_id}/export.xlsx">
+<h4 id="get-api-admin-members-member-id-export-xlsx"><span class="method method-get">GET</span><a href="#get-api-admin-members-member-id-export-xlsx" class="route">/api/admin/members/{member_id}/export.xlsx</a></h4>
+<ul><li><strong>权限</strong>：需 <code>members.view</code>；API Key 需 <code>read</code> 范围。</li><li><strong>路径</strong>：<code>member_id</code> 为会员主键；会员不存在或已进回收站时返回 404。</li><li><strong>响应</strong>：<code>application/vnd.openxmlformats-officedocument.spreadsheetml.sheet</code> 文件流，<code>Content-Disposition: attachment</code>，文件名 <code>wellness-member-{member_id}-{日期}.xlsx</code>。</li><li>一份工作簿共 11 张 Sheet，覆盖客户档案页面上的全部数据（档案页的上课记录是分页懒加载的，这里导出的是全量）：</li><li>「基本信息」：姓名、手机号、性别、生日、来源、会籍归属、微信号、邮件地址、紧急联系人、建档时间、会员时长、备注，外加持卡数、上课记录总数、已消课 / 取消 / 爽约次数、累计消费金额等汇总项；有本地照片时嵌入右上角。</li><li>「会员卡」：本人卡与共享卡逐张列出（卡号、卡种、购卡时间、开卡日、到期日、金额、总次数、剩余次数、权益明细、卡状态、冻结期间、共享给、备注）。</li><li>「团课预约记录」「私教预约记录」「其它预约记录」：按课程类型拆分的全部预约记录（预约编号、开课日期与时间、课程、课程类型、教练、教室、预约用卡、状态、预约 / 签到 / 取消时间、是否消课、来源、备注）。</li><li>「私教跟进记录」「体测评估」：会员记录（记录编号、日期、类型、标题、内容、教练）。</li><li>「消费记录」：全部入账流水（流水编号、日期、类别、摘要、支付方式、金额、状态、流水类型、营收口径、现金实收、关联预约、核销码、操作人、备注）。</li><li>「体验券」「提醒」「合同与资料」：券、会员提醒与上传的合同 / 评估文件清单。</li></ul>
+</section>
+<h3 id="13-13-上传勤鸟导出压缩包导入历史数据">13.13 上传勤鸟导出压缩包导入历史数据<a class="anchor" href="#13-13-上传勤鸟导出压缩包导入历史数据" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/import/rocketbird/upload">
 <h4 id="post-api-admin-import-rocketbird-upload"><span class="method method-post">POST</span><a href="#post-api-admin-import-rocketbird-upload" class="route">/api/admin/import/rocketbird/upload</a></h4>
 <ul><li><strong>权限</strong>：需 <code>settings.write</code>，且只接受员工登录会话（API Key 会被拒绝）。</li><li><strong>multipart</strong>：<code>file</code>（ZIP，最大 200MB，仅接受 <code>.zip</code>）、<code>dry_run</code>（默认 <code>false</code>，为 <code>true</code> 时只统计不写库）、<code>include_logs</code>（默认 <code>true</code>，是否导入勤鸟操作日志）。</li><li>压缩包内需包含勤鸟导出的 CSV，至少包括 <code>members.csv</code>、<code>member_cards.csv</code>、<code>sign_logs.csv</code>、<code>finance_flow.csv</code>；系统会自动在解压目录中定位真正存放 CSV 的那一层。</li><li><strong>响应</strong>：<code>{ source, directory, dry_run, tables, warnings, notes }</code>。</li><li><code>tables</code> 为逐表统计：<code>{ 数据表名: { read, created, skipped } }</code>。</li><li><code>warnings</code> 为需要人工确认的提示，<code>notes</code> 为口径说明。</li><li>解压时逐个校验压缩包内路径，拒绝 <code>../</code> 之类的目录穿越；导入结束（含出错）后自动清理解压出来的临时目录。</li><li>导入按外部 ID 幂等：外部 ID 由来源字段拼成（勤鸟主键或可复现的组合键），重复导入同一批数据时各表 <code>created</code> 均为 0，不会产生重复会员、卡、预约与流水，也不会覆盖已有档案。</li><li>勤鸟的课种、教室、教练、卡产品名称是中英文混在一起的（如「瑜伽拉伸与声音共振 Yogic Stretch &amp; Sound Resonance」）。导入时自动拆开：中文写进 <code>name</code>，英文写进 <code>name_en</code>，界面与导出不再中英文混排；原文名仍会作为匹配键保留，排期与签到表里的截断名照样能对上。</li><li>若压缩包里的 CSV 已经带有「课程中文名 / 课程英文名、教室中文名 / 教室英文名、教练中文名 / 教练英文名、卡中文名 / 卡英文名」这些列（由 <code>backend/scripts/adapt_rocketbird_export.py</code> 生成），优先采用列里的写法。</li><li>正式导入会写入一条操作日志（分类 <code>data_import</code>）。</li></ul>
 </section>
-<h3 id="13-13-从服务器目录导入勤鸟历史数据">13.13 从服务器目录导入勤鸟历史数据<a class="anchor" href="#13-13-从服务器目录导入勤鸟历史数据" aria-label="链接到此节">#</a></h3>
+<h3 id="13-14-从服务器目录导入勤鸟历史数据">13.14 从服务器目录导入勤鸟历史数据<a class="anchor" href="#13-14-从服务器目录导入勤鸟历史数据" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/import/rocketbird/path">
 <h4 id="post-api-admin-import-rocketbird-path"><span class="method method-post">POST</span><a href="#post-api-admin-import-rocketbird-path" class="route">/api/admin/import/rocketbird/path</a></h4>
 <ul><li><strong>权限</strong>：需 <code>settings.write</code>，且只接受员工登录会话（API Key 会被拒绝）。</li><li><strong>请求体</strong>：<code>{ path, dry_run?, include_logs? }</code>。<code>path</code> 为服务器上存放勤鸟导出 CSV 的目录，必须包含 <code>members.csv</code>、<code>member_cards.csv</code>、<code>sign_logs.csv</code>、<code>finance_flow.csv</code>。</li><li><strong>响应</strong>：同 13.12 的导入报告。</li><li>适用于在线服务器上已经放好导出文件、避免经浏览器上传大压缩包的场景。</li></ul>
 </section>
-<h3 id="13-14-一键清除全部数据-短信清除码">13.14 一键清除全部数据（短信清除码）<a class="anchor" href="#13-14-一键清除全部数据-短信清除码" aria-label="链接到此节">#</a></h3>
+<h3 id="13-15-一键清除全部数据-短信清除码">13.15 一键清除全部数据（短信清除码）<a class="anchor" href="#13-15-一键清除全部数据-短信清除码" aria-label="链接到此节">#</a></h3>
 <p>清除码只通过短信发送到系统内置手机号 <code>18602113774</code>，接口与界面都不会回显清除码本身； 执行清除还需要原样输入确认口令，避免误触。两个接口都只接受员工登录会话，API Key 会被拒绝。</p>
 <section class="endpoint" data-search="post /api/admin/maintenance/wipe/request-code">
 <h4 id="post-api-admin-maintenance-wipe-request-code"><span class="method method-post">POST</span><a href="#post-api-admin-maintenance-wipe-request-code" class="route">/api/admin/maintenance/wipe/request-code</a></h4>
@@ -1237,7 +1243,7 @@ const dashboard = await api(&quot;/api/admin/dashboard&quot;, {
 <h4 id="post-api-admin-notices-notice-id-cancel"><span class="method method-post">POST</span><a href="#post-api-admin-notices-notice-id-cancel" class="route">/api/admin/notices/{notice_id}/cancel</a></h4>
 <ul><li><strong>权限</strong>：需 <code>members.write</code>；<strong>Body</strong>：无。</li><li><strong>响应</strong>：<code>{ ok: true, notice }</code>，<code>status=cancelled</code>，不再发送。</li></ul>
 </section>
-      <footer class="docs-footer"><span>音昱 Wellness · API v1.0.0 · 157 个业务接口</span><span><a href="/help.html">系统操作指南</a> · <a href="/openapi.json">OpenAPI 3</a> · 文档源：<a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md">docs/API.md</a></span></footer>
+      <footer class="docs-footer"><span>音昱 Wellness · API v1.0.0 · 158 个业务接口</span><span><a href="/help.html">系统操作指南</a> · <a href="/openapi.json">OpenAPI 3</a> · 文档源：<a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md">docs/API.md</a></span></footer>
     </main>
   </div>
   <script>

@@ -2,7 +2,7 @@
 export const APP_VERSION = "1.1.0";
 export const APP_RELEASE_DATE = "2026-11-28";
 export const API_VERSION = "v1.0.0";
-export const API_ENDPOINT_COUNT = 157;
+export const API_ENDPOINT_COUNT = 158;
 
 export interface ChangelogText { zh: string; en: string }
 export interface ChangelogGroup { title: ChangelogText; points: ChangelogText[] }
@@ -13,7 +13,7 @@ export const changelogReleases: ChangelogRelease[] = [
     date: "2026-11-28",
     version: APP_VERSION,
     title: { zh: "会员档案打开不再卡，上课记录分页加载", en: "Member profiles open instantly, class history loads page by page" },
-    summary: { zh: "会员卡多、上课记录多的老会员，以前打开档案要等很久：档案接口把这位会员的全部上课记录一次取回来，每条记录里还重复带了一份会员资料（含备注）和课程简介，一位有 1461 条记录的会员接口体积达到 6.9 MB。现在上课记录改为按标签页懒加载并分页——点开标签页才取这一类，每次 20 条，底部显示「已显示 X / 共 Y 条」并提供「加载更多」；接口体积降到 117 KB，服务端处理时间 380 毫秒降到 35 毫秒，重复查询从 1572 次降到 8 次。会员名单的卡片也改成只带摘要，名单接口从 214 KB 降到 143 KB。会员端的「我的预约」是同一个毛病，一并修掉：接口体积从 6.5 MB 降到 700 KB、查询从 1526 次降到 1 次，列表先渲染最近 30 条，点「查看更多」再往下追加。", en: "Members with many cards and a long class history used to make the profile slow to open: the profile endpoint returned every booking at once, and each booking repeated the member record (notes included) plus the full course and instructor details — for a member with 1,461 bookings the response reached 6.9 MB. Class history now loads on demand and page by page: open a tab to fetch that kind, twenty rows at a time, with “X of Y shown” and a “Load more” button underneath. The response drops to 117 KB, server time from 380 ms to 35 ms, and the N+1 queries from 1,572 to 8. Cards in the member list are now sent as summaries too, taking the list from 214 KB to 143 KB. The member site’s booking list had the same problem and is fixed here: 6.5 MB → 700 KB, 1,526 queries → 1, and the list renders 30 rows at a time with a “Show more” button." },
+    summary: { zh: "会员卡多、上课记录多的老会员，以前打开档案要等很久：档案接口把这位会员的全部上课记录一次取回来，每条记录里还重复带了一份会员资料（含备注）和课程简介，一位有 1461 条记录的会员接口体积达到 6.9 MB。现在上课记录改为按标签页懒加载并分页——点开标签页才取这一类，每次 20 条，底部显示「已显示 X / 共 Y 条」并提供「加载更多」；接口体积降到 117 KB，服务端处理时间 380 毫秒降到 35 毫秒，重复查询从 1572 次降到 8 次。会员名单的卡片也改成只带摘要，名单接口从 214 KB 降到 143 KB。会员端的「我的预约」是同一个毛病，一并修掉：接口体积从 6.5 MB 降到 700 KB、查询从 1526 次降到 1 次，列表先渲染最近 30 条，点「查看更多」再往下追加。档案顶部另加了「导出档案」按钮，一份 Excel、11 张 Sheet，把客户档案整包导出。", en: "Members with many cards and a long class history used to make the profile slow to open: the profile endpoint returned every booking at once, and each booking repeated the member record (notes included) plus the full course and instructor details — for a member with 1,461 bookings the response reached 6.9 MB. Class history now loads on demand and page by page: open a tab to fetch that kind, twenty rows at a time, with “X of Y shown” and a “Load more” button underneath. The response drops to 117 KB, server time from 380 ms to 35 ms, and the N+1 queries from 1,572 to 8. Cards in the member list are now sent as summaries too, taking the list from 214 KB to 143 KB. The member site’s booking list had the same problem and is fixed here: 6.5 MB → 700 KB, 1,526 queries → 1, and the list renders 30 rows at a time with a “Show more” button." },
     groups: [
       { title: { zh: "上课记录分页加载", en: "Paged class history" }, points: [
         { zh: "「团课预约记录」与「私教预约记录」改为按需加载：点开标签页才取这一类记录", en: "Group bookings and PT bookings are fetched when their tab is opened" },
@@ -35,6 +35,16 @@ export const changelogReleases: ChangelogRelease[] = [
         { zh: "会员列表点开会员后的档案抽屉，最大宽度从 1440 像素增加到 1720 像素", en: "The member profile drawer now opens up to 1,720 px wide, up from 1,440 px" },
         { zh: "窗口不够宽时仍按「窗口宽度减 48 像素」铺满靠右，笔记本上与以前一致", en: "On narrower screens it still fills the window minus 48 px, exactly as before" },
         { zh: "左侧会员清单顶部的搜索框改为吸顶，往下拉也随时能搜索切换会员", en: "The search box at the top of the member list now sticks, so you can always look someone up while scrolling" },
+      ] },
+      { title: { zh: "客户档案整包导出", en: "Export the whole member profile" }, points: [
+        { zh: "档案顶部新增「导出档案」按钮，点一次下载一份 Excel", en: "A new “Export profile” button at the top of the profile downloads one Excel file" },
+        { zh: "一份文件 11 张 Sheet：基本信息、会员卡、团课 / 私教 / 其它预约记录、私教跟进、体测评估、消费记录、体验券、提醒、合同与资料", en: "Eleven sheets in one file: basics, cards, group / PT / other bookings, PT follow-ups, assessments, transactions, vouchers, reminders and documents" },
+        { zh: "导出的是全量记录：页面上的上课记录虽然分页懒加载，导出的 Excel 不会漏掉任何一条", en: "The export is complete: the profile pages its bookings lazily on screen, but the Excel file never leaves one out" },
+      ] },
+      { title: { zh: "会员资料新增邮件地址", en: "New email field on the member profile" }, points: [
+        { zh: "编辑客户资料时，备注上面一行并排放三个输入框：微信号、紧急联系电话、邮件地址", en: "In the member form, WeChat, emergency contact and email now sit side by side on the row above the notes" },
+        { zh: "邮件地址会做基本格式校验，填错时提示「邮件地址格式不正确」", en: "The email address is checked for basic format, with a clear message when it does not look right" },
+        { zh: "会员档案顶部最后一格直接显示邮件地址，不另加标题，省得占横向空间", en: "The profile header shows the email address in the last slot, without a label, so it takes no extra width" },
       ] },
     ],
   },

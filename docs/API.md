@@ -182,6 +182,7 @@ FastAPI 参数校验错误格式：
 | `gender`、`id_number`、`birth_date` | string | 性别、证件号、出生日期 |
 | `source`、`advisor_id`、`advisor_name` | string / integer / null | 来源、会籍员工 ID 和姓名 |
 | `emergency_phone`、`wechat`、`notes` | string | 紧急电话、微信、备注 |
+| `email` | string | 邮件地址，未填写时为空字符串 |
 | `photo_url` | string | 会员照片地址（`/uploads/members/...`），未上传时为空字符串 |
 | `no_show_blocked_until` | string | 自助预约限制截止日，无限制为空字符串 |
 | `active` | boolean | 是否允许登录与预约 |
@@ -576,7 +577,8 @@ curl -X POST "$API/api/auth/login" \
 
 - **权限**：前台。
 - **Body 必填**：`name`、`phone`。
-- **Body 可选**：`name_en`、`gender`、`id_number`、`birth_date`、`source`、`advisor_id`、`emergency_phone`、`wechat`、`notes`、`active`。
+- **Body 可选**：`name_en`、`gender`、`id_number`、`birth_date`、`source`、`advisor_id`、`emergency_phone`、`wechat`、`email`、`notes`、`active`。
+- `email` 为邮件地址，会去掉首尾空格；填写时校验基本格式，不合法返回 400「邮件地址格式不正确」。
 - **响应**：Member（含 cards）。手机号须符合 `1xxxxxxxxxx` 且全库唯一。
 - `source` 为获客来源，后台下拉选项来自 `GET /api/admin/meta` 的 `member_sources`；允许沿用历史自定义写法，长度不超过 20 字。
 
@@ -605,6 +607,7 @@ curl -X POST "$API/api/auth/login" \
 - **权限**：前台；**Body**：新建接口的任意可选字段及 `name`、`phone`，按部分更新处理。
 - **响应**：更新后的 Member（含 cards）。
 - 修改手机号时检查格式及与其他会员的冲突；未传字段保持不变。
+- `email` 的校验规则与新建一致：填写时校验基本格式，不合法返回 400「邮件地址格式不正确」。
 
 ### 6.5 到店购卡并开卡
 
@@ -1555,7 +1558,7 @@ ID 必须覆盖当前全部产品且不能重复，否则返回 `400`「请提�
 - 路径 `kind`：`members`、`bookings`、`transactions`；其他值 `404`。
 - **权限**：按导出类型判定——`members` 需 `members.view`，`bookings` 需 `bookings.view`，`transactions` 需 `finance.view`；API Key 需 `maintenance:write`。
 - **响应**：带 UTF-8 BOM 的 `text/csv`，可直接用 Excel 打开；导出全部记录，无日期筛选。
-- 会员列：`id,name,name_en,phone,gender,birth_date,source,wechat,emergency_phone,notes,created_at`。
+- 会员列：`id,name,name_en,phone,gender,birth_date,source,wechat,email,emergency_phone,notes,created_at`。
 - 预约列：`id,member,phone,course,teacher,room,date,start_time,end_time,status,source,booked_at,cancelled_at,cancelled_by`。
 - 流水列：`id,member,category,kind,amount,payment_method,status,occurred_at,note,redemption_code`。
 
@@ -1564,7 +1567,7 @@ ID 必须覆盖当前全部产品且不能重复，否则返回 `400`「请提�
 #### GET /api/admin/maintenance/members-template.csv
 
 - **请求**：无；**响应**：UTF-8 BOM CSV。
-- 列：`name,name_en,phone,gender,birth_date,source,wechat,emergency_phone,notes`，含一行示例。
+- 列：`name,name_en,phone,gender,birth_date,source,wechat,email,emergency_phone,notes`，含一行示例。
 
 ### 13.10 导入会员 CSV
 
@@ -1582,11 +1585,26 @@ ID 必须覆盖当前全部产品且不能重复，否则返回 `400`「请提�
 - **权限**：需 `members.view`；API Key 需 `read` 范围。
 - **Query**：`scope` 取 `all`（全部会员）、`new`（当月新进会员）、`renew_pending`（当月未续会会员），默认 `all`；`month` 为统计月份 `YYYY-MM`，`scope=all` 时忽略；`categories` 为卡种多选（英文逗号分隔，如 `group,private,annual`，为空表示不限）；`only_cards` 默认 `true`，只导出真正买过卡的客户，设为 `false` 才包含未开卡的散客。
 - **响应**：`application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` 文件流，`Content-Disposition: attachment`。
-- 工作表名为“会员列表”，中文表头：会员姓名、照片、手机号码、生日、性别、会员卡类别、合同总金额、购买时间、到期时间、会籍归属、会员时长、备注；首行冻结。
+- 工作表名为“会员列表”，中文表头：会员姓名、照片、手机号码、生日、性别、会员卡类别、合同总金额、购买时间、到期时间、会籍归属、会员时长、备注、邮件地址；首行冻结。
 - 会员照片直接嵌入“照片”列单元格（无照片留空），其余列取该会员当前有效会员卡的汇总数据。
 - `categories` 与 `GET /api/admin/members` 的卡种口径一致：`group` 团课、`private` 私教与评估、`annual` 年卡与组合套餐。
 
-### 13.12 上传勤鸟导出压缩包导入历史数据
+### 13.12 导出客户档案 Excel（一张 Excel、多张 Sheet）
+
+#### GET /api/admin/members/{member_id}/export.xlsx
+
+- **权限**：需 `members.view`；API Key 需 `read` 范围。
+- **路径**：`member_id` 为会员主键；会员不存在或已进回收站时返回 404。
+- **响应**：`application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` 文件流，`Content-Disposition: attachment`，文件名 `wellness-member-{member_id}-{日期}.xlsx`。
+- 一份工作簿共 11 张 Sheet，覆盖客户档案页面上的全部数据（档案页的上课记录是分页懒加载的，这里导出的是全量）：
+  - 「基本信息」：姓名、手机号、性别、生日、来源、会籍归属、微信号、邮件地址、紧急联系人、建档时间、会员时长、备注，外加持卡数、上课记录总数、已消课 / 取消 / 爽约次数、累计消费金额等汇总项；有本地照片时嵌入右上角。
+  - 「会员卡」：本人卡与共享卡逐张列出（卡号、卡种、购卡时间、开卡日、到期日、金额、总次数、剩余次数、权益明细、卡状态、冻结期间、共享给、备注）。
+  - 「团课预约记录」「私教预约记录」「其它预约记录」：按课程类型拆分的全部预约记录（预约编号、开课日期与时间、课程、课程类型、教练、教室、预约用卡、状态、预约 / 签到 / 取消时间、是否消课、来源、备注）。
+  - 「私教跟进记录」「体测评估」：会员记录（记录编号、日期、类型、标题、内容、教练）。
+  - 「消费记录」：全部入账流水（流水编号、日期、类别、摘要、支付方式、金额、状态、流水类型、营收口径、现金实收、关联预约、核销码、操作人、备注）。
+  - 「体验券」「提醒」「合同与资料」：券、会员提醒与上传的合同 / 评估文件清单。
+
+### 13.13 上传勤鸟导出压缩包导入历史数据
 
 #### POST /api/admin/import/rocketbird/upload
 
@@ -1602,7 +1620,7 @@ ID 必须覆盖当前全部产品且不能重复，否则返回 `400`「请提�
 - 若压缩包里的 CSV 已经带有「课程中文名 / 课程英文名、教室中文名 / 教室英文名、教练中文名 / 教练英文名、卡中文名 / 卡英文名」这些列（由 `backend/scripts/adapt_rocketbird_export.py` 生成），优先采用列里的写法。
 - 正式导入会写入一条操作日志（分类 `data_import`）。
 
-### 13.13 从服务器目录导入勤鸟历史数据
+### 13.14 从服务器目录导入勤鸟历史数据
 
 #### POST /api/admin/import/rocketbird/path
 
@@ -1611,7 +1629,7 @@ ID 必须覆盖当前全部产品且不能重复，否则返回 `400`「请提�
 - **响应**：同 13.12 的导入报告。
 - 适用于在线服务器上已经放好导出文件、避免经浏览器上传大压缩包的场景。
 
-### 13.14 一键清除全部数据（短信清除码）
+### 13.15 一键清除全部数据（短信清除码）
 
 清除码只通过短信发送到系统内置手机号 `18602113774`，接口与界面都不会回显清除码本身；
 执行清除还需要原样输入确认口令，避免误触。两个接口都只接受员工登录会话，API Key 会被拒绝。
