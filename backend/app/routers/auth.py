@@ -8,6 +8,7 @@ from ..deps import get_current_user
 from ..log_util import audit
 from ..mfa_service import consume, create_challenge, mask_phone, take_challenge
 from ..models import AppSettings, User
+from ..phone_service import claim_phone
 from ..security import create_access_token, hash_password, verify_password
 from ..serializers import user_dict
 from ..sms_service import send_otp, verify_otp
@@ -113,11 +114,8 @@ def update_me(request: Request, payload: dict = Body(...), db: Session = Depends
         user.full_name = full_name
     if "phone" in data:
         phone = str(data["phone"]).strip()
-        if phone:
-            valid_phone(phone)
-            duplicate = db.query(User).filter(User.phone == phone, User.id != user.id, User.deleted_at.is_(None)).first()
-            if duplicate:
-                raise HTTPException(400, "该手机号已被其他员工账号使用")
+        # 冲突处理见 phone_service：正常账号 -> 400 提示；回收站账号 -> 自动释放（号码转移）
+        claim_phone(db, phone, exclude_id=user.id)
         user.phone = phone or None
     audit(db, user, "account", "update_profile", "user", user.id, {key: value for key, value in data.items()})
     db.commit()

@@ -15,6 +15,8 @@ export function translateAdminMessage(message: string): string {
   if (match) return `Please contact the front desk to book within ${match[1]} hours of class.`;
   match = message.match(/^爽约限制至 (.+)，请联系前台$/);
   if (match) return `Booking is blocked until ${match[1]} due to a no-show. Please contact the front desk.`;
+  match = message.match(/^该手机号已被 (.+)（(.+)）绑定$/);
+  if (match) return `This mobile number is already bound to ${match[1]} (${match[2]}).`;
   match = message.match(/^(.+)格式应为 YYYY-MM-DD$/);
   if (match) return `${messages[match[1]] ?? match[1]} must use YYYY-MM-DD format.`;
   match = message.match(/^(.+)格式应为 HH:MM$/);

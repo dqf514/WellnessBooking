@@ -1181,3 +1181,35 @@
 - `public/help.html` 同步：「签到后名单不会关闭」「健康评估也能消课」、排课步骤 2 的可检索教练字段、「教练可以自己排序」「教室名中英文上下两行显示」「使用类别不再有 Outlook 会议」「产品顺序可以自己定」与购卡弹窗的可检索分组产品选择器。
 - `public/changelog-details.html` 追加 BATCH 23（8 张界面截图，图 89–96）；`docs/CHANGELOG_CLIENT.md`、`docs/CHANGELOG_DEVELOPER.md`、`src/lib/changelog.ts`（`API_ENDPOINT_COUNT` 151 → 153、`APP_RELEASE_DATE` → 2026-11-28）同步。
 - 验证：`npm run build`（`tsc -b` + vite）通过；`.shot/test_entitlement.py` 验证评估课消课与撤销签到退卡（`consumed_type: card` → 撤销后 `consumed: False`）；`/api/admin/teachers/reorder` 与 `/api/admin/products/reorder` 实测返回 `{"ok": true}`。
+
+## 三十六、部署端反馈修复批次：员工手机号占用与前端构建依赖（2026-11-28）
+
+来源：`wellnessbooking-fixes-20261128.zip`（部署环境打包的两个 fix，基于上游提交 `f9b68d5`），本节记录整合后的落地方式与取舍。
+
+### 1. 员工手机号占用统一处理（新增 `backend/app/phone_service.py`）
+
+- **根因**：`User.phone` 上有数据库级唯一约束（`models.py`：`mapped_column(String(32), unique=True)`），而唯一约束**包含回收站（软删）行**；`create_user` / `update_user` / `update_me` 三处的重复校验只查 `deleted_at IS NULL`，校验放行但数据库拒绝 → `IntegrityError` → 500。
+- **处理规则**（与产品确认一致）：
+  - 与**在职账号**冲突 → `400 该手机号已被 {full_name or username}（{username}）绑定`；
+  - 与**回收站账号**冲突 → 自动清空对方 `phone` 完成号码转移，操作继续，不报错；
+  - `phone` 为空串 → 直接放行（清空号码）；格式错误仍由 `utils.valid_phone()` 抛 `400 手机号格式不正确`。
+- **实现要点**：释放占用方必须**立即执行 SQL 并 `db.flush()`**——同表多行 UPDATE 的 ORM 提交顺序不保证，若先写占用方再释放方，唯一约束会在语句级立刻失败（第一版实现即栽在这里）。
+- 接入点：`backend/app/routers/admin_settings.py`（`create_user` / `update_user`）与 `backend/app/routers/auth.py`（`update_me`，员工自助改绑）。三处原有「该手机号已被其他员工账号使用」的校验与提示统一替换为 `claim_phone()`。
+
+### 2. 前端提示可见性（`src/pages/admin/settings/UsersSettings.tsx`）
+
+- 原实现里保存失败时 `error` 只渲染在设置区块里，弹窗打开时被遮罩挡住，用户必须关掉弹窗才知道没保存成功。改为在 `Modal` 内也渲染 `{error && <Notice error message={error}/>}`，并在 `openCreate()` / `openEdit()` 时清空 `error` / `message`，避免上一次加载错误残留。
+- `src/lib/adminMessages.ts` 的 `translateAdminMessage()` 新增动态文案规则 `/^该手机号已被 (.+)（(.+)）绑定$/` → `This mobile number is already bound to {name} ({username}).`，英文后台不再显示中文。
+
+### 3. 构建依赖补齐（`package.json` / `package-lock.json`）
+
+- **根因**：`src/components/QrCode.tsx` 动态 `import("qrcode")`，但仓库既没有 `@types/qrcode`，也没有本地声明文件；本机 `node_modules/@types/qrcode` 是 extraneous（未写进 `package.json`），干净环境 `npm install` 后 `tsc -b` 报 `TS7016: Could not find a declaration file for module 'qrcode'`。
+- **处理**：与上游 fix 的「加本地 `src/qrcode.d.ts`」不同，这里选择把 `@types/qrcode@^1.5.6` 正式写进 `devDependencies` 并更新 `package-lock.json`（`lockfileVersion` 3，新增 `@types/qrcode` / `@types/node` / `undici-types` 三个 dev 包），让 `npm ci` 之后类型一定存在；类型来自官方包而不是手写声明，后续用到其他 API 也不会缺类型。
+- 代价：本地 `node_modules/@types/qrcode` 由 extraneous 变为正式依赖，`package.json` / `package-lock.json` 有小幅改动。
+
+### 4. 文档与验证
+
+- `docs/API.md`：§3.8（`PATCH /api/auth/me`）、§10.6（`POST /api/admin/users`）、§10.7（`PATCH /api/admin/users/{user_id}`）补充手机号冲突规则；`python docs/build_api_docs.py` 重新生成 `public/api-docs.html`（18 章 / 153 个接口，接口总数不变）。
+- `public/help.html`：「账号与角色权限 → 新建、停用和重置密码」新增「手机号撞号怎么办」条目，说明在职冲突与回收站自动转移两种情况。
+- `public/changelog-details.html` 追加 BATCH 24（1 张界面截图，图 97）；`docs/CHANGELOG_CLIENT.md`（97 张截图）、`docs/CHANGELOG_DEVELOPER.md`、`src/lib/changelog.ts` 同步。
+- 验证：`npm ci` + `npm run build` 通过（此前无 `@types/qrcode` 时 `tsc -b --force` 稳定复现 TS7016）；`.shot/test_phone_fix.py` 实测：回收站冲突 → 200 且对方 `phone` 置空，在职冲突 → 400「该手机号已被 系统管理员（admin）绑定」，格式错误 → 400「手机号格式不正确」，`PATCH` 走同一套规则；测试产生的临时账号已从本地库清理。

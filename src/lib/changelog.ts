@@ -12,6 +12,23 @@ export const changelogReleases: ChangelogRelease[] = [
   {
     date: "2026-11-28",
     version: APP_VERSION,
+    title: { zh: "员工手机号撞号不再报错，回收站号码自动转移", en: "Staff phone clashes no longer error, and recycled numbers transfer automatically" },
+    summary: { zh: "把员工账号移入回收站后再把它的手机号绑给别人，以前会直接报 500。现在统一处理：在职账号占用时给出中文提示「该手机号已被 姓名（登录名）绑定」并显示在弹窗内；只被回收站账号占用时自动完成号码转移，操作照常成功。另外把 qrcode 的类型声明写进依赖，重装依赖后前端打包也能通过。", en: "Binding a staff phone number that belonged to an account in the recycle bin used to fail with a 500. The rule is now unified: a clash with an active account names that account in Chinese and is shown inside the dialog, while a number held only by a recycled account is transferred automatically and the change succeeds. The qrcode type package is now a declared dependency, so a fresh install builds cleanly." },
+    groups: [
+      { title: { zh: "手机号占用", en: "Phone number clashes" }, points: [
+        { zh: "新建员工、修改员工、员工自助改资料三个入口统一判断手机号占用", en: "Creating, editing and self-service profile updates all share one phone-clash check" },
+        { zh: "被在职账号占用时提示「该手机号已被 姓名（登录名）绑定」，不再返回 500", en: "A clash with an active account now reads “该手机号已被 姓名（登录名）绑定” instead of returning a 500" },
+        { zh: "只被回收站账号占用时自动把号码转给新账号，被删除账号的其余资料保留、可还原", en: "When only a recycled account holds the number it is transferred automatically; the deleted account keeps its details and can be restored" },
+        { zh: "提示直接显示在编辑弹窗里，手机号格式错误仍提示「手机号格式不正确」", en: "The message appears inside the edit dialog, and an invalid number still reports “手机号格式不正确”" },
+      ] },
+      { title: { zh: "构建与依赖", en: "Build and dependencies" }, points: [
+        { zh: "qrcode 的类型声明正式写进 devDependencies，干净环境 npm ci 后 npm run build 通过", en: "The qrcode typings are now a declared dev dependency, so npm ci followed by npm run build succeeds on a clean machine" },
+      ] },
+    ],
+  },
+  {
+    date: "2026-11-28",
+    version: APP_VERSION,
     title: { zh: "签到留在弹窗内，教练可自己排序，名单到处能检索", en: "Check-in stays in the roster, instructors can be ordered, lists are searchable" },
     summary: { zh: "团课签到消课后不再跳回外层页面，弹窗留在原地并提示结果；健康评估也能消课，权益改为按类别集合匹配，扣不动时列出会员现有卡与原因；排课选教练可检索，教练新增排序编号并支持表头排序与前移后移，同样的检索与排序补到其他名单页；教室名中英文上下并排、会员档案记录改白底、购卡产品可排序可检索。", en: "Checking in a member no longer leaves the group roster: the dialog stays open and reports the result. Health assessments can now consume a benefit — matching moved from a single course type to a set of categories, and failures list the member’s cards and the reason. Instructors can be searched when scheduling and now carry a sort order, with clickable column sorting and move up / move down; the same search and sorting reached the other list pages. Room names show Chinese above English, member-profile records use white cards, and products in the purchase dialog can be reordered and searched." },
     groups: [

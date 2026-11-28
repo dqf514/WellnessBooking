@@ -13,6 +13,7 @@ from ..deps import require_settings_view, require_settings_write
 from ..finance_service import SYSTEM_REVENUE_MODES
 from ..log_util import audit, sms_log
 from ..models import AppSettings, OperationLog, SmsSendLog, SmsSettings, User
+from ..phone_service import claim_phone
 from ..permissions import ROLE_LABELS, permission_matrix, role_capabilities
 from ..recycle_service import move_to_recycle
 from ..runtime_flags import demo_login_locked
@@ -122,10 +123,8 @@ def create_user(payload: dict = Body(...), db: Session = Depends(get_db), user: 
     if db.query(User).filter(User.username == username).first():
         raise HTTPException(400, "用户名已存在")
     phone = str(payload.get("phone", "")).strip()
-    if phone:
-        valid_phone(phone)
-        if db.query(User).filter(User.phone == phone, User.deleted_at.is_(None)).first():
-            raise HTTPException(400, "该手机号已被其他员工账号使用")
+    # 冲突处理见 phone_service：正常账号 -> 400 提示；回收站账号 -> 自动释放（号码转移）
+    claim_phone(db, phone)
     row = User(username=username, password_hash=hash_password(password), full_name=str(payload.get("full_name", "")).strip(), phone=phone or None, role=role, active=True)
     db.add(row)
     db.flush()
@@ -156,10 +155,8 @@ def update_user(user_id: int, payload: dict = Body(...), db: Session = Depends(g
         row.full_name = str(payload["full_name"]).strip()
     if "phone" in payload:
         phone = str(payload["phone"]).strip()
-        if phone:
-            valid_phone(phone)
-            if db.query(User).filter(User.phone == phone, User.id != row.id, User.deleted_at.is_(None)).first():
-                raise HTTPException(400, "该手机号已被其他员工账号使用")
+        # 冲突处理见 phone_service：正常账号 -> 400 提示；回收站账号 -> 自动释放（号码转移）
+        claim_phone(db, phone, exclude_id=row.id)
         row.phone = phone or None
     if "active" in payload:
         row.active = next_active

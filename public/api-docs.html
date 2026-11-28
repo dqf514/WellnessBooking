@@ -321,7 +321,7 @@
 <h3 id="3-8-修改自己的资料">3.8 修改自己的资料<a class="anchor" href="#3-8-修改自己的资料" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="patch /api/auth/me">
 <h4 id="patch-api-auth-me"><span class="method method-patch">PATCH</span><a href="#patch-api-auth-me" class="route">/api/auth/me</a></h4>
-<ul><li><strong>权限</strong>：员工登录会话（API Key 不支持）；<strong>Body</strong>：<code>full_name</code>、<code>phone</code> 任意子集。</li><li><code>full_name</code> 不能为空；<code>phone</code> 需为 11 位手机号，且不能与其他员工账号重复。</li><li><strong>响应</strong>：更新后的 User 对象。任何角色都可以修改自己的姓名与绑定手机号；登录名、角色与密码需走专门接口。</li></ul>
+<ul><li><strong>权限</strong>：员工登录会话（API Key 不支持）；<strong>Body</strong>：<code>full_name</code>、<code>phone</code> 任意子集。</li><li><code>full_name</code> 不能为空；<code>phone</code> 需为 11 位手机号，且不能与其他<strong>在职</strong>员工账号重复（<code>400 该手机号已被 姓名（username）绑定</code>）。</li><li>手机号若只被<strong>回收站</strong>里的账号占用，则自动清空对方的号码完成转移，改绑照常成功，不返回错误。</li><li><strong>响应</strong>：更新后的 User 对象。任何角色都可以修改自己的姓名与绑定手机号；登录名、角色与密码需走专门接口。</li></ul>
 </section>
 <h3 id="3-9-修改自己的密码">3.9 修改自己的密码<a class="anchor" href="#3-9-修改自己的密码" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/auth/change-password">
@@ -913,12 +913,12 @@
 <h3 id="10-6-新建员工账号">10.6 新建员工账号<a class="anchor" href="#10-6-新建员工账号" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/users">
 <h4 id="post-api-admin-users"><span class="method method-post">POST</span><a href="#post-api-admin-users" class="route">/api/admin/users</a></h4>
-<ul><li><strong>权限</strong>：管理员。</li><li><strong>Body</strong>：<code>username</code>、<code>password</code> 必填；<code>full_name</code>、<code>phone</code>、<code>role</code>（默认 <code>viewer</code>）可选。</li><li>用户名为 3–30 位小写字母、数字、下划线，密码至少 8 位，角色必须是五种合法角色之一。</li><li><strong>响应</strong>：User；初始 <code>active=true</code>。</li></ul>
+<ul><li><strong>权限</strong>：管理员。</li><li><strong>Body</strong>：<code>username</code>、<code>password</code> 必填；<code>full_name</code>、<code>phone</code>、<code>role</code>（默认 <code>viewer</code>）可选。</li><li>用户名为 3–30 位小写字母、数字、下划线，密码至少 8 位，角色必须是五种合法角色之一。</li><li><code>phone</code> 需为 11 位手机号（<code>400 手机号格式不正确</code>）。与在职员工账号重复返回 <code>400 该手机号已被 姓名（username）绑定</code>；只被回收站账号占用时自动清空对方号码完成转移，创建照常成功。</li><li><strong>响应</strong>：User；初始 <code>active=true</code>。</li></ul>
 </section>
 <h3 id="10-7-修改员工账号">10.7 修改员工账号<a class="anchor" href="#10-7-修改员工账号" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="patch /api/admin/users/{user_id}">
 <h4 id="patch-api-admin-users-user-id"><span class="method method-patch">PATCH</span><a href="#patch-api-admin-users-user-id" class="route">/api/admin/users/{user_id}</a></h4>
-<ul><li><strong>权限</strong>：管理员；<strong>Body</strong>：<code>role</code>、<code>full_name</code>、<code>phone</code>、<code>active</code>、<code>password</code> 任意子集。</li><li><strong>响应</strong>：User。新密码至少 8 位；不能停用当前登录的自己。</li><li>修改密码不会在此响应中返回密码，也不会吊销其他已登录 Token。</li></ul>
+<ul><li><strong>权限</strong>：管理员；<strong>Body</strong>：<code>role</code>、<code>full_name</code>、<code>phone</code>、<code>active</code>、<code>password</code> 任意子集。</li><li><strong>响应</strong>：User。新密码至少 8 位；不能停用当前登录的自己。</li><li><code>phone</code> 冲突处理与 10.6 一致：在职账号占用返回 400 提示，回收站账号占用则自动转移号码后保存成功。</li><li>修改密码不会在此响应中返回密码，也不会吊销其他已登录 Token。</li></ul>
 </section>
 <h3 id="10-8-员工账号移入回收站">10.8 员工账号移入回收站<a class="anchor" href="#10-8-员工账号移入回收站" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="delete /api/admin/users/{user_id}">
