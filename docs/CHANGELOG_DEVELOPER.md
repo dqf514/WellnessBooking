@@ -1379,3 +1379,15 @@
   - `src/components/MemberProfileDrawer.tsx`：`.profile-facts` 末尾追加 `<span className="profile-email"><strong>{detail.email || "—"}</strong></span>`，不渲染标题。
   - `src/styles.css`：新增 `.profile-facts > span.profile-email { min-width: 0; }` 与 `.profile-facts > span.profile-email strong { min-width: 0; }`，保证长地址省略号截断。
 - 实测：`PATCH /api/admin/members/5238` 传 `{"email":"hailu@example.com"}` 返回 200 且响应含该值；传 `{"email":"abc"}` 返回 400「邮件地址格式不正确」；浏览器实测编辑弹窗内三输入框与备注的纵向位置为 573–644 / 660，档案顶部末格显示邮件地址且无标题。
+
+### 10. 会员档案操作按钮上移到顶栏
+
+- `src/components/UI.tsx`：`Modal` 新增可选参数 `actions?: ReactNode`，渲染在 `.modal-header` 内、标题与关闭按钮之间（外层包一层 `.modal-header-actions`）；不传时不渲染，其余弹窗完全不受影响。
+- `src/components/MemberProfileDrawer.tsx`：`.profile-actions` 从 `.member-profile` 的第一项改为组件内的 `actionRow` 变量，通过 `actions={actionRow}` 传给抽屉 `Modal`；按钮与权限判断原样保留。
+- `src/styles.css`：
+  - `.modal-header` 增加 `flex: 0 0 auto`（顶栏不再被 flex 压缩，按钮换行时正常长高）与 `gap: 14px`；`.modal-header h2` 增加 `flex: 0 0 auto` 与 `white-space: nowrap`（标题不被挤成两行；≤960px 断点恢复 `white-space: normal`）。
+  - 新增 `.modal-header-actions { display: flex; flex: 1 1 auto; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; min-width: 0; margin-left: auto; }`。
+  - `.profile-actions` 去掉内容区专用的 `margin / padding-bottom / border-bottom`；新增 `.modal-header .profile-actions { display: flex; flex-wrap: wrap; }` 与 `.modal-header .profile-actions button, .modal-header .profile-upload { flex: 0 0 auto; min-height: 34px; padding: 6px 11px; font-size: 12px; }`。
+  - `.modal-drawer` 改为 `display: flex; flex-direction: column`；`.modal-drawer .modal-body` 由写死的 `height: calc(100dvh - 65px)` 改为 `flex: 1 1 auto; height: auto; min-height: 0`，顶栏长高时内容区自动让位。
+  - ≤700px：`.modal-header` 允许换行，`.modal-header-actions` 占满整行（`order: 3; flex: 1 0 100%`），操作按钮改为横向滚动一行（`flex-wrap: nowrap; overflow-x: auto`），顶栏高度从 197 像素降到 109 像素。
+- 实测（浏览器实测）：`.profile-actions` 的父节点为 `.modal-header-actions`，内容区内不再有该行；1600×950 下顶栏高 65 像素、内容区高 883 像素、内容第一行（会员资料）起始于 89 像素（改前约 170 像素）；760 像素宽时顶栏自动长到 97 像素，420 像素宽时顶栏 109 像素且页面无横向溢出。

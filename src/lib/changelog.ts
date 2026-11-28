@@ -46,6 +46,11 @@ export const changelogReleases: ChangelogRelease[] = [
         { zh: "邮件地址会做基本格式校验，填错时提示「邮件地址格式不正确」", en: "The email address is checked for basic format, with a clear message when it does not look right" },
         { zh: "会员档案顶部最后一格直接显示邮件地址，不另加标题，省得占横向空间", en: "The profile header shows the email address in the last slot, without a label, so it takes no extra width" },
       ] },
+      { title: { zh: "档案操作按钮上移到顶栏", en: "Profile actions moved into the header bar" }, points: [
+        { zh: "编辑资料、上传照片、购卡·购课、提醒、赠体验券、导出档案、删除这一排按钮移到抽屉顶栏，不再占内容区的一整行", en: "Edit, upload photo, buy card, reminder, offer voucher, export and delete now sit in the drawer header instead of taking a row of the content area" },
+        { zh: "内容区多出约 80 像素高度，会员资料、会员卡与上课记录表格一屏能多看一截", en: "The content area gains about 80 pixels, so more of the profile, the cards and the booking table fit on screen" },
+        { zh: "按钮的权限规则不变，窄屏自动换行或横向滑动，顶栏不会被撑破", en: "The permission rules are unchanged; on narrow screens the buttons wrap or scroll sideways" },
+      ] },
     ],
   },
   {
