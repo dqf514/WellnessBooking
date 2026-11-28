@@ -1329,3 +1329,11 @@
 - `src/styles.css`：新增 `.me-list-more`。
 - 实测：同一会员 1461 条记录，接口体积 **6.53 MB → 704 KB**，SQL **1526 → 1 条**，HTTP 端到端 317 ms → 145 ms；页面首屏只渲染 30 条（原来 1461 条 DOM 节点）。
 - `docs/API.md` 4.5 补充 `bookings` 为精简记录及字段清单；`public/api-docs.html` 重新生成（仍为 157 个接口）。
+
+### 6. 会员档案抽屉加宽
+
+- `src/styles.css`：`.modal-drawer` 的 `width` 由 `min(1440px, calc(100% - 48px))` 改为 `min(1720px, calc(100% - 48px))`，最大宽度 +280 px。
+- `.modal-drawer` 目前只用于会员档案抽屉（`Modal drawer` 仅 `MemberProfileDrawer` 传入），因此不影响其它弹窗；`.modal` / `.modal-wide` 的宽度规则保持不变。
+- 内部布局（`.member-profile-layout` 两栏、`.profile-facts`、`.profile-cards > article` 等）全部使用 `minmax()` / `1fr` 弹性列，无需改动即可自适应更宽的内容区。
+- 移动端断点 `@media` 内 `.modal-drawer { width: 100% }` 不变。
+- 实测 1920 像素视口：抽屉宽 1720 像素、内容区 1718 像素（此前 1440 / 1438）。

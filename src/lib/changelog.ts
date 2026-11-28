@@ -31,6 +31,10 @@ export const changelogReleases: ChangelogRelease[] = [
         { zh: "列表先渲染最近 30 条，底部「查看更多（还有 N 条）」每次再追加 30 条", en: "The list renders the latest 30 rows first; “Show more (N left)” adds 30 at a time" },
         { zh: "课程名、教练、教室、时间与取消预约、加日历均保持不变", en: "Course, instructor, room, time, cancelling and calendar export all stay the same" },
       ] },
+      { title: { zh: "会员档案抽屉加宽", en: "Wider member profile drawer" }, points: [
+        { zh: "会员列表点开会员后的档案抽屉，最大宽度从 1440 像素增加到 1720 像素", en: "The member profile drawer now opens up to 1,720 px wide, up from 1,440 px" },
+        { zh: "窗口不够宽时仍按「窗口宽度减 48 像素」铺满靠右，笔记本上与以前一致", en: "On narrower screens it still fills the window minus 48 px, exactly as before" },
+      ] },
     ],
   },
   {
