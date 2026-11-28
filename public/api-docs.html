@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#173f35">
-  <meta name="description" content="音昱 Wellness 完整 API 对接文档，覆盖 153 个接口、权限、字段、业务规则与示例。">
+  <meta name="description" content="音昱 Wellness 完整 API 对接文档，覆盖 156 个接口、权限、字段、业务规则与示例。">
   <meta name="generator" content="docs/build_api_docs.py">
   <link id="api-favicon" rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Crect width='36' height='36' rx='18' fill='%23173f35'/%3E%3Cpath d='M28 6C15 7 8 13 8 23c7 1 15-2 20-17ZM8 29c3-8 8-12 16-17' fill='none' stroke='%23e9efe7' stroke-width='1.5'/%3E%3C/svg%3E">
   <title>API 对接文档 · 音昱 Wellness</title>
@@ -33,7 +33,7 @@
     <aside class="sidebar" aria-label="API 文档目录">
       <label class="search-label"><span>搜索接口、字段或业务规则</span><input class="search-input" id="api-search" type="search" placeholder="例如：签到、退款、bookings" autocomplete="off"><span class="search-hint">按 / 快速搜索，Esc 清空</span></label>
       <p class="search-results" id="search-results" aria-live="polite"></p>
-      <p class="toc-title">API REFERENCE · 153 ENDPOINTS</p>
+      <p class="toc-title">API REFERENCE · 156 ENDPOINTS</p>
       <nav><ul class="toc-list"><li><a href="#1-接入基础">1. 接入基础</a></li>
 <li><a href="#2-通用数据结构">2. 通用数据结构</a></li>
 <li><a href="#3-健康检查与员工认证-9">3. 健康检查与员工认证（9）</a></li>
@@ -41,9 +41,9 @@
 <li><a href="#5-经营概览与基础元数据-2">5. 经营概览与基础元数据（2）</a></li>
 <li><a href="#6-会员档案-会员卡-权益与爽约-23">6. 会员档案、会员卡、权益与爽约（23）</a></li>
 <li><a href="#7-会员合同与评估文件-7">7. 会员合同与评估文件（7）</a></li>
-<li><a href="#8-排课-预约-教室与目录-31">8. 排课、预约、教室与目录（31）</a></li>
+<li><a href="#8-排课-预约-教室与目录-33">8. 排课、预约、教室与目录（33）</a></li>
 <li><a href="#9-产品-财务与报表-16">9. 产品、财务与报表（16）</a></li>
-<li><a href="#10-场馆-品牌与账号-9">10. 场馆、品牌与账号（9）</a></li>
+<li><a href="#10-场馆-品牌与账号-10">10. 场馆、品牌与账号（10）</a></li>
 <li><a href="#11-短信与审计日志-5">11. 短信与审计日志（5）</a></li>
 <li><a href="#12-api-key-管理与调用日志-6">12. API Key 管理与调用日志（6）</a></li>
 <li><a href="#13-数据导出-备份与恢复-15">13. 数据导出、备份与恢复（15）</a></li>
@@ -62,9 +62,9 @@
 <option value="5-经营概览与基础元数据-2">5. 经营概览与基础元数据（2）</option>
 <option value="6-会员档案-会员卡-权益与爽约-23">6. 会员档案、会员卡、权益与爽约（23）</option>
 <option value="7-会员合同与评估文件-7">7. 会员合同与评估文件（7）</option>
-<option value="8-排课-预约-教室与目录-31">8. 排课、预约、教室与目录（31）</option>
+<option value="8-排课-预约-教室与目录-33">8. 排课、预约、教室与目录（33）</option>
 <option value="9-产品-财务与报表-16">9. 产品、财务与报表（16）</option>
-<option value="10-场馆-品牌与账号-9">10. 场馆、品牌与账号（9）</option>
+<option value="10-场馆-品牌与账号-10">10. 场馆、品牌与账号（10）</option>
 <option value="11-短信与审计日志-5">11. 短信与审计日志（5）</option>
 <option value="12-api-key-管理与调用日志-6">12. API Key 管理与调用日志（6）</option>
 <option value="13-数据导出-备份与恢复-15">13. 数据导出、备份与恢复（15）</option>
@@ -120,7 +120,7 @@
 <tr><td><code>cards.write</code></td><td>延期、冻结、转卡、共享与体验券管理</td><td>✓</td><td>—</td><td>✓</td><td>—</td><td>—</td></tr>
 <tr><td><code>revenue.write</code></td><td>购卡、升额、电子码核销与消课营收确认</td><td>✓</td><td>✓</td><td>✓</td><td>—</td><td>—</td></tr>
 <tr><td><code>catalog.view</code></td><td>查看课程、教练与教室目录</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
-<tr><td><code>catalog.write</code></td><td>维护课程、教练与教室资料</td><td>✓</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td><code>catalog.write</code></td><td>维护课程、教练与教室资料</td><td>✓</td><td>—</td><td>✓</td><td>—</td><td>—</td></tr>
 <tr><td><code>products.view</code></td><td>查看卡课产品与价格</td><td>✓</td><td>✓</td><td>✓</td><td>—</td><td>✓</td></tr>
 <tr><td><code>products.write</code></td><td>新建与修改卡课产品</td><td>✓</td><td>✓</td><td>—</td><td>—</td><td>—</td></tr>
 <tr><td><code>finance.view</code></td><td>查看收支流水与对账单</td><td>✓</td><td>✓</td><td>—</td><td>—</td><td>✓</td></tr>
@@ -133,7 +133,7 @@
 </tbody>
 </table></div>
 <p>要点：</p>
-<ul><li>移入回收站按资源类型校验，只能删除自己具备写入能力的资源（见第 16 节）；读取回收站、恢复和彻底删除仅管理员可用。</li><li>API Key 的实际权限是“密钥 scopes”与“创建人当前角色能力”的交集，两者任一不满足即返回 <code>403</code>。</li><li>少数入口按“满足其中一项能力”开放：财务入账页面对具备 <code>finance.view</code> 的角色返回完整流水，对仅有 <code>revenue.write</code> 的前台只提供电子码核销。</li><li>完整矩阵可通过 <code>GET /api/admin/role-permissions</code> 查询（管理员）。</li></ul>
+<ul><li>移入回收站按资源类型校验，只能删除自己具备写入能力的资源（见第 16 节）；读取回收站、恢复和彻底删除仅管理员可用。</li><li>API Key 的实际权限是“密钥 scopes”与“创建人当前角色能力”的交集，两者任一不满足即返回 <code>403</code>。</li><li>少数入口按“满足其中一项能力”开放：财务入账页面对具备 <code>finance.view</code> 的角色返回完整流水，对仅有 <code>revenue.write</code> 的前台只提供电子码核销。</li><li>完整矩阵可通过 <code>GET /api/admin/role-permissions</code> 查询（管理员）；后台「系统设置 → 账号权限」里可以直接勾选调整，保存后立即生效（<code>PUT /api/admin/role-permissions</code>）。</li><li>上表是<strong>出厂默认值</strong>。管理员在后台勾选保存后，实际生效的矩阵以 <code>GET /api/admin/role-permissions</code> 返回为准；管理员角色固定不可编辑，避免把所有人挡在系统外。</li></ul>
 <h3 id="1-5-api-key-接入鉴权">1.5 API Key 接入鉴权<a class="anchor" href="#1-5-api-key-接入鉴权" aria-label="链接到此节">#</a></h3>
 <p>系统对接可在“系统设置 → API 密钥”创建独立凭证，调用后台接口时发送：</p>
 <div class="code-block"><button class="copy-code" type="button">复制</button><pre><code class="language-http">X-API-Key: &lt;完整 API Key&gt;</code></pre></div>
@@ -226,7 +226,8 @@
 <tr><td><code>purchased_at</code>、<code>starts_on</code>、<code>expires_on</code></td><td>date</td><td>购买日、生效日、到期日</td></tr>
 <tr><td><code>total_sessions</code>、<code>remaining_sessions</code></td><td>integer / null</td><td>总次数、剩余次数；周期卡可为 <code>null</code></td></tr>
 <tr><td><code>benefits</code></td><td>object[]</td><td>分课程类型权益，见下表</td></tr>
-<tr><td><code>status</code></td><td>string</td><td><code>active</code> / <code>cancelled</code> / <code>upgraded</code>；响应可将过期活动卡显示为 <code>expired</code></td></tr>
+<tr><td><code>status</code></td><td>string</td><td>卡的库内状态：<code>active</code> / <code>used</code>（次数已用完）/ <code>cancelled</code> / <code>upgraded</code> / <code>frozen</code></td></tr>
+<tr><td><code>display_status</code></td><td>string</td><td>统一的显示状态：<code>active</code> 正常 / <code>pending</code> 未激活 / <code>expired</code> 已过期 / <code>used_up</code> 已用完 / <code>void</code> 已销卡 / <code>upgraded</code> 已升卡 / <code>frozen</code> 已冻结；由卡状态、是否待定开卡、到期日与剩余次数综合判断，全系统（列表、档案、筛选、导出）共用同一口径</td></tr>
 <tr><td><code>frozen_from</code>、<code>frozen_until</code></td><td>string</td><td>冻结开始日与截止日，未冻结为空字符串；冻结区间内不消耗权益</td></tr>
 <tr><td><code>is_renewal</code></td><td>boolean</td><td>是否为续卡（重新购卡）开的卡</td></tr>
 <tr><td><code>start_pending</code></td><td>boolean</td><td>开卡日期待定：卡已生效可预约，首次签到当天自动开卡并按产品有效期顺延</td></tr>
@@ -440,7 +441,7 @@
 <h3 id="6-1-查询会员列表">6.1 查询会员列表<a class="anchor" href="#6-1-查询会员列表" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/members">
 <h4 id="get-api-admin-members"><span class="method method-get">GET</span><a href="#get-api-admin-members" class="route">/api/admin/members</a></h4>
-<ul><li><strong>权限</strong>：只读。</li><li><strong>Query</strong>：<code>q</code>（姓名/英文名/手机号模糊搜索）、<code>category</code>（卡类别，可多选，用英文逗号分隔，如 <code>group,private</code>）、<code>card_status</code>（持卡状态：<code>active</code> 有有效卡 / <code>expired</code> 卡已过期 / <code>pending</code> 开卡日期待定 / <code>none</code> 未开卡）、<code>active_only</code>（默认 <code>false</code>）、<code>sort</code>（排序：<code>card</code> 默认按会员卡种类自动排序 / <code>name</code> 按姓名 / <code>joined</code> 按入会时间倒序）、<code>page</code>（页码，从 1 开始；<strong>不传则整份返回</strong>，保持旧行为）、<code>page_size</code>（每页条数，默认 50，最大 200）。</li><li><strong>响应</strong>：<code>{ items: Member[]（含 cards）, total, page, page_size, pages, card_stats }</code>，<code>card_stats</code> 为按卡种统计的人数数组（<code>product_id</code>、<code>name</code>、<code>name_en</code>、<code>category</code>、<code>count</code>），用于列表底部展示每种会员卡的数量；统计始终基于筛选后的全部会员，不受分页影响。</li><li>传 <code>page</code> 时只序列化当前页的会员（会员上千时页面秒开），<code>total</code> 为筛选后的总人数，<code>pages</code> 为总页数；页码超出范围会自动回落到最后一页。</li><li><code>category</code> 多选时按业务卡种归类：<code>group</code> 团课、<code>private</code> 私教与评估、<code>annual</code> 年卡与组合套餐；历史 <code>package</code> 产品归入 <code>annual</code>。</li><li><code>sort=card</code> 的顺序为：年卡 / 组合套餐 → 团课月卡 → 团课十次卡 → 团课六次卡 → 团课周卡 → 私教 10/20/30 次卡；无有效卡的客户排在最后。</li></ul>
+<ul><li><strong>权限</strong>：只读。</li><li><strong>Query</strong>：<code>q</code>（姓名/英文名/手机号模糊搜索）、<code>category</code>（卡类别，可多选，用英文逗号分隔，如 <code>group,private</code>）、<code>card_status</code>（持卡状态，可多选，用英文逗号分隔，如 <code>active,none</code>；取值：<code>active</code> 有效卡 / <code>pending</code> 未激活 / <code>expired</code> 已过期 / <code>used_up</code> 已用完 / <code>none</code> 无会员卡）、<code>active_only</code>（默认 <code>false</code>）、<code>sort</code>（排序：<code>card</code> 默认按会员卡种类自动排序 / <code>name</code> 按姓名 / <code>joined</code> 按入会时间倒序）、<code>page</code>（页码，从 1 开始；<strong>不传则整份返回</strong>，保持旧行为）、<code>page_size</code>（每页条数，默认 50，最大 200）。</li><li><strong>响应</strong>：<code>{ items: Member[]（含 cards）, total, page, page_size, pages, card_stats }</code>，<code>card_stats</code> 为按卡种统计的人数数组（<code>product_id</code>、<code>name</code>、<code>name_en</code>、<code>category</code>、<code>count</code>），用于列表底部展示每种会员卡的数量；统计始终基于筛选后的全部会员，不受分页影响。</li><li>传 <code>page</code> 时只序列化当前页的会员（会员上千时页面秒开），<code>total</code> 为筛选后的总人数，<code>pages</code> 为总页数；页码超出范围会自动回落到最后一页。</li><li><code>card_status</code> 多选之间是<strong>或</strong>的关系：传 <code>active,none</code> 表示“持有有效卡<strong>或</strong>完全没有卡”的会员；同一会员命中任意一项即被选中。</li><li><code>category</code> 多选时按业务卡种归类：<code>group</code> 团课、<code>private</code> 私教与评估、<code>annual</code> 年卡与组合套餐；历史 <code>package</code> 产品归入 <code>annual</code>。</li><li><code>sort=card</code> 的顺序为：年卡 / 组合套餐 → 团课月卡 → 团课十次卡 → 团课六次卡 → 团课周卡 → 私教 10/20/30 次卡；无有效卡的客户排在最后。</li></ul>
 </section>
 <section class="endpoint" data-search="get /api/admin/members/options">
 <h4 id="get-api-admin-members-options"><span class="method method-get">GET</span><a href="#get-api-admin-members-options" class="route">/api/admin/members/options</a></h4>
@@ -612,7 +613,7 @@
 <h4 id="get-api-admin-documents-document-id-view"><span class="method method-get">GET</span><a href="#get-api-admin-documents-document-id-view" class="route">/api/admin/documents/{document_id}/view</a></h4>
 <ul><li><strong>权限</strong>：只读；<strong>响应</strong>：原始文件流，<code>Content-Disposition: inline</code>。</li><li>用于浏览器直接预览 PDF 和图片；Office、CSV 等格式是否可直接显示由浏览器决定。鉴权方式与下载接口相同。</li></ul>
 </section>
-<h2 id="8-排课-预约-教室与目录-31">8. 排课、预约、教室与目录（31）<a class="anchor" href="#8-排课-预约-教室与目录-31" aria-label="链接到此节">#</a></h2>
+<h2 id="8-排课-预约-教室与目录-33">8. 排课、预约、教室与目录（33）<a class="anchor" href="#8-排课-预约-教室与目录-33" aria-label="链接到此节">#</a></h2>
 <h3 id="8-1-查询后台排课">8.1 查询后台排课<a class="anchor" href="#8-1-查询后台排课" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/sessions">
 <h4 id="get-api-admin-sessions"><span class="method method-get">GET</span><a href="#get-api-admin-sessions" class="route">/api/admin/sessions</a></h4>
@@ -638,12 +639,22 @@
 <h4 id="post-api-admin-sessions-copy-week"><span class="method method-post">POST</span><a href="#post-api-admin-sessions-copy-week" class="route">/api/admin/sessions/copy-week</a></h4>
 <ul><li><strong>权限</strong>：前台；<strong>Body</strong>：<code>week_start</code>（目标周任意一天，复制源固定为该日期前 7 天起的 7 天）。</li><li><strong>响应</strong>：<code>{ ok, created, skipped }</code>，<code>skipped</code> 为逐项中文原因。</li><li>逐节复制到对应下周日期；重复、冲突或无效项跳过，不覆盖已有课程。</li></ul>
 </section>
-<h3 id="8-6-后台添加预约">8.6 后台添加预约<a class="anchor" href="#8-6-后台添加预约" aria-label="链接到此节">#</a></h3>
+<h3 id="8-6-批量处理排课">8.6 批量处理排课<a class="anchor" href="#8-6-批量处理排课" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="post /api/admin/sessions/batch">
+<h4 id="post-api-admin-sessions-batch"><span class="method method-post">POST</span><a href="#post-api-admin-sessions-batch" class="route">/api/admin/sessions/batch</a></h4>
+<ul><li><strong>权限</strong>：前台（<code>bookings.write</code>）。</li><li><strong>Body</strong>：<code>session_ids</code>（integer[]，必填）、<code>action</code>（<code>cancel</code> 取消课程 / <code>recycle</code> 移入回收站，默认 <code>cancel</code>）。</li><li><strong>响应</strong>：<code>{ ok, cancelled, recycled, skipped }</code>，<code>skipped</code> 为逐条中文原因。</li><li><code>action=cancel</code> 与逐节 <code>DELETE /api/admin/sessions/{id}</code> 语义一致：取消课程、取消 <code>booked</code> 与 <code>checked_in</code> 预约、返还权益并发送取消通知。</li><li><code>action=recycle</code> 只处理没有任何预约的排课；已有预约的排课会被跳过并提示改为取消课程。</li></ul>
+</section>
+<h3 id="8-7-按日期复制课表">8.7 按日期复制课表<a class="anchor" href="#8-7-按日期复制课表" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="post /api/admin/sessions/copy-dates">
+<h4 id="post-api-admin-sessions-copy-dates"><span class="method method-post">POST</span><a href="#post-api-admin-sessions-copy-dates" class="route">/api/admin/sessions/copy-dates</a></h4>
+<ul><li><strong>权限</strong>：前台（<code>bookings.write</code>）。</li><li><strong>Body</strong>：<code>source_date</code> + <code>target_date</code>（单组），或 <code>source_dates</code> + <code>target_dates</code>（多组一一对应）；<code>course_type</code> 可选，逗号分隔的课程类型。</li><li><strong>响应</strong>：<code>{ ok, created, skipped }</code>，<code>skipped</code> 为逐项中文原因。</li><li>复制来源日期当天所有 <code>scheduled</code> 排课到目标日期，保留课程、教练、教室、时段与容量；目标日期已存在同课程同时间的排课时跳过，教练或教室时间冲突同样跳过并说明原因。</li></ul>
+</section>
+<h3 id="8-8-后台添加预约">8.8 后台添加预约<a class="anchor" href="#8-8-后台添加预约" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/sessions/{session_id}/bookings">
 <h4 id="post-api-admin-sessions-session-id-bookings"><span class="method method-post">POST</span><a href="#post-api-admin-sessions-session-id-bookings" class="route">/api/admin/sessions/{session_id}/bookings</a></h4>
 <ul><li><strong>权限</strong>：前台；<strong>Body</strong>：<code>member_id</code> 必填，<code>notes</code> 可选。</li><li><strong>响应</strong>：Booking。</li><li>与会员预约共用容量、重复和状态校验，但不应用自助截止、爽约限制和“预约前必须有卡”的限制；签到时仍会校验卡。</li></ul>
 </section>
-<h3 id="8-7-预约状态操作">8.7 预约状态操作<a class="anchor" href="#8-7-预约状态操作" aria-label="链接到此节">#</a></h3>
+<h3 id="8-9-预约状态操作">8.9 预约状态操作<a class="anchor" href="#8-9-预约状态操作" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/bookings/{booking_id}/{action}">
 <h4 id="post-api-admin-bookings-booking-id-action"><span class="method method-post">POST</span><a href="#post-api-admin-bookings-booking-id-action" class="route">/api/admin/bookings/{booking_id}/{action}</a></h4>
 <ul><li><strong>权限</strong>：前台；<strong>Body</strong>：无；路径 <code>action</code> 见下表。</li><li><strong>响应</strong>：更新后的 Booking；<code>check_in</code> 额外返回 <code>member_reminders: string[]</code>，包含已到期会员提醒及生日前 7 天提示。</li></ul>
@@ -660,57 +671,57 @@
 <p>卡选择按到期日、ID 升序，需活动、已生效、未过期、未冻结且权益适用；优先使用有效卡，无可用卡时才选择有效体验券。扣次与返还均使用版本号做并发校验。</p>
 <p>权益适用范围按“课程类别”判定，而不是单一课程类型：健康评估类课程（课程名或产品名包含「健康评估」「体测」或 <code>assessment</code>）可核销对应产品，名称为健康评估的产品即使归在团课类别也能用于评估课；课程名带健康评估的团课会优先匹配评估类产品。卡未设置有效期时不再按过期处理。找不到可用权益时返回 <code>400</code>，并列出会员现有卡及不适用的原因。</p>
 </section>
-<h3 id="8-8-教室某日总览">8.8 教室某日总览<a class="anchor" href="#8-8-教室某日总览" aria-label="链接到此节">#</a></h3>
+<h3 id="8-10-教室某日总览">8.10 教室某日总览<a class="anchor" href="#8-10-教室某日总览" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/rooms/overview">
 <h4 id="get-api-admin-rooms-overview"><span class="method method-get">GET</span><a href="#get-api-admin-rooms-overview" class="route">/api/admin/rooms/overview</a></h4>
 <ul><li><strong>权限</strong>：只读（<code>catalog.view</code>）；<strong>Query</strong>：<code>date</code>（默认今日）、<code>floor</code>（可选，按楼层精确筛选）。</li><li><strong>响应</strong>：<code>{ date, rooms }</code>；每个 Room 增加 <code>sessions</code> 和 <code>reservations</code>，教室按 <code>floor</code>、<code>sort_order</code>、<code>id</code> 排列。</li><li><code>reservations[]</code> 含 <code>id</code>、<code>room_id</code>、<code>title</code>、<code>reservation_date</code>、<code>start_time</code>、<code>end_time</code>、<code>usage_type</code>、<code>notes</code>；只包含启用教室、正常排课和有效占用。</li></ul>
 </section>
-<h3 id="8-9-创建教室占用">8.9 创建教室占用<a class="anchor" href="#8-9-创建教室占用" aria-label="链接到此节">#</a></h3>
+<h3 id="8-11-创建教室占用">8.11 创建教室占用<a class="anchor" href="#8-11-创建教室占用" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/room-reservations">
 <h4 id="post-api-admin-room-reservations"><span class="method method-post">POST</span><a href="#post-api-admin-room-reservations" class="route">/api/admin/room-reservations</a></h4>
 <ul><li><strong>权限</strong>：前台。</li><li><strong>Body</strong>：<code>room_id</code>、<code>reservation_date</code>、<code>start_time</code>、<code>end_time</code>、<code>title</code> 必填；<code>repeat_weeks</code>（1–52，默认 1）、<code>usage_type</code>（默认 <code>internal</code>）、<code>notes</code> 可选。</li><li><strong>响应</strong>：<code>{ ok, created, skipped }</code>。</li><li>按周重复时逐日检查课程和其他占用，冲突项跳过；用途标题不能为空。</li></ul>
 </section>
-<h3 id="8-10-取消教室占用">8.10 取消教室占用<a class="anchor" href="#8-10-取消教室占用" aria-label="链接到此节">#</a></h3>
+<h3 id="8-12-取消教室占用">8.12 取消教室占用<a class="anchor" href="#8-12-取消教室占用" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="delete /api/admin/room-reservations/{reservation_id}">
 <h4 id="delete-api-admin-room-reservations-reservation-id"><span class="method method-delete">DELETE</span><a href="#delete-api-admin-room-reservations-reservation-id" class="route">/api/admin/room-reservations/{reservation_id}</a></h4>
 <ul><li><strong>权限</strong>：前台；<strong>Body</strong>：无。</li><li><strong>响应</strong>：<code>{ ok: true }</code>。软取消，不删除记录。</li></ul>
 </section>
-<h3 id="8-11-课程库列表">8.11 课程库列表<a class="anchor" href="#8-11-课程库列表" aria-label="链接到此节">#</a></h3>
+<h3 id="8-13-课程库列表">8.13 课程库列表<a class="anchor" href="#8-13-课程库列表" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/courses">
 <h4 id="get-api-admin-courses"><span class="method method-get">GET</span><a href="#get-api-admin-courses" class="route">/api/admin/courses</a></h4>
 <ul><li><strong>权限</strong>：只读（<code>catalog.view</code>）；<strong>Query</strong>：<code>course_type</code>（课程类别，可逗号分隔多值）、<code>q</code>（按中英文名称模糊搜索）、<code>active_only</code>（默认 <code>false</code>，只返回启用课程）。</li><li><strong>响应</strong>：<code>{ items: Course[], total }</code>，按课程类别和 ID 排序，不含已删除课程；后台“课程库”页面据此渲染卡片与表格两种视图。</li></ul>
 </section>
-<h3 id="8-12-新建课程">8.12 新建课程<a class="anchor" href="#8-12-新建课程" aria-label="链接到此节">#</a></h3>
+<h3 id="8-14-新建课程">8.14 新建课程<a class="anchor" href="#8-14-新建课程" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/courses">
 <h4 id="post-api-admin-courses"><span class="method method-post">POST</span><a href="#post-api-admin-courses" class="route">/api/admin/courses</a></h4>
 <ul><li><strong>权限</strong>：管理员。</li><li><strong>Body</strong>：Course 字段中的 <code>course_type</code>、<code>name</code>、<code>name_en</code>、<code>description</code>、<code>description_en</code>、<code>duration_minutes</code>、<code>price</code>、<code>color</code>、<code>image_url</code>、<code>active</code>；未在代码中额外强制必填，但业务上应提供类型和名称。</li><li><strong>响应</strong>：Course。</li></ul>
 </section>
-<h3 id="8-13-修改课程">8.13 修改课程<a class="anchor" href="#8-13-修改课程" aria-label="链接到此节">#</a></h3>
+<h3 id="8-15-修改课程">8.15 修改课程<a class="anchor" href="#8-15-修改课程" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="patch /api/admin/courses/{course_id}">
 <h4 id="patch-api-admin-courses-course-id"><span class="method method-patch">PATCH</span><a href="#patch-api-admin-courses-course-id" class="route">/api/admin/courses/{course_id}</a></h4>
 <ul><li><strong>权限</strong>：管理员；<strong>Body</strong>：与新建相同，部分更新。</li><li><strong>响应</strong>：Course；不存在返回 <code>404</code>。</li></ul>
 </section>
-<h3 id="8-14-新建教室">8.14 新建教室<a class="anchor" href="#8-14-新建教室" aria-label="链接到此节">#</a></h3>
+<h3 id="8-16-新建教室">8.16 新建教室<a class="anchor" href="#8-16-新建教室" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/rooms">
 <h4 id="post-api-admin-rooms"><span class="method method-post">POST</span><a href="#post-api-admin-rooms" class="route">/api/admin/rooms</a></h4>
 <ul><li><strong>权限</strong>：管理员；<strong>Body</strong>：<code>name</code>、<code>name_en</code>、<code>capacity</code>、<code>floor</code>、<code>sort_order</code>、<code>color</code>、<code>active</code>。</li><li><strong>响应</strong>：Room。<code>sort_order</code> 省略时按当前教室数量生成。</li></ul>
 </section>
-<h3 id="8-15-修改教室">8.15 修改教室<a class="anchor" href="#8-15-修改教室" aria-label="链接到此节">#</a></h3>
+<h3 id="8-17-修改教室">8.17 修改教室<a class="anchor" href="#8-17-修改教室" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="patch /api/admin/rooms/{room_id}">
 <h4 id="patch-api-admin-rooms-room-id"><span class="method method-patch">PATCH</span><a href="#patch-api-admin-rooms-room-id" class="route">/api/admin/rooms/{room_id}</a></h4>
 <ul><li><strong>权限</strong>：管理员；<strong>Body</strong>：与新建相同，部分更新；<strong>响应</strong>：Room。</li></ul>
 </section>
-<h3 id="8-16-新建教练">8.16 新建教练<a class="anchor" href="#8-16-新建教练" aria-label="链接到此节">#</a></h3>
+<h3 id="8-18-新建教练">8.18 新建教练<a class="anchor" href="#8-18-新建教练" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/teachers">
 <h4 id="post-api-admin-teachers"><span class="method method-post">POST</span><a href="#post-api-admin-teachers" class="route">/api/admin/teachers</a></h4>
 <ul><li><strong>权限</strong>：管理员；<strong>Body</strong>：<code>user_id</code>、<code>name</code>、<code>name_en</code>、<code>phone</code>、<code>gender</code>、<code>specialties</code>、<code>specialties_en</code>、<code>bio</code>、<code>bio_en</code>、<code>image_url</code>、<code>visible</code>、<code>active</code>、<code>sort_order</code>。</li><li><code>user_id</code> 可为空表示不关联；传入时必须是存在、已启用且角色为 <code>teacher</code> 的员工账号，且未被其他教练占用，否则返回 <code>400</code> / <code>409</code>。</li><li><code>sort_order</code> 为排序编号，数字小的排在前面（主打教练可设为 <code>0</code>）；省略时按当前教练数量生成。</li><li><strong>响应</strong>：Teacher。</li></ul>
 </section>
-<h3 id="8-17-修改教练">8.17 修改教练<a class="anchor" href="#8-17-修改教练" aria-label="链接到此节">#</a></h3>
+<h3 id="8-19-修改教练">8.19 修改教练<a class="anchor" href="#8-19-修改教练" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="patch /api/admin/teachers/{teacher_id}">
 <h4 id="patch-api-admin-teachers-teacher-id"><span class="method method-patch">PATCH</span><a href="#patch-api-admin-teachers-teacher-id" class="route">/api/admin/teachers/{teacher_id}</a></h4>
 <ul><li><strong>权限</strong>：管理员；<strong>Body</strong>：与新建相同，部分更新；<strong>响应</strong>：Teacher。</li><li>传入与当前一致的 <code>user_id</code> 不会重复校验，便于在不改变关联关系时修改其他资料。</li></ul>
 </section>
-<h3 id="8-18-一步完成私教排课与预约">8.18 一步完成私教排课与预约<a class="anchor" href="#8-18-一步完成私教排课与预约" aria-label="链接到此节">#</a></h3>
+<h3 id="8-20-一步完成私教排课与预约">8.20 一步完成私教排课与预约<a class="anchor" href="#8-20-一步完成私教排课与预约" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/private-bookings">
 <h4 id="post-api-admin-private-bookings"><span class="method method-post">POST</span><a href="#post-api-admin-private-bookings" class="route">/api/admin/private-bookings</a></h4>
 <ul><li><strong>权限</strong>：前台。一次事务中创建一节容量为 1 的私教/评估课程和会员预约，避免先排课再选会员的两步操作。</li></ul>
@@ -726,39 +737,39 @@
   &quot;notes&quot;: &quot;初次私教&quot;
 }</code></pre></div>
 <p>课程必须是 <code>private</code> 或 <code>assessment</code>，教练、教室冲突返回 <code>409</code>，课程已开始返回 <code>400</code>。成功响应包含 <code>session</code> 和 <code>booking</code>，任一失败则整体不保存。发送预约通知的规则与普通后台预约一致，保存后仍是 <code>booked</code>，签到时才扣次。</p>
-<h3 id="8-19-空排课移入回收站">8.19 空排课移入回收站<a class="anchor" href="#8-19-空排课移入回收站" aria-label="链接到此节">#</a></h3>
+<h3 id="8-21-空排课移入回收站">8.21 空排课移入回收站<a class="anchor" href="#8-21-空排课移入回收站" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="delete /api/admin/sessions/{session_id}/permanent">
 <h4 id="delete-api-admin-sessions-session-id-permanent"><span class="method method-delete">DELETE</span><a href="#delete-api-admin-sessions-session-id-permanent" class="route">/api/admin/sessions/{session_id}/permanent</a></h4>
 <ul><li><strong>权限</strong>：前台；<strong>Body</strong>：无；<strong>响应</strong>：<code>{ ok, item, message }</code>。</li><li>路径名为历史兼容保留，实际执行软删除而非物理删除。仅从未产生任何预约的排课可通过此入口删除；已有预约（包括已取消预约）返回 <code>400</code>，应使用取消课程保留历史。恢复与到期彻底删除见第 16 章。</li></ul>
 </section>
-<h3 id="8-20-编辑教室占用">8.20 编辑教室占用<a class="anchor" href="#8-20-编辑教室占用" aria-label="链接到此节">#</a></h3>
+<h3 id="8-22-编辑教室占用">8.22 编辑教室占用<a class="anchor" href="#8-22-编辑教室占用" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="patch /api/admin/room-reservations/{reservation_id}">
 <h4 id="patch-api-admin-room-reservations-reservation-id"><span class="method method-patch">PATCH</span><a href="#patch-api-admin-room-reservations-reservation-id" class="route">/api/admin/room-reservations/{reservation_id}</a></h4>
 <ul><li><strong>权限</strong>：前台；<strong>Body</strong>：<code>room_id</code>、<code>title</code>、<code>reservation_date</code>、<code>start_time</code>、<code>end_time</code>、<code>usage_type</code>、<code>notes</code> 的任意子集。</li><li><strong>响应</strong>：<code>{ ok: true }</code>。省略字段沿用原值，保存前排除自身并检查课程及其他占用冲突；取消占用仍使用 DELETE 接口。</li></ul>
 </section>
-<h3 id="8-21-教室自定义排序">8.21 教室自定义排序<a class="anchor" href="#8-21-教室自定义排序" aria-label="链接到此节">#</a></h3>
+<h3 id="8-23-教室自定义排序">8.23 教室自定义排序<a class="anchor" href="#8-23-教室自定义排序" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/rooms/reorder">
 <h4 id="post-api-admin-rooms-reorder"><span class="method method-post">POST</span><a href="#post-api-admin-rooms-reorder" class="route">/api/admin/rooms/reorder</a></h4>
 <ul><li><strong>权限</strong>：管理员。接收完整 <code>room_ids</code> 数组，按数组顺序写入 <code>sort_order</code>。</li></ul>
 </section>
 <div class="code-block"><button class="copy-code" type="button">复制</button><pre><code class="language-json">{ &quot;room_ids&quot;: [5, 1, 2, 3, 4] }</code></pre></div>
 <p>ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、自定义顺序和 ID 排列；此接口不修改 <code>floor</code>。</p>
-<h3 id="8-22-上传教练照片">8.22 上传教练照片<a class="anchor" href="#8-22-上传教练照片" aria-label="链接到此节">#</a></h3>
+<h3 id="8-24-上传教练照片">8.24 上传教练照片<a class="anchor" href="#8-24-上传教练照片" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/teachers/{teacher_id}/photo">
 <h4 id="post-api-admin-teachers-teacher-id-photo"><span class="method method-post">POST</span><a href="#post-api-admin-teachers-teacher-id-photo" class="route">/api/admin/teachers/{teacher_id}/photo</a></h4>
 <ul><li><strong>权限</strong>：管理员；<code>multipart/form-data</code> 上传字段名为 <code>file</code>，支持 PNG、JPG、WebP，最大 4 MiB。</li><li><strong>响应</strong>：更新后的 Teacher。服务端校验真实文件头，<code>image_url</code> 为 <code>/uploads/teachers/...</code> 路径；上传文件需与数据库一起备份。</li></ul>
 </section>
-<h3 id="8-23-查询各教室指定时段占用">8.23 查询各教室指定时段占用<a class="anchor" href="#8-23-查询各教室指定时段占用" aria-label="链接到此节">#</a></h3>
+<h3 id="8-25-查询各教室指定时段占用">8.25 查询各教室指定时段占用<a class="anchor" href="#8-25-查询各教室指定时段占用" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/rooms/availability">
 <h4 id="get-api-admin-rooms-availability"><span class="method method-get">GET</span><a href="#get-api-admin-rooms-availability" class="route">/api/admin/rooms/availability</a></h4>
 <ul><li><strong>权限</strong>：只读（<code>catalog.view</code>）；<strong>Query</strong>：<code>date</code>、<code>start_time</code>、<code>end_time</code> 必填，<code>exclude_session_id</code> 可选（编辑排课时排除自身）。</li><li><strong>响应</strong>：<code>{ date, start_time, end_time, rooms }</code>，按楼层和排序返回启用教室；每项在 Room 基础上增加 <code>available</code> 和 <code>conflicts</code>。</li><li><code>conflicts[]</code> 同时包含重叠课程和内部占用：<code>kind=class|reservation</code>、<code>title</code>、<code>title_en</code>、<code>teacher_name</code>、<code>teacher_name_en</code>、<code>start_time</code>、<code>end_time</code>。</li><li>结束时间必须晚于开始时间。此接口用于在排课编辑器中即时禁用并标注冲突教室；新建和修改排课仍会执行服务端最终冲突校验。</li></ul>
 </section>
-<h3 id="8-24-获取课程动态签到码">8.24 获取课程动态签到码<a class="anchor" href="#8-24-获取课程动态签到码" aria-label="链接到此节">#</a></h3>
+<h3 id="8-26-获取课程动态签到码">8.26 获取课程动态签到码<a class="anchor" href="#8-26-获取课程动态签到码" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/sessions/{session_id}/check-in-code">
 <h4 id="get-api-admin-sessions-session-id-check-in-code"><span class="method method-get">GET</span><a href="#get-api-admin-sessions-session-id-check-in-code" class="route">/api/admin/sessions/{session_id}/check-in-code</a></h4>
 <ul><li><strong>权限</strong>：前台（<code>admin</code>、<code>frontdesk</code>）；API Key 需要 <code>read</code>。</li><li><strong>响应</strong>：<code>{ token, expires_at, expires_in, refresh_after, session }</code>；<code>token</code> 以 <code>YYS1.</code> 开头，前端据此生成供会员扫描的课程二维码。</li><li>仅在开课前 30 分钟至课程结束提供签到码；未开放或已结束返回 <code>400</code>，取消或删除课程不可生成。</li><li>二维码有效期 60 秒，建议每 30 秒刷新。课程码不能代替会员登录，会员扫描后仍需通过本人 Bearer Token 调用自助签到接口。</li></ul>
 </section>
-<h3 id="8-25-前台扫描会员动态码签到">8.25 前台扫描会员动态码签到<a class="anchor" href="#8-25-前台扫描会员动态码签到" aria-label="链接到此节">#</a></h3>
+<h3 id="8-27-前台扫描会员动态码签到">8.27 前台扫描会员动态码签到<a class="anchor" href="#8-27-前台扫描会员动态码签到" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/check-in/scan">
 <h4 id="post-api-admin-check-in-scan"><span class="method method-post">POST</span><a href="#post-api-admin-check-in-scan" class="route">/api/admin/check-in/scan</a></h4>
 <ul><li><strong>权限</strong>：前台（<code>admin</code>、<code>frontdesk</code>）；API Key 需要 <code>bookings:write</code>。</li><li><strong>Body</strong>：<code>{ token, session_id? }</code>；<code>token</code> 为会员 <code>YYM1....</code> 动态码。存在多个可签到预约时，使用 <code>session_id</code> 完成指定课程签到。</li><li><strong>响应</strong>：签到后的 Booking，增加 <code>already_checked_in</code>、<code>check_in_method=member_code</code>、<code>member_reminders</code>。</li><li>系统只在当天的签到时段内自动匹配。仅一个待签到预约时直接消课；多个待签到预约时先返回以下选择响应且<strong>不扣次</strong>：</li></ul>
@@ -769,32 +780,32 @@
   &quot;choices&quot;: [{ &quot;id&quot;: 101, &quot;session_id&quot;: 39, &quot;session&quot;: { &quot;id&quot;: 39, &quot;start_time&quot;: &quot;18:30&quot; } }]
 }</code></pre></div>
 <ul><li>重复扫描已消课预约返回 <code>already_checked_in=true</code>，不会重复扣次。无效、篡改或过期签到码返回 <code>400</code>；无匹配预约时转预约名单人工核对。</li></ul>
-<h3 id="8-26-私教-评估消课营收入账">8.26 私教/评估消课营收入账<a class="anchor" href="#8-26-私教-评估消课营收入账" aria-label="链接到此节">#</a></h3>
+<h3 id="8-28-私教-评估消课营收入账">8.28 私教/评估消课营收入账<a class="anchor" href="#8-28-私教-评估消课营收入账" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/bookings/{booking_id}/revenue">
 <h4 id="post-api-admin-bookings-booking-id-revenue"><span class="method method-post">POST</span><a href="#post-api-admin-bookings-booking-id-revenue" class="route">/api/admin/bookings/{booking_id}/revenue</a></h4>
 <ul><li><strong>权限</strong>：前台或财务；<strong>Body</strong>：<code>amount</code>（大于 0，必填）、<code>payment_method</code>（默认 <code>fitness_member</code>）、<code>note</code> 可选。</li><li><strong>响应</strong>：<code>kind=consumption</code>、<code>cash_basis=false</code>、<code>revenue_mode=immediate</code> 的 Transaction。</li><li>仅已签到消课的私教/评估预约可用。金额可参考 Booking 的 <code>consumption_amount</code>，也允许按财务口径修改；本接口只入营收，不重复计入现金流水。</li><li>同一预约当前存在未冲销营收时返回 <code>409</code>，不得重复入账。<code>booking_id + revenue_sequence + kind</code> 唯一索引防止并发重复；取消签到后自动冲销，再次签到可开启新的营收周期。</li></ul>
 </section>
-<h3 id="8-27-上传课程图片">8.27 上传课程图片<a class="anchor" href="#8-27-上传课程图片" aria-label="链接到此节">#</a></h3>
+<h3 id="8-29-上传课程图片">8.29 上传课程图片<a class="anchor" href="#8-29-上传课程图片" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/courses/{course_id}/image">
 <h4 id="post-api-admin-courses-course-id-image"><span class="method method-post">POST</span><a href="#post-api-admin-courses-course-id-image" class="route">/api/admin/courses/{course_id}/image</a></h4>
 <ul><li><strong>权限</strong>：管理员；<strong>multipart</strong>：字段 <code>file</code>。</li><li>支持 PNG、JPG、WebP，最大 6 MiB，校验文件签名；<strong>响应</strong>：更新后的 Course，<code>image_url</code> 指向 <code>/uploads/courses/</code>。</li><li>新建课程时先保存课程取得 <code>course_id</code>，再调用本接口；也可在课程表单中仅填写已有图片 URL。</li></ul>
 </section>
-<h3 id="8-28-移除教练照片">8.28 移除教练照片<a class="anchor" href="#8-28-移除教练照片" aria-label="链接到此节">#</a></h3>
+<h3 id="8-30-移除教练照片">8.30 移除教练照片<a class="anchor" href="#8-30-移除教练照片" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="delete /api/admin/teachers/{teacher_id}/photo">
 <h4 id="delete-api-admin-teachers-teacher-id-photo"><span class="method method-delete">DELETE</span><a href="#delete-api-admin-teachers-teacher-id-photo" class="route">/api/admin/teachers/{teacher_id}/photo</a></h4>
 <ul><li><strong>权限</strong>：管理员；<strong>Body</strong>：无。</li><li>清空教练的 <code>image_url</code> 并删除服务器上的旧文件；<strong>响应</strong>：更新后的 Teacher。</li></ul>
 </section>
-<h3 id="8-29-移除课程图片">8.29 移除课程图片<a class="anchor" href="#8-29-移除课程图片" aria-label="链接到此节">#</a></h3>
+<h3 id="8-31-移除课程图片">8.31 移除课程图片<a class="anchor" href="#8-31-移除课程图片" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="delete /api/admin/courses/{course_id}/image">
 <h4 id="delete-api-admin-courses-course-id-image"><span class="method method-delete">DELETE</span><a href="#delete-api-admin-courses-course-id-image" class="route">/api/admin/courses/{course_id}/image</a></h4>
 <ul><li><strong>权限</strong>：管理员；<strong>Body</strong>：无。</li><li>清空课程的 <code>image_url</code> 并删除服务器上的旧文件；<strong>响应</strong>：更新后的 Course。</li></ul>
 </section>
-<h3 id="8-30-导入-outlook-会议室日历">8.30 导入 Outlook 会议室日历<a class="anchor" href="#8-30-导入-outlook-会议室日历" aria-label="链接到此节">#</a></h3>
+<h3 id="8-32-导入-outlook-会议室日历">8.32 导入 Outlook 会议室日历<a class="anchor" href="#8-32-导入-outlook-会议室日历" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/room-reservations/import-ics">
 <h4 id="post-api-admin-room-reservations-import-ics"><span class="method method-post">POST</span><a href="#post-api-admin-room-reservations-import-ics" class="route">/api/admin/room-reservations/import-ics</a></h4>
 <ul><li><strong>权限</strong>：需 <code>bookings.write</code>。</li><li><strong>Body</strong>：<code>ics</code>（string，必填，ICS 文本内容）、<code>room_id</code>（integer，可选；为 0 或缺省时按日程 <code>LOCATION</code> 自动匹配教室）。</li><li><strong>响应</strong>：<code>{ ok, created, skipped, total }</code>，<code>skipped</code> 为跳过原因数组（如「已经导入过」「与课程冲突」「未指定教室」）。</li><li>解析 Outlook 导出的 <code>.ics</code>：支持 <code>DTSTART;TZID=Asia/Shanghai</code>、UTC（<code>Z</code>）、全天事件与 <code>RRULE:FREQ=WEEKLY</code> 每周重复。</li><li>每条日程按 <code>UID</code> 去重，重复导入不会产生重复占用；导入的占用 <code>usage_type</code> 与 <code>source</code> 均为 <code>outlook</code>，在教室总览里以「Outlook 会议」标注。</li><li>与已有课程或占用冲突的日程会跳过，不覆盖已有排课。</li></ul>
 </section>
-<h3 id="8-31-教练自定义排序">8.31 教练自定义排序<a class="anchor" href="#8-31-教练自定义排序" aria-label="链接到此节">#</a></h3>
+<h3 id="8-33-教练自定义排序">8.33 教练自定义排序<a class="anchor" href="#8-33-教练自定义排序" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/teachers/reorder">
 <h4 id="post-api-admin-teachers-reorder"><span class="method method-post">POST</span><a href="#post-api-admin-teachers-reorder" class="route">/api/admin/teachers/reorder</a></h4>
 <ul><li><strong>权限</strong>：管理员（<code>catalog.write</code>）。接收完整 <code>teacher_ids</code> 数组，按数组顺序重写 <code>sort_order</code>。</li></ul>
@@ -884,7 +895,7 @@
 </section>
 <div class="code-block"><button class="copy-code" type="button">复制</button><pre><code class="language-json">{ &quot;product_ids&quot;: [5, 1, 2, 3, 4] }</code></pre></div>
 <p>ID 必须覆盖当前全部产品且不能重复，否则返回 <code>400</code>「请提交完整的产品排序」。列表仍先按类别归拢，同一类别内按 <code>sort_order</code> 升序排列。</p>
-<h2 id="10-场馆-品牌与账号-9">10. 场馆、品牌与账号（9）<a class="anchor" href="#10-场馆-品牌与账号-9" aria-label="链接到此节">#</a></h2>
+<h2 id="10-场馆-品牌与账号-10">10. 场馆、品牌与账号（10）<a class="anchor" href="#10-场馆-品牌与账号-10" aria-label="链接到此节">#</a></h2>
 <h3 id="10-1-读取系统设置">10.1 读取系统设置<a class="anchor" href="#10-1-读取系统设置" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/settings">
 <h4 id="get-api-admin-settings"><span class="method method-get">GET</span><a href="#get-api-admin-settings" class="route">/api/admin/settings</a></h4>
@@ -928,9 +939,13 @@
 <h3 id="10-9-角色权限矩阵">10.9 角色权限矩阵<a class="anchor" href="#10-9-角色权限矩阵" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/role-permissions">
 <h4 id="get-api-admin-role-permissions"><span class="method method-get">GET</span><a href="#get-api-admin-role-permissions" class="route">/api/admin/role-permissions</a></h4>
-<ul><li><strong>权限</strong>：管理员（<code>settings.view</code>）；API Key 需要 <code>settings:write</code>。</li><li><strong>响应</strong>：<code>{ roles: [{ role, label, capabilities: string[] }], matrix: [{ capability, label, hint, roles: string[] }] }</code>，供后台“账号权限”页面展示当前权限矩阵。</li></ul>
+<ul><li><strong>权限</strong>：管理员（<code>settings.view</code>）；API Key 需要 <code>settings:write</code>。</li><li><strong>响应</strong>：<code>{ roles: [{ role, label, capabilities: string[], editable }], matrix: [{ capability, label, hint, roles: string[] }] }</code>，供后台“账号权限”页面展示当前权限矩阵；<code>editable=false</code> 的角色不可勾选（管理员角色固定，防止把自己锁在系统外）。</li></ul>
 </section>
-<h3 id="10-10-品牌静态文件">10.10 品牌静态文件<a class="anchor" href="#10-10-品牌静态文件" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="put /api/admin/role-permissions">
+<h4 id="put-api-admin-role-permissions"><span class="method method-put">PUT</span><a href="#put-api-admin-role-permissions" class="route">/api/admin/role-permissions</a></h4>
+<ul><li><strong>权限</strong>：管理员（<code>settings.write</code>）。</li><li><strong>Body</strong>：<code>permissions</code>（对象，键为角色名，值为该角色启用的能力名数组）。</li><li><strong>响应</strong>：与 <code>GET /api/admin/role-permissions</code> 相同的结构，返回保存后的实际生效矩阵。</li><li>保存后立即生效：后端权限判定、后台菜单、路由守卫与按钮显隐全部按新矩阵执行；重启后依然保留（存于 <code>role_permissions</code> 表）。</li><li><code>admin</code> 角色的内容会被忽略，不会被覆盖；未知能力名返回 <code>400</code>。</li></ul>
+</section>
+<h3 id="10-11-品牌静态文件">10.11 品牌静态文件<a class="anchor" href="#10-11-品牌静态文件" aria-label="链接到此节">#</a></h3>
 <p>上传后的图片通过 <code>GET /uploads/branding/logo.png</code> 或 <code>GET /uploads/branding/favicon.png</code> 访问，属于静态资源而不是 <code>/api</code> 业务接口。实际使用时应采用 AppSettings 返回的带版本 URL。</p>
 <h2 id="11-短信与审计日志-5">11. 短信与审计日志（5）<a class="anchor" href="#11-短信与审计日志-5" aria-label="链接到此节">#</a></h2>
 <h3 id="11-1-读取短信配置">11.1 读取短信配置<a class="anchor" href="#11-1-读取短信配置" aria-label="链接到此节">#</a></h3>
@@ -1218,7 +1233,7 @@ const dashboard = await api(&quot;/api/admin/dashboard&quot;, {
 <h4 id="post-api-admin-notices-notice-id-cancel"><span class="method method-post">POST</span><a href="#post-api-admin-notices-notice-id-cancel" class="route">/api/admin/notices/{notice_id}/cancel</a></h4>
 <ul><li><strong>权限</strong>：需 <code>members.write</code>；<strong>Body</strong>：无。</li><li><strong>响应</strong>：<code>{ ok: true, notice }</code>，<code>status=cancelled</code>，不再发送。</li></ul>
 </section>
-      <footer class="docs-footer"><span>音昱 Wellness · API v1.0.0 · 153 个业务接口</span><span><a href="/help.html">系统操作指南</a> · <a href="/openapi.json">OpenAPI 3</a> · 文档源：<a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md">docs/API.md</a></span></footer>
+      <footer class="docs-footer"><span>音昱 Wellness · API v1.0.0 · 156 个业务接口</span><span><a href="/help.html">系统操作指南</a> · <a href="/openapi.json">OpenAPI 3</a> · 文档源：<a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md">docs/API.md</a></span></footer>
     </main>
   </div>
   <script>

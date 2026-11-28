@@ -64,7 +64,7 @@ Token 类型为 JWT，签名算法 HS256；有效期默认 10080 分钟（7 天�
 | `cards.write` | 延期、冻结、转卡、共享与体验券管理 | ✓ | — | ✓ | — | — |
 | `revenue.write` | 购卡、升额、电子码核销与消课营收确认 | ✓ | ✓ | ✓ | — | — |
 | `catalog.view` | 查看课程、教练与教室目录 | ✓ | ✓ | ✓ | ✓ | ✓ |
-| `catalog.write` | 维护课程、教练与教室资料 | ✓ | — | — | — | — |
+| `catalog.write` | 维护课程、教练与教室资料 | ✓ | — | ✓ | — | — |
 | `products.view` | 查看卡课产品与价格 | ✓ | ✓ | ✓ | — | ✓ |
 | `products.write` | 新建与修改卡课产品 | ✓ | ✓ | — | — | — |
 | `finance.view` | 查看收支流水与对账单 | ✓ | ✓ | — | — | ✓ |
@@ -80,7 +80,8 @@ Token 类型为 JWT，签名算法 HS256；有效期默认 10080 分钟（7 天�
 - 移入回收站按资源类型校验，只能删除自己具备写入能力的资源（见第 16 节）；读取回收站、恢复和彻底删除仅管理员可用。
 - API Key 的实际权限是“密钥 scopes”与“创建人当前角色能力”的交集，两者任一不满足即返回 `403`。
 - 少数入口按“满足其中一项能力”开放：财务入账页面对具备 `finance.view` 的角色返回完整流水，对仅有 `revenue.write` 的前台只提供电子码核销。
-- 完整矩阵可通过 `GET /api/admin/role-permissions` 查询（管理员）。
+- 完整矩阵可通过 `GET /api/admin/role-permissions` 查询（管理员）；后台「系统设置 → 账号权限」里可以直接勾选调整，保存后立即生效（`PUT /api/admin/role-permissions`）。
+- 上表是**出厂默认值**。管理员在后台勾选保存后，实际生效的矩阵以 `GET /api/admin/role-permissions` 返回为准；管理员角色固定不可编辑，避免把所有人挡在系统外。
 
 ### 1.5 API Key 接入鉴权
 
@@ -214,7 +215,8 @@ FastAPI 参数校验错误格式：
 | `purchased_at`、`starts_on`、`expires_on` | date | 购买日、生效日、到期日 |
 | `total_sessions`、`remaining_sessions` | integer / null | 总次数、剩余次数；周期卡可为 `null` |
 | `benefits` | object[] | 分课程类型权益，见下表 |
-| `status` | string | `active` / `cancelled` / `upgraded`；响应可将过期活动卡显示为 `expired` |
+| `status` | string | 卡的库内状态：`active` / `used`（次数已用完）/ `cancelled` / `upgraded` / `frozen` |
+| `display_status` | string | 统一的显示状态：`active` 正常 / `pending` 未激活 / `expired` 已过期 / `used_up` 已用完 / `void` 已销卡 / `upgraded` 已升卡 / `frozen` 已冻结；由卡状态、是否待定开卡、到期日与剩余次数综合判断，全系统（列表、档案、筛选、导出）共用同一口径 |
 | `frozen_from`、`frozen_until` | string | 冻结开始日与截止日，未冻结为空字符串；冻结区间内不消耗权益 |
 | `is_renewal` | boolean | 是否为续卡（重新购卡）开的卡 |
 | `start_pending` | boolean | 开卡日期待定：卡已生效可预约，首次签到当天自动开卡并按产品有效期顺延 |
@@ -553,9 +555,10 @@ curl -X POST "$API/api/auth/login" \
 #### GET /api/admin/members
 
 - **权限**：只读。
-- **Query**：`q`（姓名/英文名/手机号模糊搜索）、`category`（卡类别，可多选，用英文逗号分隔，如 `group,private`）、`card_status`（持卡状态：`active` 有有效卡 / `expired` 卡已过期 / `pending` 开卡日期待定 / `none` 未开卡）、`active_only`（默认 `false`）、`sort`（排序：`card` 默认按会员卡种类自动排序 / `name` 按姓名 / `joined` 按入会时间倒序）、`page`（页码，从 1 开始；**不传则整份返回**，保持旧行为）、`page_size`（每页条数，默认 50，最大 200）。
+- **Query**：`q`（姓名/英文名/手机号模糊搜索）、`category`（卡类别，可多选，用英文逗号分隔，如 `group,private`）、`card_status`（持卡状态，可多选，用英文逗号分隔，如 `active,none`；取值：`active` 有效卡 / `pending` 未激活 / `expired` 已过期 / `used_up` 已用完 / `none` 无会员卡）、`active_only`（默认 `false`）、`sort`（排序：`card` 默认按会员卡种类自动排序 / `name` 按姓名 / `joined` 按入会时间倒序）、`page`（页码，从 1 开始；**不传则整份返回**，保持旧行为）、`page_size`（每页条数，默认 50，最大 200）。
 - **响应**：`{ items: Member[]（含 cards）, total, page, page_size, pages, card_stats }`，`card_stats` 为按卡种统计的人数数组（`product_id`、`name`、`name_en`、`category`、`count`），用于列表底部展示每种会员卡的数量；统计始终基于筛选后的全部会员，不受分页影响。
 - 传 `page` 时只序列化当前页的会员（会员上千时页面秒开），`total` 为筛选后的总人数，`pages` 为总页数；页码超出范围会自动回落到最后一页。
+- `card_status` 多选之间是**或**的关系：传 `active,none` 表示“持有有效卡**或**完全没有卡”的会员；同一会员命中任意一项即被选中。
 - `category` 多选时按业务卡种归类：`group` 团课、`private` 私教与评估、`annual` 年卡与组合套餐；历史 `package` 产品归入 `annual`。
 - `sort=card` 的顺序为：年卡 / 组合套餐 → 团课月卡 → 团课十次卡 → 团课六次卡 → 团课周卡 → 私教 10/20/30 次卡；无有效卡的客户排在最后。
 
@@ -814,7 +817,7 @@ curl -X POST "$API/api/auth/login" \
 - **权限**：只读；**响应**：原始文件流，`Content-Disposition: inline`。
 - 用于浏览器直接预览 PDF 和图片；Office、CSV 等格式是否可直接显示由浏览器决定。鉴权方式与下载接口相同。
 
-## 8. 排课、预约、教室与目录（31）
+## 8. 排课、预约、教室与目录（33）
 
 ### 8.1 查询后台排课
 
@@ -858,7 +861,26 @@ curl -X POST "$API/api/auth/login" \
 - **响应**：`{ ok, created, skipped }`，`skipped` 为逐项中文原因。
 - 逐节复制到对应下周日期；重复、冲突或无效项跳过，不覆盖已有课程。
 
-### 8.6 后台添加预约
+### 8.6 批量处理排课
+
+#### POST /api/admin/sessions/batch
+
+- **权限**：前台（`bookings.write`）。
+- **Body**：`session_ids`（integer[]，必填）、`action`（`cancel` 取消课程 / `recycle` 移入回收站，默认 `cancel`）。
+- **响应**：`{ ok, cancelled, recycled, skipped }`，`skipped` 为逐条中文原因。
+- `action=cancel` 与逐节 `DELETE /api/admin/sessions/{id}` 语义一致：取消课程、取消 `booked` 与 `checked_in` 预约、返还权益并发送取消通知。
+- `action=recycle` 只处理没有任何预约的排课；已有预约的排课会被跳过并提示改为取消课程。
+
+### 8.7 按日期复制课表
+
+#### POST /api/admin/sessions/copy-dates
+
+- **权限**：前台（`bookings.write`）。
+- **Body**：`source_date` + `target_date`（单组），或 `source_dates` + `target_dates`（多组一一对应）；`course_type` 可选，逗号分隔的课程类型。
+- **响应**：`{ ok, created, skipped }`，`skipped` 为逐项中文原因。
+- 复制来源日期当天所有 `scheduled` 排课到目标日期，保留课程、教练、教室、时段与容量；目标日期已存在同课程同时间的排课时跳过，教练或教室时间冲突同样跳过并说明原因。
+
+### 8.8 后台添加预约
 
 #### POST /api/admin/sessions/{session_id}/bookings
 
@@ -866,7 +888,7 @@ curl -X POST "$API/api/auth/login" \
 - **响应**：Booking。
 - 与会员预约共用容量、重复和状态校验，但不应用自助截止、爽约限制和“预约前必须有卡”的限制；签到时仍会校验卡。
 
-### 8.7 预约状态操作
+### 8.9 预约状态操作
 
 #### POST /api/admin/bookings/{booking_id}/{action}
 
@@ -885,7 +907,7 @@ curl -X POST "$API/api/auth/login" \
 
 权益适用范围按“课程类别”判定，而不是单一课程类型：健康评估类课程（课程名或产品名包含「健康评估」「体测」或 `assessment`）可核销对应产品，名称为健康评估的产品即使归在团课类别也能用于评估课；课程名带健康评估的团课会优先匹配评估类产品。卡未设置有效期时不再按过期处理。找不到可用权益时返回 `400`，并列出会员现有卡及不适用的原因。
 
-### 8.8 教室某日总览
+### 8.10 教室某日总览
 
 #### GET /api/admin/rooms/overview
 
@@ -893,7 +915,7 @@ curl -X POST "$API/api/auth/login" \
 - **响应**：`{ date, rooms }`；每个 Room 增加 `sessions` 和 `reservations`，教室按 `floor`、`sort_order`、`id` 排列。
 - `reservations[]` 含 `id`、`room_id`、`title`、`reservation_date`、`start_time`、`end_time`、`usage_type`、`notes`；只包含启用教室、正常排课和有效占用。
 
-### 8.9 创建教室占用
+### 8.11 创建教室占用
 
 #### POST /api/admin/room-reservations
 
@@ -902,21 +924,21 @@ curl -X POST "$API/api/auth/login" \
 - **响应**：`{ ok, created, skipped }`。
 - 按周重复时逐日检查课程和其他占用，冲突项跳过；用途标题不能为空。
 
-### 8.10 取消教室占用
+### 8.12 取消教室占用
 
 #### DELETE /api/admin/room-reservations/{reservation_id}
 
 - **权限**：前台；**Body**：无。
 - **响应**：`{ ok: true }`。软取消，不删除记录。
 
-### 8.11 课程库列表
+### 8.13 课程库列表
 
 #### GET /api/admin/courses
 
 - **权限**：只读（`catalog.view`）；**Query**：`course_type`（课程类别，可逗号分隔多值）、`q`（按中英文名称模糊搜索）、`active_only`（默认 `false`，只返回启用课程）。
 - **响应**：`{ items: Course[], total }`，按课程类别和 ID 排序，不含已删除课程；后台“课程库”页面据此渲染卡片与表格两种视图。
 
-### 8.12 新建课程
+### 8.14 新建课程
 
 #### POST /api/admin/courses
 
@@ -924,27 +946,27 @@ curl -X POST "$API/api/auth/login" \
 - **Body**：Course 字段中的 `course_type`、`name`、`name_en`、`description`、`description_en`、`duration_minutes`、`price`、`color`、`image_url`、`active`；未在代码中额外强制必填，但业务上应提供类型和名称。
 - **响应**：Course。
 
-### 8.13 修改课程
+### 8.15 修改课程
 
 #### PATCH /api/admin/courses/{course_id}
 
 - **权限**：管理员；**Body**：与新建相同，部分更新。
 - **响应**：Course；不存在返回 `404`。
 
-### 8.14 新建教室
+### 8.16 新建教室
 
 #### POST /api/admin/rooms
 
 - **权限**：管理员；**Body**：`name`、`name_en`、`capacity`、`floor`、`sort_order`、`color`、`active`。
 - **响应**：Room。`sort_order` 省略时按当前教室数量生成。
 
-### 8.15 修改教室
+### 8.17 修改教室
 
 #### PATCH /api/admin/rooms/{room_id}
 
 - **权限**：管理员；**Body**：与新建相同，部分更新；**响应**：Room。
 
-### 8.16 新建教练
+### 8.18 新建教练
 
 #### POST /api/admin/teachers
 
@@ -953,14 +975,14 @@ curl -X POST "$API/api/auth/login" \
 - `sort_order` 为排序编号，数字小的排在前面（主打教练可设为 `0`）；省略时按当前教练数量生成。
 - **响应**：Teacher。
 
-### 8.17 修改教练
+### 8.19 修改教练
 
 #### PATCH /api/admin/teachers/{teacher_id}
 
 - **权限**：管理员；**Body**：与新建相同，部分更新；**响应**：Teacher。
 - 传入与当前一致的 `user_id` 不会重复校验，便于在不改变关联关系时修改其他资料。
 
-### 8.18 一步完成私教排课与预约
+### 8.20 一步完成私教排课与预约
 
 #### POST /api/admin/private-bookings
 
@@ -981,21 +1003,21 @@ curl -X POST "$API/api/auth/login" \
 
 课程必须是 `private` 或 `assessment`，教练、教室冲突返回 `409`，课程已开始返回 `400`。成功响应包含 `session` 和 `booking`，任一失败则整体不保存。发送预约通知的规则与普通后台预约一致，保存后仍是 `booked`，签到时才扣次。
 
-### 8.19 空排课移入回收站
+### 8.21 空排课移入回收站
 
 #### DELETE /api/admin/sessions/{session_id}/permanent
 
 - **权限**：前台；**Body**：无；**响应**：`{ ok, item, message }`。
 - 路径名为历史兼容保留，实际执行软删除而非物理删除。仅从未产生任何预约的排课可通过此入口删除；已有预约（包括已取消预约）返回 `400`，应使用取消课程保留历史。恢复与到期彻底删除见第 16 章。
 
-### 8.20 编辑教室占用
+### 8.22 编辑教室占用
 
 #### PATCH /api/admin/room-reservations/{reservation_id}
 
 - **权限**：前台；**Body**：`room_id`、`title`、`reservation_date`、`start_time`、`end_time`、`usage_type`、`notes` 的任意子集。
 - **响应**：`{ ok: true }`。省略字段沿用原值，保存前排除自身并检查课程及其他占用冲突；取消占用仍使用 DELETE 接口。
 
-### 8.21 教室自定义排序
+### 8.23 教室自定义排序
 
 #### POST /api/admin/rooms/reorder
 
@@ -1007,14 +1029,14 @@ curl -X POST "$API/api/auth/login" \
 
 ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、自定义顺序和 ID 排列；此接口不修改 `floor`。
 
-### 8.22 上传教练照片
+### 8.24 上传教练照片
 
 #### POST /api/admin/teachers/{teacher_id}/photo
 
 - **权限**：管理员；`multipart/form-data` 上传字段名为 `file`，支持 PNG、JPG、WebP，最大 4 MiB。
 - **响应**：更新后的 Teacher。服务端校验真实文件头，`image_url` 为 `/uploads/teachers/...` 路径；上传文件需与数据库一起备份。
 
-### 8.23 查询各教室指定时段占用
+### 8.25 查询各教室指定时段占用
 
 #### GET /api/admin/rooms/availability
 
@@ -1023,7 +1045,7 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 - `conflicts[]` 同时包含重叠课程和内部占用：`kind=class|reservation`、`title`、`title_en`、`teacher_name`、`teacher_name_en`、`start_time`、`end_time`。
 - 结束时间必须晚于开始时间。此接口用于在排课编辑器中即时禁用并标注冲突教室；新建和修改排课仍会执行服务端最终冲突校验。
 
-### 8.24 获取课程动态签到码
+### 8.26 获取课程动态签到码
 
 #### GET /api/admin/sessions/{session_id}/check-in-code
 
@@ -1032,7 +1054,7 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 - 仅在开课前 30 分钟至课程结束提供签到码；未开放或已结束返回 `400`，取消或删除课程不可生成。
 - 二维码有效期 60 秒，建议每 30 秒刷新。课程码不能代替会员登录，会员扫描后仍需通过本人 Bearer Token 调用自助签到接口。
 
-### 8.25 前台扫描会员动态码签到
+### 8.27 前台扫描会员动态码签到
 
 #### POST /api/admin/check-in/scan
 
@@ -1051,7 +1073,7 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 
 - 重复扫描已消课预约返回 `already_checked_in=true`，不会重复扣次。无效、篡改或过期签到码返回 `400`；无匹配预约时转预约名单人工核对。
 
-### 8.26 私教/评估消课营收入账
+### 8.28 私教/评估消课营收入账
 
 #### POST /api/admin/bookings/{booking_id}/revenue
 
@@ -1060,7 +1082,7 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 - 仅已签到消课的私教/评估预约可用。金额可参考 Booking 的 `consumption_amount`，也允许按财务口径修改；本接口只入营收，不重复计入现金流水。
 - 同一预约当前存在未冲销营收时返回 `409`，不得重复入账。`booking_id + revenue_sequence + kind` 唯一索引防止并发重复；取消签到后自动冲销，再次签到可开启新的营收周期。
 
-### 8.27 上传课程图片
+### 8.29 上传课程图片
 
 #### POST /api/admin/courses/{course_id}/image
 
@@ -1068,21 +1090,21 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 - 支持 PNG、JPG、WebP，最大 6 MiB，校验文件签名；**响应**：更新后的 Course，`image_url` 指向 `/uploads/courses/`。
 - 新建课程时先保存课程取得 `course_id`，再调用本接口；也可在课程表单中仅填写已有图片 URL。
 
-### 8.28 移除教练照片
+### 8.30 移除教练照片
 
 #### DELETE /api/admin/teachers/{teacher_id}/photo
 
 - **权限**：管理员；**Body**：无。
 - 清空教练的 `image_url` 并删除服务器上的旧文件；**响应**：更新后的 Teacher。
 
-### 8.29 移除课程图片
+### 8.31 移除课程图片
 
 #### DELETE /api/admin/courses/{course_id}/image
 
 - **权限**：管理员；**Body**：无。
 - 清空课程的 `image_url` 并删除服务器上的旧文件；**响应**：更新后的 Course。
 
-### 8.30 导入 Outlook 会议室日历
+### 8.32 导入 Outlook 会议室日历
 
 #### POST /api/admin/room-reservations/import-ics
 
@@ -1093,7 +1115,7 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 - 每条日程按 `UID` 去重，重复导入不会产生重复占用；导入的占用 `usage_type` 与 `source` 均为 `outlook`，在教室总览里以「Outlook 会议」标注。
 - 与已有课程或占用冲突的日程会跳过，不覆盖已有排课。
 
-### 8.31 教练自定义排序
+### 8.33 教练自定义排序
 
 #### POST /api/admin/teachers/reorder
 
@@ -1251,7 +1273,7 @@ ID 必须覆盖当前全部教练且不能重复，否则返回 `400`「请提�
 
 ID 必须覆盖当前全部产品且不能重复，否则返回 `400`「请提交完整的产品排序」。列表仍先按类别归拢，同一类别内按 `sort_order` 升序排列。
 
-## 10. 场馆、品牌与账号（9）
+## 10. 场馆、品牌与账号（10）
 
 ### 10.1 读取系统设置
 
@@ -1325,9 +1347,17 @@ ID 必须覆盖当前全部产品且不能重复，否则返回 `400`「请提�
 #### GET /api/admin/role-permissions
 
 - **权限**：管理员（`settings.view`）；API Key 需要 `settings:write`。
-- **响应**：`{ roles: [{ role, label, capabilities: string[] }], matrix: [{ capability, label, hint, roles: string[] }] }`，供后台“账号权限”页面展示当前权限矩阵。
+- **响应**：`{ roles: [{ role, label, capabilities: string[], editable }], matrix: [{ capability, label, hint, roles: string[] }] }`，供后台“账号权限”页面展示当前权限矩阵；`editable=false` 的角色不可勾选（管理员角色固定，防止把自己锁在系统外）。
 
-### 10.10 品牌静态文件
+#### PUT /api/admin/role-permissions
+
+- **权限**：管理员（`settings.write`）。
+- **Body**：`permissions`（对象，键为角色名，值为该角色启用的能力名数组）。
+- **响应**：与 `GET /api/admin/role-permissions` 相同的结构，返回保存后的实际生效矩阵。
+- 保存后立即生效：后端权限判定、后台菜单、路由守卫与按钮显隐全部按新矩阵执行；重启后依然保留（存于 `role_permissions` 表）。
+- `admin` 角色的内容会被忽略，不会被覆盖；未知能力名返回 `400`。
+
+### 10.11 品牌静态文件
 
 上传后的图片通过 `GET /uploads/branding/logo.png` 或 `GET /uploads/branding/favicon.png` 访问，属于静态资源而不是 `/api` 业务接口。实际使用时应采用 AppSettings 返回的带版本 URL。
 

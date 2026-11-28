@@ -12,9 +12,9 @@ from ..database import get_db
 from ..deps import require_settings_view, require_settings_write
 from ..finance_service import SYSTEM_REVENUE_MODES
 from ..log_util import audit, sms_log
-from ..models import AppSettings, OperationLog, SmsSendLog, SmsSettings, User
+from ..models import AppSettings, OperationLog, RolePermission, SmsSendLog, SmsSettings, User
 from ..phone_service import claim_phone
-from ..permissions import ROLE_LABELS, permission_matrix, role_capabilities
+from ..permissions import CAPABILITIES, ROLE_LABELS, load_overrides, permission_matrix, role_capabilities
 from ..recycle_service import move_to_recycle
 from ..runtime_flags import demo_login_locked
 from ..security import hash_password
@@ -101,7 +101,37 @@ def reset_branding_image(kind: str, db: Session = Depends(get_db), user: User = 
 def role_permissions(_: User = Depends(require_settings_view)):
     """角色 → 能力矩阵，供后台展示当前权限模型（与 permissions.py 同源）。"""
     return {
-        "roles": [{"role": role, "label": label, "capabilities": role_capabilities(role)} for role, label in ROLE_LABELS.items()],
+        "roles": [{"role": role, "label": label, "capabilities": role_capabilities(role), "editable": role != "admin"} for role, label in ROLE_LABELS.items()],
+        "matrix": permission_matrix(),
+    }
+
+
+@router.put("/role-permissions")
+def update_role_permissions(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_settings_write)):
+    """保存可编辑的权限矩阵；管理员角色权限固定，避免把自己锁在系统外。"""
+    permissions = payload.get("permissions")
+    if not isinstance(permissions, dict):
+        raise HTTPException(400, "权限矩阵格式不合法")
+    changes: dict[str, set[str]] = {}
+    for role, capabilities in permissions.items():
+        if role not in ROLE_LABELS or role == "admin":
+            continue
+        if not isinstance(capabilities, list):
+            raise HTTPException(400, f"角色 {ROLE_LABELS.get(role, role)} 的能力列表不合法")
+        wanted = {str(item) for item in capabilities}
+        unknown = wanted - set(CAPABILITIES)
+        if unknown:
+            raise HTTPException(400, f"存在未知的能力：{'、'.join(sorted(unknown))}")
+        changes[role] = wanted
+    db.query(RolePermission).delete(synchronize_session=False)
+    for role, wanted in changes.items():
+        for capability in CAPABILITIES:
+            db.add(RolePermission(role=role, capability=capability, allowed=capability in wanted))
+    audit(db, user, "settings", "update_permissions", "role_permission", detail={role: sorted(items) for role, items in changes.items()})
+    db.commit()
+    load_overrides(db)
+    return {
+        "roles": [{"role": role, "label": label, "capabilities": role_capabilities(role), "editable": role != "admin"} for role, label in ROLE_LABELS.items()],
         "matrix": permission_matrix(),
     }
 

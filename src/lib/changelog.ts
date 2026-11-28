@@ -2,13 +2,47 @@
 export const APP_VERSION = "1.1.0";
 export const APP_RELEASE_DATE = "2026-11-28";
 export const API_VERSION = "v1.0.0";
-export const API_ENDPOINT_COUNT = 153;
+export const API_ENDPOINT_COUNT = 156;
 
 export interface ChangelogText { zh: string; en: string }
 export interface ChangelogGroup { title: ChangelogText; points: ChangelogText[] }
 export interface ChangelogRelease { date: string; version: string; title: ChangelogText; summary: ChangelogText; groups: ChangelogGroup[] }
 
 export const changelogReleases: ChangelogRelease[] = [
+  {
+    date: "2026-11-28",
+    version: APP_VERSION,
+    title: { zh: "会员卡状态统一口径，权限矩阵可勾选，排课支持批量操作", en: "Card statuses unified, permission matrix editable, bulk session handling" },
+    summary: { zh: "按《MODIFY1129》逐条落地：持卡状态筛选改成多选并统一叫法（有效卡 / 未激活 / 已过期 / 已用完 / 无会员卡），名单与档案的卡状态直接用颜色标出；会员档案的卡按团课、私教、体测评估、年卡·组合套餐、工作坊分组，有效卡排最前，可一键只看有效卡或失效卡；会员名单翻页条新增首页、末页与页码输入；卡片外侧多余的红色「删除」取消，作废一张卡请走「销卡」；档案备注放大两号并在框内滚动；「教练管理」等资源维护权限开放给前台；角色权限矩阵从只读改为可勾选；排课新增复选框批量删除与按日期复制课表。另附 Outlook 会议室预定导入的可行性与公司网络加载慢的代码层排查结论。", en: "Every item of MODIFY1129 landed: the card-status filter became multi-select with consistent wording (active card / not activated / expired / used up / no card), and card statuses are colour-coded in both the member list and the profile. Profile cards are grouped by group class, private training, assessment, annual package and workshop with valid cards first, plus one-tap filters for valid or invalid cards. The member list pager gained first / last buttons and a page box; the redundant red delete button on cards is gone — use “void card” instead. Profile notes are two sizes larger and scroll inside the box. Resource maintenance (coaches, rooms, courses) is open to front desk, and the role permission matrix is now tickable instead of read-only. Scheduling gained checkboxes for bulk removal and copy-by-date. A feasibility note on importing Outlook room reservations and a code-level investigation of slow loading on the corporate network are included." },
+    groups: [
+      { title: { zh: "持卡状态筛选与配色", en: "Card-status filter and colours" }, points: [
+        { zh: "「有有效卡」统一写作「有效卡」，同一组选项对齐为无会员卡、未激活、已过期、已用完", en: "“有有效卡” is now just “有效卡”, with the same filter listing no card, not activated, expired and used up" },
+        { zh: "持卡状态改为多选，可同时勾选多项，勾选之间是「或」的关系", en: "The card-status filter is multi-select; ticked options are combined with OR" },
+        { zh: "名单与档案统一上色：正常使用中绿色、未激活黄色、已过期与已用完红色、无会员卡灰色", en: "Both screens share one colour rule: green for active, amber for not activated, red for expired or used up, grey for no card" },
+      ] },
+      { title: { zh: "会员档案的卡", en: "Cards in the member profile" }, points: [
+        { zh: "卡按团课、私教、体测评估（单列）、年卡·组合套餐、工作坊分组，有效卡排最前", en: "Cards are grouped by group class, private training, assessment, annual package and workshop, with valid cards first" },
+        { zh: "新增「全部卡 / 有效卡 / 失效卡」筛选按钮", en: "New all / valid / invalid card filter buttons" },
+        { zh: "卡外侧多余的红色「删除」取消，作废一张卡统一走「销卡」", en: "The redundant red delete button is removed; voiding a card goes through “销卡”" },
+        { zh: "备注字号加大两号并设最高高度，超出后框内滚动", en: "Profile notes are two sizes larger and scroll inside a height-limited box" },
+      ] },
+      { title: { zh: "名单翻页", en: "Member list paging" }, points: [
+        { zh: "翻页条新增「首页」与「末页」按钮，并可直接输入页码跳转", en: "The pager gained first / last buttons and a box for jumping to a page" },
+      ] },
+      { title: { zh: "权限矩阵可勾选", en: "Editable permission matrix" }, points: [
+        { zh: "角色权限表从只读改为可勾选，保存后立即生效；管理员一列固定全选", en: "The role matrix is now tickable and takes effect on save; the admin column stays locked" },
+        { zh: "「教练管理」等资源维护权限开放给前台", en: "Resource maintenance — coaches, rooms and course templates — is open to front desk" },
+      ] },
+      { title: { zh: "排课批量操作", en: "Bulk session handling" }, points: [
+        { zh: "排课列表加复选框，可批量取消课程或移入回收站；已产生预约的不允许进回收站", en: "Sessions can be ticked and cancelled in bulk or sent to the recycle bin; sessions with bookings cannot be recycled" },
+        { zh: "支持按日期复制课表，可单组或多组日期一一对应复制", en: "A day’s timetable can be copied to another date, one pair or several pairs at once" },
+      ] },
+      { title: { zh: "评估与排查", en: "Assessment and investigation" }, points: [
+        { zh: "Outlook 会议室预定可导入：系统已有 .ics 导入功能，2027 年底前的预定可批量导入", en: "Outlook room reservations can be imported: the .ics importer already exists, so reservations up to the end of 2027 can be brought over" },
+        { zh: "公司网络加载慢的主因不在后端（列表查询已改到 SQL 层过滤，单次从约 0.22 秒降到 0.09～0.15 秒），剩余是静态资源的带宽与延迟", en: "The corporate-network slowness is not the backend (list queries now filter in SQL, dropping from ~0.22 s to 0.09–0.15 s); what remains is static-asset bandwidth and latency" },
+      ] },
+    ],
+  },
   {
     date: "2026-11-28",
     version: APP_VERSION,

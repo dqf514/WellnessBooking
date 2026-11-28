@@ -197,6 +197,88 @@ def copy_week(payload: dict = Body(...), db: Session = Depends(get_db), user: Us
     return {"ok": True, "created": created, "skipped": skipped}
 
 
+@router.post("/sessions/batch")
+def batch_sessions(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_bookings_write)):
+    """批量处理排课：action=cancel 取消课程（保留预约与财务历史），action=recycle 移入回收站（仅限无预约的排课）。"""
+    ids = [as_int(value, "排课编号") for value in payload.get("session_ids", [])]
+    if not ids:
+        raise HTTPException(400, "请先选择要处理的排课")
+    action = str(payload.get("action", "cancel")).strip()
+    if action not in {"cancel", "recycle"}:
+        raise HTTPException(400, "批量操作类型不合法")
+    rows = db.query(ClassSession).filter(ClassSession.id.in_(ids), ClassSession.deleted_at.is_(None)).all()
+    if not rows:
+        raise HTTPException(404, "排课不存在")
+    cancelled, recycled, skipped = 0, 0, []
+    affected: list[Booking] = []
+    for row in rows:
+        label = f"{row.session_date} {row.start_time}"
+        if action == "recycle":
+            if db.query(Booking).filter(Booking.session_id == row.id, Booking.deleted_at.is_(None)).count():
+                skipped.append(f"{label}：已有预约记录，请改为取消课程")
+                continue
+            try:
+                move_to_recycle(db, "sessions", row.id, user)
+            except HTTPException as exc:
+                skipped.append(f"{label}：{exc.detail}")
+                continue
+            recycled += 1
+            continue
+        row.status = "cancelled"
+        for booking in row.bookings:
+            if booking.deleted_at is None and booking.status in {"booked", "checked_in"}:
+                transition_booking(db, booking, "cancel", user.username)
+                affected.append(booking)
+        cancelled += 1
+    audit(db, user, "schedule", f"batch_{action}", "class_session", detail={"session_ids": ids, "cancelled": cancelled, "recycled": recycled, "skipped": skipped})
+    db.commit()
+    for booking in affected:
+        notify_booking(db, booking, cancelled=True)
+    return {"ok": True, "cancelled": cancelled, "recycled": recycled, "skipped": skipped}
+
+
+@router.post("/sessions/copy-dates")
+def copy_sessions_by_date(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_bookings_write)):
+    """按日期复制课表：把来源日期的课程复制到目标日期，来源与目标可多组一一对应。"""
+    source_dates = [valid_date(str(item), "来源日期") for item in payload.get("source_dates", [])]
+    target_dates = [valid_date(str(item), "目标日期") for item in payload.get("target_dates", [])]
+    if payload.get("source_date"):
+        source_dates.insert(0, valid_date(str(payload.get("source_date")), "来源日期"))
+    if payload.get("target_date"):
+        target_dates.insert(0, valid_date(str(payload.get("target_date")), "目标日期"))
+    if not source_dates or not target_dates:
+        raise HTTPException(400, "请填写来源日期与目标日期")
+    if len(source_dates) != len(target_dates):
+        raise HTTPException(400, "来源日期与目标日期必须一一对应")
+    wanted_types = [item for item in str(payload.get("course_type", "")).split(",") if item]
+    created, skipped = 0, []
+    for source_date, target_date in zip(source_dates, target_dates):
+        if source_date == target_date:
+            skipped.append(f"{source_date}：来源与目标日期相同")
+            continue
+        rows = db.query(ClassSession).filter(ClassSession.session_date == source_date, ClassSession.status == "scheduled", ClassSession.deleted_at.is_(None)).all()
+        for source_row in rows:
+            if wanted_types and (not source_row.course or source_row.course.course_type not in wanted_types):
+                continue
+            data = {key: getattr(source_row, key) for key in SESSION_FIELDS}
+            data["session_date"] = target_date
+            data["status"] = "scheduled"
+            duplicate = db.query(ClassSession).filter(ClassSession.course_id == data["course_id"], ClassSession.teacher_id == data["teacher_id"], ClassSession.room_id == data["room_id"], ClassSession.session_date == target_date, ClassSession.start_time == data["start_time"], ClassSession.deleted_at.is_(None)).first()
+            if duplicate:
+                skipped.append(f"{target_date} {data['start_time']} 已存在")
+                continue
+            try:
+                _validate_session(db, data)
+            except HTTPException as exc:
+                skipped.append(f"{target_date} {data['start_time']}：{exc.detail}")
+                continue
+            db.add(ClassSession(**data))
+            created += 1
+    audit(db, user, "schedule", "copy_dates", "class_session", detail={"source_dates": source_dates, "target_dates": target_dates, "created": created, "skipped": skipped})
+    db.commit()
+    return {"ok": True, "created": created, "skipped": skipped}
+
+
 @router.post("/sessions/{session_id}/bookings")
 def admin_create_booking(session_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_bookings_write)):
     session = db.get(ClassSession, session_id)

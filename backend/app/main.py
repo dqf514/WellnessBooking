@@ -14,6 +14,7 @@ from .api_key_service import record_api_key_usage
 from .booking_service import reconcile_booking_inventory
 from .config import UPLOAD_DIR
 from .database import Base, SessionLocal, engine, ensure_constraints, ensure_schema
+from .permissions import load_overrides
 from .routers import admin_api_keys, admin_core, admin_documents, admin_exports, admin_finance, admin_import, admin_membership, admin_notices, admin_recycle, admin_reports, admin_schedule, admin_settings, auth, checkin, maintenance, public
 from .scheduler import start_scheduler
 from .seed import run_seed
@@ -27,6 +28,8 @@ async def lifespan(_: FastAPI):
     with SessionLocal() as db:
         reconcile_booking_inventory(db)
     ensure_constraints()
+    with SessionLocal() as db:
+        load_overrides(db)
     stop_event = threading.Event()
     start_scheduler(stop_event)
     yield

@@ -1213,3 +1213,66 @@
 - `public/help.html`：「账号与角色权限 → 新建、停用和重置密码」新增「手机号撞号怎么办」条目，说明在职冲突与回收站自动转移两种情况。
 - `public/changelog-details.html` 追加 BATCH 24（1 张界面截图，图 97）；`docs/CHANGELOG_CLIENT.md`（97 张截图）、`docs/CHANGELOG_DEVELOPER.md`、`src/lib/changelog.ts` 同步。
 - 验证：`npm ci` + `npm run build` 通过（此前无 `@types/qrcode` 时 `tsc -b --force` 稳定复现 TS7016）；`.shot/test_phone_fix.py` 实测：回收站冲突 → 200 且对方 `phone` 置空，在职冲突 → 400「该手机号已被 系统管理员（admin）绑定」，格式错误 → 400「手机号格式不正确」，`PATCH` 走同一套规则；测试产生的临时账号已从本地库清理。
+
+## 三十七、MODIFY1129 需求批次：会员卡状态口径、权限矩阵可编辑与排课批量操作（2026-11-28）
+
+来源：`modify1129.pdf`（最终编辑列表，12 条）。R1–R10 为代码改动，R11、R12 为评估与排查。
+
+### 1. 会员卡状态口径统一（新增 `backend/app/card_state.py`）
+
+- 原来「卡状态」在列表、档案、筛选、导出各处各写一套判断，措辞也不一致（「有有效卡 / 未开卡 / 开卡日期待定」）。新增 `backend/app/card_state.py` 作为**单一事实来源**：
+  - `card_display_status(card)` 返回 7 种显示状态：`active` 正常 / `pending` 未激活 / `expired` 已过期 / `used_up` 已用完 / `void` 已销卡 / `upgraded` 已升卡 / `frozen` 已冻结；勤鸟历史数据的 `status="used"` 归入「已用完」；
+  - `card_status_condition(status)` 返回对应的 SQLAlchemy `ColumnElement`，把筛选**下推到数据库**而不是在 Python 里遍历卡片。
+- `serializers.card_dict()` 新增 `display_status` 字段（`src/types.ts` 的 `MemberCard` 同步），前端 `src/lib/cardCopy.ts` 提供同名判断作为兜底，两端口径一致。
+- 配色口径：正常＝绿、未激活＝黄、已过期与已用完＝红、无会员卡＝灰。
+
+### 2. 会员名单筛选下推到 SQL（性能）
+
+- `GET /api/admin/members` 原先 `query.all()` 读出**全表 ORM 对象**再用 Python 过滤与排序（`member_card_sort_key` 等），会员上千时明显变慢。改为：
+  - 用 `select(Member.id).where(...)` 子查询承载搜索、卡种、持卡状态三类条件，`or_(*clauses)` 实现多选状态的**或**语义；
+  - `total` 用 `func.count().select_from(subquery)` 统计，`_card_stats()` 用 `func.count(func.distinct(MemberCard.member_id))` + `GROUP BY` 统计卡种人数；
+  - `_member_id_order()` 只查 `Member.id` 等轻量字段完成排序，再按 ID 窗口回表取当页数据。
+- `card_status` 参数由单值改为**逗号分隔的多值**（`active,expired`），前端 `MembersPage.tsx` 的筛选项从 `<select>` 换成复选 `Dropdown`，选项文案统一为「有效卡 / 未激活 / 已过期 / 已用完 / 无会员卡」。
+- 实测：单次列表查询由约 0.222 s 降到 0.09～0.15 s（对应 R12 的排查结论）。
+
+### 3. 会员档案的卡分组与筛选（`MemberProfileDrawer.tsx`）
+
+- `cardRows` useMemo：把本人卡与共享卡合并后按 `CARD_CATEGORY_GROUPS`（团课 / 私教 / 体测评估 / 年卡·组合套餐 / 工作坊 / 其他）分组渲染，每组先出标题与张数，组内按 有效 → 未激活 → 其余 排序（有效卡排最前）。
+- 新增「全部卡 / 有效卡 / 失效卡」三个筛选按钮（`cardFilter`），「有效」口径为 `active` 与 `pending`。
+- **移除卡外侧的 `RecycleDeleteButton`**（R7）：作废一张卡统一走卡操作里的「销卡」，避免两个删除入口。
+- 卡状态徽章改用 `cardStatusTone()` / `cardStatusLabel()`，与名单配色一致；`start_pending` 文案由「开卡日期待定」改为「未激活（首次签到自动开卡）」。
+- 备注区：`.profile-note` 字号加大 2 号（14px / 行高 1.7），`.profile-note span` 设 `max-height: 168px` + `overflow-y: auto`，超出内部滚动而不撑开页面（R8）。
+
+### 4. 名单翻页跳页（`MembersPage.tsx`）
+
+- 翻页条新增「首页」「末页」按钮与 `page-jump` 页码输入框（`onBlur` / `Enter` 触发跳转，越界时回填当前页），样式见 `.member-pagination .page-jump`。
+
+### 5. 权限矩阵改为可编辑（新增 `role_permissions` 表）
+
+- `models.py` 新增 `RolePermission(role, capability, allowed)`（`Base.metadata.create_all` 自动建表）；`permissions.py` 增加 `_ROLE_OVERRIDES` 内存缓存、`refresh_overrides()` / `load_overrides()` / `effective_capabilities()`，`has_capability()` 与 `role_capabilities()` 改为读**默认矩阵 + 覆盖**。
+- 覆盖表在 `main.py` 的 lifespan 里启动载入，保存后由 `admin_settings.update_role_permissions` 立即 `load_overrides(db)` 刷新，接口校验、菜单可见性与前端按钮口径一致。
+- 新增 `PUT /api/admin/role-permissions`（`require_settings_write`）：整体覆盖保存，**忽略 `admin` 角色**（避免把管理员锁在系统外），未知能力返回 400「存在未知的能力：…」，保存后写 `audit`。
+- `GET /api/admin/role-permissions` 增加 `matrix` 与 `editable` 字段；前端 `UsersSettings.tsx` 渲染 `.permission-matrix` 勾选表格并调用保存接口。
+- 默认矩阵调整：`frontdesk` 增补 `catalog.write`（R9 开放「教练管理 / 教室管理 / 课程库」的维护权限），`backend/app/permissions.py` 与 `src/lib/permissions.ts` 同步，并更新 `docs/API.md` §1.4。
+
+### 6. 排课批量删除与按日期复制（`admin_schedule.py` / `SchedulePage.tsx`）
+
+- 新增 `POST /api/admin/sessions/batch`（`require_bookings_write`）：`action=cancel` 取消课程（走 `transition_booking` 取消关联预约并触发 `notify_booking`），`action=recycle` 移入回收站（**有预约的课程拒绝回收**，逐条写入 `skipped`）；空 ID 返回 400「请先选择要处理的排课」。
+- 新增 `POST /api/admin/sessions/copy-dates`：支持 `source_date`/`target_date` 单组或 `source_dates`/`target_dates` 多组一一对应，`course_type` 可限定课种；复制时按「课程 + 教练 + 教室 + 日期 + 开始时间」判重，来源与目标同日期跳过并提示「来源与目标日期相同」，`_validate_session` 冲突逐条说明。
+- 前端 `SchedulePage.tsx` 增加复选框与 `.schedule-bulk` 批量操作条（含批量删除与按日期复制两个入口）；样式见 `.schedule-bulk` / `.schedule-class-wrap`。
+
+### 7. 文档与验证
+
+- `docs/API.md`：新增 §8.6 批量处理排课、§8.7 按日期复制课表；§10.9 增加 `PUT /api/admin/role-permissions`；§2.4 增加 `display_status` 字段；§6.1 说明 `card_status` 多选语义；§1.4 能力矩阵补 `catalog.write`。`python docs/build_api_docs.py` 重新生成 `public/api-docs.html`（18 章 / **156** 个接口，较上批 153 个新增 3 个）。
+- `public/help.html` 同步：排课章节新增「批量处理与按日期复制课表」，会员章节新增「按持卡状态筛选会员」与「会员卡状态与分组」，权限章节新增「自定义权限矩阵」，翻页说明补充首页 / 末页 / 页码跳转。
+- `public/changelog-details.html` 追加 BATCH 25（7 张界面截图，图 98–104）；`docs/CHANGELOG_CLIENT.md`、`docs/CHANGELOG_DEVELOPER.md`、`src/lib/changelog.ts`（`API_ENDPOINT_COUNT` 153 → 156）同步。
+- 验证：`npm run build`（`tsc -b` + vite）通过；后端实测 `POST /api/admin/sessions/batch` 空 ID → 400「请先选择要处理的排课」，`POST /api/admin/sessions/copy-dates` 同日期 → 「来源与目标日期相同」，`GET/PUT /api/admin/role-permissions` 往返一致且前台已含 `catalog.write`。
+
+### 8. R11 Outlook 会议室预定导入（评估结论：可实现）
+
+系统已有 `POST /api/admin/room-reservations/import-ics`（后台 → 教室管理 → 导入 Outlook 日历），按 .ics 的 `LOCATION` 与系统教室名匹配，命中后生成 `usage_type="outlook"` 的教室预定，并以 `external_uid` 幂等去重。**2027 年底之前的会议室预定只要能导出 .ics 即可批量导入**；限制是教室名必须与系统完全一致，不匹配的记录会被跳过（可先在 .ics 里改成与系统一致）。
+
+### 9. R12 公司网络加载慢（代码层排查结论）
+
+- 服务端不是瓶颈：已把会员列表等接口从「整表 ORM 读出 + Python 过滤」改为 SQL 层过滤，实测单次 0.222 s → 0.09～0.15 s；不再有整表实例化开销。
+- 剩余等待来自**静态资源的带宽与代理链路**：前端产物含约 742 KB + 375 KB 的 JS 与 733 KB 的 CSS，公司网络带宽受限或需走代理时首屏等待明显。建议站点域名绕过代理、开启 gzip 与静态资源缓存；骨架屏属于可选的前端体验优化，本批未做。

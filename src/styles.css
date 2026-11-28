@@ -1228,3 +1228,24 @@ body:has(.modal-backdrop .notice-error) .notice-error:not(.modal-backdrop .notic
 .wipe-notes li { margin: 4px 0; }
 .wipe-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
 .wipe-actions .button { min-height: 44px; }
+
+/* —— 第 25 批：会员卡状态、权限矩阵、排课批量操作 —— */
+/* 会员档案备注：字号加大 2 号，超出最高高度后内部上下滚动 */
+.profile-summary .profile-note { font-size: 14px; line-height: 1.7; }
+.profile-summary .profile-note span { max-height: 168px; overflow-y: auto; padding-right: 4px; }
+/* 会员档案的卡片筛选与分组标题 */
+.profile-card-filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.profile-card-filters button { padding: 6px 13px; border: 1px solid var(--line); border-radius: 20px; background: #fff; color: var(--muted); font-size: 12px; }
+.profile-card-filters button.active { border-color: var(--pine-900); background: var(--pine-900); color: #fff; }
+.profile-card-group { margin: 16px 0 2px; padding-bottom: 6px; border-bottom: 1px solid var(--line); font-size: 13px; }
+/* 会员列表分页：首页 / 页码输入 / 末页 */
+.member-pagination .page-jump { width: 58px; min-height: 32px; padding: 4px 6px; text-align: center; }
+/* 权限矩阵勾选框 */
+.permission-matrix input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--pine-900); cursor: pointer; }
+.permission-matrix td { vertical-align: middle; }
+/* 排课批量选择 */
+.schedule-bulk { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 5px; background: #fff; color: var(--muted); font-size: 12px; }
+.schedule-bulk > div { display: flex; align-items: center; gap: 9px; }
+.schedule-class-wrap { position: relative; display: grid; }
+.schedule-class-wrap .schedule-class { width: 100%; }
+.schedule-class-wrap .schedule-select { position: absolute; top: 7px; right: 7px; z-index: 2; width: 17px; height: 17px; accent-color: var(--pine-900); cursor: pointer; }

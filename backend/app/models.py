@@ -459,6 +459,18 @@ class ApiKey(Base, TimestampMixin, SoftDeleteMixin):
     creator: Mapped[User] = relationship()
 
 
+class RolePermission(Base, TimestampMixin):
+    """角色 → 能力的可编辑矩阵；保存后台「账号权限」里的勾选结果。
+
+    只记录与默认角色权限不同的差异项，未出现在表里的角色沿用 permissions.py 的默认矩阵。
+    """
+    __tablename__ = "role_permissions"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    role: Mapped[str] = mapped_column(String(24), index=True)
+    capability: Mapped[str] = mapped_column(String(48), index=True)
+    allowed: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
 class ApiKeyUsageLog(Base):
     __tablename__ = "api_key_usage_logs"
     id: Mapped[int] = mapped_column(primary_key=True)

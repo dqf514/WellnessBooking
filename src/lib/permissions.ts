@@ -33,7 +33,7 @@ export const CAPABILITIES: Capability[] = [
 export const ROLE_CAPABILITIES: Record<Role, Capability[]> = {
   admin: [...CAPABILITIES],
   finance: ["dashboard.view", "bookings.view", "members.view", "catalog.view", "products.view", "products.write", "revenue.write", "finance.view", "finance.write", "reports.view", "recycle.write"],
-  frontdesk: ["dashboard.view", "bookings.view", "bookings.write", "members.view", "members.write", "records.write", "cards.write", "revenue.write", "catalog.view", "products.view", "reports.view", "recycle.write"],
+  frontdesk: ["dashboard.view", "bookings.view", "bookings.write", "members.view", "members.write", "records.write", "cards.write", "revenue.write", "catalog.view", "catalog.write", "products.view", "reports.view", "recycle.write"],
   teacher: ["dashboard.view", "bookings.view", "members.view", "records.write", "catalog.view"],
   viewer: ["dashboard.view", "bookings.view", "members.view", "catalog.view", "products.view", "finance.view", "reports.view"],
 };

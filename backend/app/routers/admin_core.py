@@ -2,14 +2,15 @@ import json
 from datetime import datetime
 
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
-from sqlalchemy import or_
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, joinedload
 
 from ..card_service import issue_card
+from ..card_state import card_status_condition
 from ..database import get_db
 from ..deps import require_cards_write, require_catalog_view, require_dashboard, require_members_view, require_members_write, require_records_write, require_revenue
-from ..export_service import member_card_sort_key, member_card_stats
-from ..finance_service import PRODUCT_GROUP_ORDER, category_matches_any, recognized_revenue
+from ..export_service import CATEGORY_SORT_ORDER
+from ..finance_service import CATEGORY_ALIASES, PRODUCT_GROUP_ORDER, recognized_revenue
 from ..log_util import audit
 from ..membership_service import MEMBER_SOURCE_OPTIONS, due_reminders, normalize_member_source, reminder_dict, voucher_dict
 from ..models import Booking, CardProduct, ClassSession, Course, ExperienceVoucher, Member, MemberCard, MemberCardShare, MemberRecord, MemberReminder, Room, Teacher, Transaction, User
@@ -76,43 +77,69 @@ def meta(db: Session = Depends(get_db), user: User = Depends(require_catalog_vie
 
 @router.get("/members")
 def list_members(q: str = Query(""), category: str = Query(""), card_status: str = Query(""), active_only: bool = Query(False), sort: str = Query("card"), page: int | None = Query(None, ge=1), page_size: int = Query(50, ge=1, le=200), db: Session = Depends(get_db), _: User = Depends(require_members_view)):
-    query = db.query(Member).options(joinedload(Member.advisor), joinedload(Member.cards).joinedload(MemberCard.product)).filter(Member.deleted_at.is_(None))
+    """会员名单：筛选、排序与卡种统计全部下推到数据库，名单上千条也能秒开。"""
+    member_ids = select(Member.id).where(Member.deleted_at.is_(None))
     if q.strip():
         term = f"%{q.strip()}%"
-        query = query.filter(or_(Member.name.like(term), Member.name_en.like(term), Member.phone.like(term)))
+        member_ids = member_ids.where(or_(Member.name.like(term), Member.name_en.like(term), Member.phone.like(term)))
     if active_only:
-        query = query.filter(Member.active.is_(True))
-    rows = query.order_by(Member.id.desc()).all()
+        member_ids = member_ids.where(Member.active.is_(True))
     categories = [item for item in category.split(",") if item]
     if categories:
-        rows = [row for row in rows if any(card.product and category_matches_any(card.product.category, categories) and card.deleted_at is None for card in row.cards)]
+        wanted: set[str] = set()
+        for item in categories:
+            wanted.update(CATEGORY_ALIASES.get(item, {item}))
+        member_ids = member_ids.where(Member.id.in_(select(MemberCard.member_id).join(CardProduct, MemberCard.product_id == CardProduct.id).where(MemberCard.deleted_at.is_(None), CardProduct.category.in_(wanted))))
     statuses = [item for item in card_status.split(",") if item]
     if statuses:
-        current = today()
-        def matches(row: Member) -> bool:
-            cards = [card for card in row.cards if card.deleted_at is None]
-            if "none" in statuses and not cards:
-                return True
-            if "active" in statuses and any(card.status == "active" and (card.start_pending or (card.expires_on or "") >= current) for card in cards):
-                return True
-            if "expired" in statuses and any(card.status == "active" and not card.start_pending and (card.expires_on or "") < current for card in cards):
-                return True
-            if "pending" in statuses and any(card.status == "active" and card.start_pending for card in cards):
-                return True
-            return False
-        rows = [row for row in rows if matches(row)]
-    if sort == "card":
-        rows = sorted(rows, key=member_card_sort_key)
-    elif sort == "name":
-        rows = sorted(rows, key=lambda row: (row.name, row.id))
-    elif sort == "joined":
-        rows = sorted(rows, key=lambda row: (-(row.created_at.timestamp() if row.created_at else 0), row.id))
-    # 名单上千条时页面只取当前一页，避免整包序列化；不带 page 时保持整份返回的旧行为。
-    total = len(rows)
+        # 持卡状态多选：命中任意一项即算匹配。
+        clauses = []
+        for item in statuses:
+            if item == "none":
+                clauses.append(~Member.id.in_(select(MemberCard.member_id).where(MemberCard.deleted_at.is_(None))))
+                continue
+            condition = card_status_condition(item)
+            if condition is not None:
+                clauses.append(Member.id.in_(select(MemberCard.member_id).where(condition)))
+        if clauses:
+            member_ids = member_ids.where(or_(*clauses))
+    total = db.query(func.count()).select_from(member_ids.subquery()).scalar() or 0
     pages = max(1, (total + page_size - 1) // page_size)
     current = min(page, pages) if page else 1
-    window = rows[(current - 1) * page_size: current * page_size] if page else rows
-    return {"items": [member_dict(row, include_cards=True) for row in window], "total": total, "page": current, "page_size": page_size, "pages": pages, "card_stats": member_card_stats(rows)}
+    ordered_ids = _member_id_order(db, member_ids, sort)
+    window_ids = ordered_ids[(current - 1) * page_size: current * page_size] if page else ordered_ids
+    rows = db.query(Member).options(joinedload(Member.advisor), joinedload(Member.cards).joinedload(MemberCard.product)).filter(Member.id.in_(window_ids)).all() if window_ids else []
+    by_id = {row.id: row for row in rows}
+    window = [by_id[member_id] for member_id in window_ids if member_id in by_id]
+    return {"items": [member_dict(row, include_cards=True) for row in window], "total": total, "page": current, "page_size": page_size, "pages": pages, "card_stats": _card_stats(db, member_ids)}
+
+
+def _member_id_order(db: Session, member_ids, sort: str) -> list[int]:
+    """按所选排序方式返回会员 ID 顺序；只查轻量字段，避免整表 ORM 实例化。"""
+    if sort == "name":
+        return [row.id for row in db.query(Member.id).filter(Member.id.in_(member_ids)).order_by(Member.name, Member.id).all()]
+    if sort == "joined":
+        return [row.id for row in db.query(Member.id).filter(Member.id.in_(member_ids)).order_by(Member.created_at.desc(), Member.id.desc()).all()]
+    # 按卡种：主卡优先有效卡，其次购卡金额从高到低，与导出排序保持一致。
+    current = today()
+    card_rows = db.query(MemberCard.member_id, MemberCard.id, MemberCard.status, MemberCard.start_pending, MemberCard.expires_on, MemberCard.purchase_price, CardProduct.category).join(CardProduct, MemberCard.product_id == CardProduct.id).filter(MemberCard.deleted_at.is_(None), MemberCard.member_id.in_(member_ids)).all()
+    primary: dict[int, tuple] = {}
+    for row in card_rows:
+        active = row.status == "active" and (row.start_pending or (row.expires_on or "") >= current)
+        key = (0 if active else 1, -(row.purchase_price or 0), row.expires_on or "", row.id)
+        previous = primary.get(row.member_id)
+        if previous is None or key < previous[0]:
+            primary[row.member_id] = (key, row.category, row.purchase_price or 0)
+    members = db.query(Member.id, Member.name).filter(Member.id.in_(member_ids)).all()
+    members.sort(key=lambda row: (CATEGORY_SORT_ORDER.get(primary.get(row.id, (None, "", 0))[1], 90), -primary.get(row.id, (None, "", 0))[2], row.name or "", row.id))
+    return [row.id for row in members]
+
+
+def _card_stats(db: Session, member_ids) -> list[dict]:
+    """卡种人数统计：每种会员卡有多少位会员（按人计，同一人同卡种只算一次）。"""
+    rows = db.query(CardProduct.id, CardProduct.name, CardProduct.name_en, CardProduct.category, func.count(func.distinct(MemberCard.member_id))).join(MemberCard, MemberCard.product_id == CardProduct.id).filter(MemberCard.deleted_at.is_(None), MemberCard.member_id.in_(member_ids)).group_by(CardProduct.id, CardProduct.name, CardProduct.name_en, CardProduct.category).all()
+    items = [{"product_id": row[0], "name": row[1], "name_en": row[2], "category": row[3], "count": row[4]} for row in rows]
+    return sorted(items, key=lambda item: (CATEGORY_SORT_ORDER.get(item["category"], 90), -item["count"], item["name"]))
 
 
 @router.get("/members/options")

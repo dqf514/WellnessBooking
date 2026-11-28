@@ -49,7 +49,8 @@ ROLE_CAPABILITIES: dict[str, set[str]] = {
     "frontdesk": {
         "dashboard.view", "bookings.view", "bookings.write", "members.view",
         "members.write", "records.write", "cards.write", "revenue.write",
-        "catalog.view", "products.view", "reports.view", "recycle.write",
+        "catalog.view", "catalog.write", "products.view", "reports.view",
+        "recycle.write",
     },
     "teacher": {
         "dashboard.view", "bookings.view", "members.view", "records.write",
@@ -64,7 +65,44 @@ ROLE_CAPABILITIES: dict[str, set[str]] = {
 
 def has_capability(role: str, capability: str) -> bool:
     """判断角色是否具备某项能力；未知角色按无权限处理。"""
-    return capability in ROLE_CAPABILITIES.get(role, set())
+    return capability in effective_capabilities(role)
+
+
+# —— 后台可编辑的权限矩阵 ——
+# 默认矩阵在 ROLE_CAPABILITIES；管理员在「账号权限」里勾选的差异保存在 role_permissions 表，
+# 启动时载入内存缓存，保存后立即刷新，保证接口校验、菜单与前端按钮口径一致。
+_ROLE_OVERRIDES: dict[str, dict[str, bool]] = {}
+
+
+def refresh_overrides(rows) -> None:
+    """刷新角色 → 能力的运行时覆盖表；rows 为 (role, capability, allowed) 序列。"""
+    global _ROLE_OVERRIDES
+    data: dict[str, dict[str, bool]] = {}
+    for role, capability, allowed in rows:
+        data.setdefault(role, {})[capability] = bool(allowed)
+    _ROLE_OVERRIDES = data
+
+
+def load_overrides(db=None) -> None:
+    """从数据库载入权限覆盖；启动时调用一次即可。"""
+    from .database import SessionLocal
+    from .models import RolePermission
+
+    session = db or SessionLocal()
+    try:
+        rows = session.query(RolePermission.role, RolePermission.capability, RolePermission.allowed).all()
+    finally:
+        if db is None:
+            session.close()
+    refresh_overrides(rows)
+
+
+def effective_capabilities(role: str) -> set[str]:
+    """角色最终拥有的能力：默认矩阵 + 后台勾选覆盖。"""
+    override = _ROLE_OVERRIDES.get(role)
+    if override is None:
+        return set(ROLE_CAPABILITIES.get(role, set()))
+    return {capability for capability, allowed in override.items() if allowed}
 
 
 # 回收站资源 → 删除该类数据所需的能力，与 recycle_service 的角色白名单对应。
@@ -99,7 +137,7 @@ def can_manage_resource(role: str, resource: str) -> bool:
 
 def role_capabilities(role: str) -> list[str]:
     """返回角色拥有的能力列表，顺序与 CAPABILITY_GROUPS 一致。"""
-    owned = ROLE_CAPABILITIES.get(role, set())
+    owned = effective_capabilities(role)
     return [capability for capability in CAPABILITIES if capability in owned]
 
 
