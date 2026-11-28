@@ -34,6 +34,7 @@ export const changelogReleases: ChangelogRelease[] = [
       { title: { zh: "会员档案抽屉加宽", en: "Wider member profile drawer" }, points: [
         { zh: "会员列表点开会员后的档案抽屉，最大宽度从 1440 像素增加到 1720 像素", en: "The member profile drawer now opens up to 1,720 px wide, up from 1,440 px" },
         { zh: "窗口不够宽时仍按「窗口宽度减 48 像素」铺满靠右，笔记本上与以前一致", en: "On narrower screens it still fills the window minus 48 px, exactly as before" },
+        { zh: "左侧会员清单顶部的搜索框改为吸顶，往下拉也随时能搜索切换会员", en: "The search box at the top of the member list now sticks, so you can always look someone up while scrolling" },
       ] },
     ],
   },

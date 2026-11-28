@@ -1337,3 +1337,14 @@
 - 内部布局（`.member-profile-layout` 两栏、`.profile-facts`、`.profile-cards > article` 等）全部使用 `minmax()` / `1fr` 弹性列，无需改动即可自适应更宽的内容区。
 - 移动端断点 `@media` 内 `.modal-drawer { width: 100% }` 不变。
 - 实测 1920 像素视口：抽屉宽 1720 像素、内容区 1718 像素（此前 1440 / 1438）。
+
+### 7. 会员档案左侧清单搜索框吸顶
+
+- `src/components/MemberProfileDrawer.tsx`：搜索框包进新的 `.member-switcher-search-bar` 容器；姓名列表容器加 `.member-switcher-list` 类名。
+- `src/styles.css`：
+  - 新增 `.member-switcher-search-bar { position: sticky; top: 0; z-index: 3; padding: 17px 0 0; background: #f4f6f1; }`，与侧栏同色，列表内容从其下方滚过。
+  - `.member-switcher` 的 `padding` 由 `17px 10px` 改为 `0 10px 17px`（顶部留白改由吸顶条承担，滚动后位置不跳动）。
+  - 原 `.member-switcher > div`（列表容器）选择器改为 `.member-switcher > .member-switcher-list`，避免误伤新的搜索条外层；移动端隐藏列表的规则同步改名。
+  - 输入框样式选择器由 `.member-switcher > .member-switcher-search` 改为 `.member-switcher-search-bar .member-switcher-search`。
+  - 移动端（≤960px）侧栏本身不滚动，搜索条恢复 `position: static`，布局与以前一致。
+- 实测：1600×900 视口下侧栏 `scrollHeight/clientHeight = 2033/835`，滚到底（`scrollTop = 1198`）后输入框 `getBoundingClientRect().top` 仍为 83（吸顶前同为 83），完全可见。
