@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Field, Notice } from "@/components/AdminUI";
 import { SearchableCourseSelect } from "@/components/SearchableCourseSelect";
+import { SearchableTeacherSelect } from "@/components/SearchableTeacherSelect";
 import { Modal } from "@/components/UI";
 import { useLanguage } from "@/context/LanguageContext";
 import { apiFetch } from "@/lib/api";
@@ -108,7 +109,7 @@ export function SessionEditor({ meta, session, initial = {}, courseType = "", on
         <Field label={local("上课日期", "Class date")}><input required type="date" value={form.session_date} onChange={(event) => update("session_date", event.target.value)}/></Field>
         <Field label={local("开始时间", "Start time")}><input required type="time" step={900} value={form.start_time} onChange={(event) => update("start_time", event.target.value)}/></Field>
         <Field label={local("结束时间", "End time")} hint={local("按课程时长自动带出，可手动调整", "Based on class duration; editable")}><input required type="time" step={900} value={form.end_time} onChange={(event) => update("end_time", event.target.value)}/></Field>
-        <Field label={local("教练", "Instructor")}><select required value={form.teacher_id} onChange={(event) => update("teacher_id", event.target.value)}>{meta.teachers.filter((item) => item.active).map((teacher) => <option key={teacher.id} value={teacher.id}>{local(teacher.name, teacher.name_en)}</option>)}</select></Field>
+        <Field label={local("教练", "Instructor")} hint={local("输入教练姓名或擅长课程即可筛选", "Type a name or specialty to filter")}><SearchableTeacherSelect teachers={meta.teachers.filter((item) => item.active)} value={form.teacher_id} onChange={(value) => update("teacher_id", value)}/></Field>
         <Field label={local("教室", "Room")} hint={roomHint}><select required value={form.room_id} onChange={(event) => update("room_id", event.target.value)}>{meta.rooms.filter((item) => item.active).map((room) => { const conflicts = availability[room.id]?.conflicts ?? []; return <option key={room.id} value={room.id} disabled={conflicts.length > 0}>{local(room.name, room.name_en)} · {room.floor}{conflicts.length ? ` · ${local("冲突", "Conflict")}: ${conflicts.map(conflictText).join(local("；", "; "))}` : ""}</option>; })}</select></Field>
         <Field label={local("最大人数", "Capacity")} hint={isPrivateService ? local("私教 / 评估为 1 对 1，人数固定为 1", "Private training and assessments are one-on-one, so capacity is fixed at 1") : undefined}><input required min={1} type="number" value={form.capacity} readOnly={isPrivateService} onChange={(event) => update("capacity", event.target.value)}/></Field>
         <Field label={local("备注", "Notes")}><input value={form.notes} onChange={(event) => update("notes", event.target.value)}/></Field>

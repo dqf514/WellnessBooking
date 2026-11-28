@@ -70,6 +70,8 @@ class Teacher(Base, TimestampMixin, SoftDeleteMixin):
     image_url: Mapped[str] = mapped_column(String(600), default="")
     visible: Mapped[bool] = mapped_column(Boolean, default=True)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # 排序编号：数字小的排在前面，主打教练可以放在最上面。
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
     external_id: Mapped[str] = mapped_column(String(64), default="", index=True)
     # 勤鸟原系统的教练类型与职位，本系统暂无对应字段，原样保留备查。
     legacy_position: Mapped[str] = mapped_column(String(120), default="")
@@ -141,6 +143,8 @@ class CardProduct(Base, TimestampMixin, SoftDeleteMixin):
     description_en: Mapped[str] = mapped_column(Text, default="")
     online_sale: Mapped[bool] = mapped_column(Boolean, default=False)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # 排序编号：数字小的排在前面，便于把团课、私教评估、年卡分别归拢到一起。
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
     external_id: Mapped[str] = mapped_column(String(64), default="", index=True)
     # 勤鸟原系统的卡类型（期限卡 / 次卡 / 私教课 / 储值卡），本系统以 category 表达。
     legacy_card_type: Mapped[str] = mapped_column(String(24), default="")
@@ -195,6 +199,9 @@ class Booking(Base, SoftDeleteMixin):
     checked_in_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     consumed: Mapped[bool] = mapped_column(Boolean, default=False)
+    # 本次核销的权益类型：card（扣卡的总次数）/ benefit:<类别>（扣分项权益）/ voucher（体验券）。
+    # 撤销签到时按这里记录的类别精确返还，不会扣错地方。
+    consumed_type: Mapped[str] = mapped_column(String(24), default="")
     notes: Mapped[str] = mapped_column(Text, default="")
     external_id: Mapped[str] = mapped_column(String(64), default="", index=True)
     # 勤鸟原字段：签到来源方式（0 前台 / 2 会员端 / 3 教练端）。

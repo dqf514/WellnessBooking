@@ -572,7 +572,7 @@ def _validate_teacher_account(db: Session, user_id, exclude_teacher_id: int | No
 
 @router.post("/teachers")
 def create_teacher(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_catalog_write)):
-    allowed = {"user_id", "name", "name_en", "phone", "gender", "specialties", "specialties_en", "bio", "bio_en", "image_url", "visible", "active"}
+    allowed = {"user_id", "name", "name_en", "phone", "gender", "specialties", "specialties_en", "bio", "bio_en", "image_url", "visible", "active", "sort_order"}
     data = clean_payload(payload, allowed)
     linked_user = _validate_teacher_account(db, data.pop("user_id", None))
     if linked_user and not str(data.get("phone", "")).strip():
@@ -580,6 +580,7 @@ def create_teacher(payload: dict = Body(...), db: Session = Depends(get_db), use
     data["name"] = str(data.get("name", "")).strip()
     if not data["name"]:
         raise HTTPException(400, "教练姓名不能为空")
+    data["sort_order"] = as_int(data.get("sort_order", db.query(Teacher).filter(Teacher.deleted_at.is_(None)).count()), "排序编号")
     row = Teacher(**data)
     if linked_user:
         row.user_id = linked_user.id
@@ -595,7 +596,7 @@ def update_teacher(teacher_id: int, payload: dict = Body(...), db: Session = Dep
     row = db.get(Teacher, teacher_id)
     if not row or row.deleted_at is not None:
         raise HTTPException(404, "教练不存在")
-    allowed = {"user_id", "name", "name_en", "phone", "gender", "specialties", "specialties_en", "bio", "bio_en", "image_url", "visible", "active"}
+    allowed = {"user_id", "name", "name_en", "phone", "gender", "specialties", "specialties_en", "bio", "bio_en", "image_url", "visible", "active", "sort_order"}
     data = clean_payload(payload, allowed)
     if "user_id" in data:
         raw_account = data.pop("user_id")
@@ -608,11 +609,28 @@ def update_teacher(teacher_id: int, payload: dict = Body(...), db: Session = Dep
         data["name"] = str(data["name"]).strip()
         if not data["name"]:
             raise HTTPException(400, "教练姓名不能为空")
+    if "sort_order" in data:
+        data["sort_order"] = as_int(data["sort_order"], "排序编号")
     for key, value in data.items():
         setattr(row, key, value)
     audit(db, user, "catalog", "update", "teacher", teacher_id, {"user_id": row.user_id})
     db.commit()
     return teacher_dict(row)
+
+
+@router.post("/teachers/reorder")
+def reorder_teachers(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_catalog_write)):
+    """教练排序：按提交的顺序重排排序编号，数字小的排前面。"""
+    ids = [as_int(value, "教练编号") for value in payload.get("teacher_ids", [])]
+    teachers = db.query(Teacher).filter(Teacher.id.in_(ids), Teacher.deleted_at.is_(None)).all() if ids else []
+    if len(teachers) != len(set(ids)) or len(ids) != db.query(Teacher).filter(Teacher.deleted_at.is_(None)).count():
+        raise HTTPException(400, "请提交完整的教练排序")
+    positions = {teacher_id: index for index, teacher_id in enumerate(ids)}
+    for teacher in teachers:
+        teacher.sort_order = positions[teacher.id]
+    audit(db, user, "catalog", "reorder", "teacher", detail={"teacher_ids": ids})
+    db.commit()
+    return {"ok": True}
 
 
 @router.post("/teachers/{teacher_id}/photo")

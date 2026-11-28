@@ -52,7 +52,7 @@ def _unique_redemption_code(db: Session) -> str:
 def bootstrap(db: Session = Depends(get_db)):
     settings = db.get(AppSettings, 1)
     courses = db.query(Course).filter(Course.active.is_(True)).order_by(Course.id).all()
-    teachers = db.query(Teacher).filter(Teacher.active.is_(True), Teacher.visible.is_(True)).order_by(Teacher.id).all()
+    teachers = db.query(Teacher).filter(Teacher.active.is_(True), Teacher.visible.is_(True)).order_by(Teacher.sort_order, Teacher.id).all()
     products = db.query(CardProduct).filter(CardProduct.active.is_(True)).order_by(CardProduct.price).all()
     return {
         "venue": {"name": settings.venue_name, "name_en": settings.venue_name_en, "address": settings.address, "address_en": settings.address_en, "phone": settings.phone, "logo_url": settings.logo_url, "favicon_url": settings.favicon_url, "booking_cutoff_minutes": settings.booking_cutoff_minutes},

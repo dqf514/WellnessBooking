@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from ..card_service import issue_card
 from ..database import get_db
 from ..deps import require_finance, require_finance_view, require_products_view, require_products_write, require_reports, require_revenue
-from ..finance_service import create_consumption_revenue, normalized_category, recognized_revenue, resolve_entry_options, resolve_purchase_revenue_mode, resolve_revenue_details, revenue_breakdown, system_revenue_mode
+from ..finance_service import PRODUCT_GROUP_ORDER, create_consumption_revenue, normalized_category, recognized_revenue, resolve_entry_options, resolve_purchase_revenue_mode, resolve_revenue_details, revenue_breakdown, system_revenue_mode
 from ..log_util import audit
 from ..models import Booking, CardProduct, ClassSession, Member, Room, RoomReservation, Transaction, User
 from ..recycle_service import move_to_recycle
@@ -17,7 +17,7 @@ from ..serializers import product_dict, transaction_dict
 from ..utils import as_float, as_int, clean_payload, minutes, today, valid_benefits, valid_date
 
 router = APIRouter(prefix="/api/admin", tags=["admin-finance"])
-PRODUCT_FIELDS = {"name", "name_en", "category", "price", "original_price", "validity_days", "total_sessions", "description", "description_en", "online_sale", "active"}
+PRODUCT_FIELDS = {"name", "name_en", "category", "price", "original_price", "validity_days", "total_sessions", "description", "description_en", "online_sale", "active", "sort_order"}
 TRANSACTION_CATEGORIES = {"group", "private", "annual", "workshop", "training", "enterprise", "misc", "assessment", "package"}
 MANUAL_FIELDS = {"member_id", "category", "amount", "payment_method", "note", "record_cash", "revenue_mode", "revenue_start_on", "revenue_days"}
 
@@ -56,9 +56,9 @@ def finance_totals(db: Session, rows: list[Transaction], *, date_from: str = "",
 
 @router.get("/products")
 def list_products(db: Session = Depends(get_db), _: User = Depends(require_products_view)):
-    rows = db.query(CardProduct).filter(CardProduct.deleted_at.is_(None)).order_by(CardProduct.id).all()
-    order = {"group": 0, "private": 1, "assessment": 1, "annual": 2, "package": 2, "workshop": 3, "training": 4}
-    rows.sort(key=lambda row: (order.get(row.category, 99), row.id))
+    rows = db.query(CardProduct).filter(CardProduct.deleted_at.is_(None)).all()
+    # 先按类别归拢（团课 / 私教评估 / 年卡套餐 / 其他），同类内按自定义排序编号。
+    rows.sort(key=lambda row: (PRODUCT_GROUP_ORDER.get(row.category, 99), row.sort_order or 0, row.id))
     return {"items": [product_dict(row) for row in rows]}
 
 
@@ -83,6 +83,7 @@ def create_product(payload: dict = Body(...), db: Session = Depends(get_db), use
     if data.get("total_sessions") is not None and as_int(data["total_sessions"], "总次数") < 0:
         raise HTTPException(400, "总次数不能为负数")
     data["category"] = normalized_category(str(data.get("category", "group")))
+    data["sort_order"] = as_int(data.get("sort_order", db.query(CardProduct).filter(CardProduct.deleted_at.is_(None)).count()), "排序编号")
     row = CardProduct(**data, benefits_json=json.dumps(valid_benefits(payload.get("benefits", [])), ensure_ascii=False))
     db.add(row)
     db.flush()
@@ -109,6 +110,8 @@ def update_product(product_id: int, payload: dict = Body(...), db: Session = Dep
         raise HTTPException(400, "有效天数至少为 1 天")
     if "total_sessions" in changes and changes["total_sessions"] is not None and as_int(changes["total_sessions"], "总次数") < 0:
         raise HTTPException(400, "总次数不能为负数")
+    if "sort_order" in changes:
+        changes["sort_order"] = as_int(changes["sort_order"], "排序编号")
     for key, value in changes.items():
         setattr(row, key, value)
     if "benefits" in payload:
@@ -116,6 +119,21 @@ def update_product(product_id: int, payload: dict = Body(...), db: Session = Dep
     audit(db, user, "product", "update", "card_product", product_id, payload)
     db.commit()
     return product_dict(row)
+
+
+@router.post("/products/reorder")
+def reorder_products(payload: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(require_products_write)):
+    """卡课产品排序：按提交的顺序重排排序编号，便于把同类产品归拢到一起。"""
+    ids = [as_int(value, "产品编号") for value in payload.get("product_ids", [])]
+    products = db.query(CardProduct).filter(CardProduct.id.in_(ids), CardProduct.deleted_at.is_(None)).all() if ids else []
+    if len(products) != len(set(ids)) or len(ids) != db.query(CardProduct).filter(CardProduct.deleted_at.is_(None)).count():
+        raise HTTPException(400, "请提交完整的产品排序")
+    positions = {product_id: index for index, product_id in enumerate(ids)}
+    for product in products:
+        product.sort_order = positions[product.id]
+    audit(db, user, "product", "reorder", "card_product", detail={"product_ids": ids})
+    db.commit()
+    return {"ok": True}
 
 
 @router.get("/transactions")

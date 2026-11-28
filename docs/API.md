@@ -191,7 +191,7 @@ FastAPI 参数校验错误格式：
 
 **Course**：`id`、`course_type`、`name`、`name_en`、`description`、`description_en`、`duration_minutes`、`price`、`color`、`image_url`、`active`。
 
-**Teacher**：`id`、`user_id`、`name`、`name_en`、`phone`、`gender`、`specialties`、`specialties_en`、`bio`、`bio_en`、`image_url`、`visible`、`active`。
+**Teacher**：`id`、`user_id`、`name`、`name_en`、`phone`、`gender`、`specialties`、`specialties_en`、`bio`、`bio_en`、`image_url`、`visible`、`active`、`sort_order`。
 
 `user_id` 为关联的员工账号（角色为 `teacher`），用于让教练用自己的账号登录系统；未关联时为 `null`。同一员工账号只能关联一位教练。
 
@@ -201,7 +201,7 @@ FastAPI 参数校验错误格式：
 
 ### 2.4 CardProduct 与 MemberCard
 
-**CardProduct**：`id`、`name`、`name_en`、`category`、`price`、`original_price`、`validity_days`、`total_sessions`、`benefits`、`description`、`description_en`、`online_sale`、`active`。
+**CardProduct**：`id`、`name`、`name_en`、`category`、`price`、`original_price`、`validity_days`、`total_sessions`、`benefits`、`description`、`description_en`、`online_sale`、`active`、`sort_order`。
 
 **MemberCard**：
 
@@ -240,7 +240,7 @@ FastAPI 参数校验错误格式：
 | `course`、`teacher`、`room` | object | 完整关联对象 |
 | `bookings` | Booking[] | 仅后台 `detailed=true` 或写排课时返回 |
 
-**Booking**：`id`、`session_id`、`member_id`、`member`、`member_card_id`、`experience_voucher_id`、`card_name`、`consumption_amount`、`status`、`source`、`booked_at`、`cancelled_at`、`cancelled_by`、`checked_in_at`、`completed_at`、`consumed`、`notes`；除嵌套在排课详情中时，还包含完整 `session`。使用体验券消课时 `card_name` 为“免费体验券”；`consumption_amount` 是“卡实购价 ÷ 总次数”的建议消课营收，无可用卡次数时为 0。
+**Booking**：`id`、`session_id`、`member_id`、`member`、`member_card_id`、`experience_voucher_id`、`card_name`、`consumption_amount`、`status`、`source`、`booked_at`、`cancelled_at`、`cancelled_by`、`checked_in_at`、`completed_at`、`consumed`、`consumed_type`、`notes`；除嵌套在排课详情中时，还包含完整 `session`。使用体验券消课时 `card_name` 为“免费体验券”；`consumption_amount` 是“卡实购价 ÷ 总次数”的建议消课营收，无可用卡次数时为 0。`consumed_type` 记录本次核销的权益类型：`card`（扣卡的总次数）、`benefit:<类别>`（扣组合套餐里的分项权益，如 `benefit:assessment`）、`voucher`（体验券），撤销签到时按该字段原样返还。
 
 预约状态为 `booked`（待上课）、`checked_in`（历史已签到状态）、`completed`（已签到消课）、`cancelled`（已取消）、`no_show`（爽约）。来源为 `public` 或 `admin`。新签到直接写入 `completed`；`consumed=true` 表示已经扣除一次卡或体验券权益，重复完成不会再次扣减。
 
@@ -813,7 +813,7 @@ curl -X POST "$API/api/auth/login" \
 - **权限**：只读；**响应**：原始文件流，`Content-Disposition: inline`。
 - 用于浏览器直接预览 PDF 和图片；Office、CSV 等格式是否可直接显示由浏览器决定。鉴权方式与下载接口相同。
 
-## 8. 排课、预约、教室与目录（30）
+## 8. 排课、预约、教室与目录（31）
 
 ### 8.1 查询后台排课
 
@@ -882,6 +882,8 @@ curl -X POST "$API/api/auth/login" \
 
 卡选择按到期日、ID 升序，需活动、已生效、未过期、未冻结且权益适用；优先使用有效卡，无可用卡时才选择有效体验券。扣次与返还均使用版本号做并发校验。
 
+权益适用范围按“课程类别”判定，而不是单一课程类型：健康评估类课程（课程名或产品名包含「健康评估」「体测」或 `assessment`）可核销对应产品，名称为健康评估的产品即使归在团课类别也能用于评估课；课程名带健康评估的团课会优先匹配评估类产品。卡未设置有效期时不再按过期处理。找不到可用权益时返回 `400`，并列出会员现有卡及不适用的原因。
+
 ### 8.8 教室某日总览
 
 #### GET /api/admin/rooms/overview
@@ -945,8 +947,9 @@ curl -X POST "$API/api/auth/login" \
 
 #### POST /api/admin/teachers
 
-- **权限**：管理员；**Body**：`user_id`、`name`、`name_en`、`phone`、`gender`、`specialties`、`specialties_en`、`bio`、`bio_en`、`image_url`、`visible`、`active`。
+- **权限**：管理员；**Body**：`user_id`、`name`、`name_en`、`phone`、`gender`、`specialties`、`specialties_en`、`bio`、`bio_en`、`image_url`、`visible`、`active`、`sort_order`。
 - `user_id` 可为空表示不关联；传入时必须是存在、已启用且角色为 `teacher` 的员工账号，且未被其他教练占用，否则返回 `400` / `409`。
+- `sort_order` 为排序编号，数字小的排在前面（主打教练可设为 `0`）；省略时按当前教练数量生成。
 - **响应**：Teacher。
 
 ### 8.17 修改教练
@@ -1089,21 +1092,35 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 - 每条日程按 `UID` 去重，重复导入不会产生重复占用；导入的占用 `usage_type` 与 `source` 均为 `outlook`，在教室总览里以「Outlook 会议」标注。
 - 与已有课程或占用冲突的日程会跳过，不覆盖已有排课。
 
-## 9. 产品、财务与报表（15）
+### 8.31 教练自定义排序
+
+#### POST /api/admin/teachers/reorder
+
+- **权限**：管理员（`catalog.write`）。接收完整 `teacher_ids` 数组，按数组顺序重写 `sort_order`。
+
+```json
+{ "teacher_ids": [5, 1, 2, 3, 4] }
+```
+
+ID 必须覆盖当前全部教练且不能重复，否则返回 `400`「请提交完整的教练排序」。教练列表、后台元数据与会员端教练展示都按 `sort_order` 升序排列（数字小的在前）。
+
+## 9. 产品、财务与报表（16）
 
 ### 9.1 产品列表
 
 #### GET /api/admin/products
 
 - **权限**：只读（`products.view`；教练角色不可见）；**响应**：`{ items: CardProduct[] }`，包含停用产品。
+- 列表按类别归拢排序：团课产品 → 私教与评估产品 → 年卡与组合套餐 → 工作坊 / 培训课，同一类别内按 `sort_order` 升序、`id` 兜底。
 
 ### 9.2 新建产品
 
 #### POST /api/admin/products
 
 - **权限**：财务。
-- **Body**：`name` 必填；`name_en`、`category`、`price`、`original_price`、`validity_days`、`total_sessions`、`benefits`、`description`、`description_en`、`online_sale`、`active` 可选。
+- **Body**：`name` 必填；`name_en`、`category`、`price`、`original_price`、`validity_days`、`total_sessions`、`benefits`、`description`、`description_en`、`online_sale`、`active`、`sort_order` 可选。
 - 价格不能为负，有效期至少 1 天；**响应**：CardProduct。
+- `sort_order` 为同类产品内的排序编号，数字小的排在前面；省略时按当前产品数量生成。
 
 ### 9.3 修改产品
 
@@ -1220,6 +1237,18 @@ ID 必须覆盖当前全部教室且不能重复。列表和总览按楼层、�
 
 - **权限**：报表（`reports.view`）；**Query**：`date_from`（默认本月 1 日）、`date_to`（默认今日），开始日期不能晚于结束日期。
 - **响应**：多页签 Excel，包含「经营总览」「分类汇总」「课程统计」「教练统计」「教室使用率」五个页签，取代原经营分析 PDF。
+
+### 9.16 卡课产品自定义排序
+
+#### POST /api/admin/products/reorder
+
+- **权限**：`products.write`；接收完整 `product_ids` 数组，按数组顺序重写 `sort_order`。
+
+```json
+{ "product_ids": [5, 1, 2, 3, 4] }
+```
+
+ID 必须覆盖当前全部产品且不能重复，否则返回 `400`「请提交完整的产品排序」。列表仍先按类别归拢，同一类别内按 `sort_order` 升序排列。
 
 ## 10. 场馆、品牌与账号（9）
 

@@ -50,6 +50,7 @@
       <nav>
         <ul class="toc-list">
           <li><a href="#overview">本次更新概览</a></li>
+          <li><a href="#batch-1128">2026-11-28 · 签到不关窗、教练可排序与列表检索</a></li>
           <li><a href="#batch-1126e">2026-11-26 · 名称中英文分家与一键清除数据</a></li>
           <li><a href="#batch-1126d">2026-11-26 · 会员名单分页与表格排版</a></li>
           <li><a href="#batch-1126c">2026-11-26 · 勤鸟历史数据一键导入</a></li>
@@ -83,19 +84,25 @@
 
     <main>
       <section class="hero">
-        <p class="hero-eyebrow">CHANGELOG · 2026-11-17 → 2026-11-26</p>
-        <h1>名称中英文分家、<br>一键清除全部数据</h1>
+        <p class="hero-eyebrow">CHANGELOG · 2026-11-17 → 2026-11-28</p>
+        <h1>签到不再关窗、<br>教练自己排顺序</h1>
+        <p class="hero-description">11 月 28 日推进第 23 个批次，共 8 项改动：团课「预约名单」签到消课后不再跳回外层页面，弹窗留在原地并提示「某某：签到消课成功」，可以接着给下一位会员签到；健康评估同样可以消课——权益匹配从「按单一课种」改为「按类别集合」，卡类别选成团课或私教也能正确扣次，扣不动时会把会员现有卡和被拒原因一并列出；排课时选择教练可以边打边筛，几十位教练不再靠翻；教练列表新增「排序编号」，主打教练排最前面，表头可点击排序，并支持前移 / 后移；同样的检索与排序也补齐到课程、卡课产品、预约名单、会员通知与财务流水等列表。教室总览里教室的中英文名上下两行同时显示；「预约教室」里用不到的「Outlook 会议」选项已删除（日历导入功能保留）；会员档案的「团课预约记录 / 私教预约记录 / 消费记录」统一改成与「体测 / Assessment」一样的白色卡片；购卡界面里的卡课产品可以自己排序（团课、私教评估、年卡分组排列）也能直接输入检索。</p>
         <p class="hero-description">11 月 26 日推进第 21 个批次：勤鸟导出里中英文写在一起的名称（课种、教室、教练、卡产品）在导入时自动拆开——中文进名称栏、英文进英文名栏，界面与导出不再混排；名字本来就带英文缩写的（如「太极FIT」）原样保留；另附一份把导出目录适配好的 ZIP，导入时优先使用其中的中文名 / 英文名分列，旧库再导入一次即可改写，排期与签到的匹配不受影响。同日再落地第 22 个批次：后台「系统设置 → 数据清除」可一键清空全部业务数据，清除码只以短信形式发到内置手机号 18602113774，界面与接口都不回显清除码；清除后仅保留当前管理员账号（密码重置为 Tpc@2026）与场馆名称、Logo、备份计划、短信通道等与商业无关的系统设置，并停止自动写入演示数据。同日更早还推进了第 17 个批次：会员列表、报表导出和「当月新进会员」只统计真正买过卡的客户，导出前可按团课 / 私教 / 年卡·组合套餐多选，列表按卡种自动排序并在底部显示每种卡的人数；健康评估从私教中独立成「评估预约」，签到只扣评估权益，私教与评估名单里点会员名字即可直接打开会员档案；购卡与升卡恢复「入流水 / 入营收 / 营收每日均摊」逐单选择；后台新增「会员通知」可预约群发短信，并提供会员手机端操作指南 PDF；教室页新增 Outlook 会议室日历导入。同日再补一批后台导航改动：左侧导航栏可一键折叠为图标栏，折叠后把鼠标移到分组图标上，子菜单仍以浮层形式展开。同日再落地第 19 个批次：旧系统勤鸟运动 SaaS 的在用与历史数据可整套导入本系统，后台「系统设置 → 历史数据导入」上传导出 ZIP 即可，支持先演练后正式导入，重复导入幂等跳过。此前 11 月 22 日与 23 日推进的批次包括：照片上传新增裁剪窗口，选图后可拖动取景、按页面显示比例保存；会员新增照片字段（会员端自己拍照上传，后台也能代为更换）并支持名单导出 Excel；会员卡新增编辑、续卡、请假停卡与跨类目升卡，购卡可选择“开卡日期待定”，营收口径收归系统设置由管理员统一选择；报表页升级为报表中心，销售、财务、管理、总经理各有预设，维度与指标可自由组合，全部改为导出 Excel；财务入账新增结账方式多选筛选，合计金额改名为流水总额、营收总额与退款总额；会员端登录简化为手机号加验证码、预约后按钮变“已约”可直接取消、手机端教室总览一次看全所有教室；11 月 23 日会员端在手机上改为多页模式，底部五个按钮切换首页、预约、引导者、卡课与我的，电脑端保持整页滚动不变。</p>
         <p class="hero-description">本次更新分批推进：11 月 17 日按《MODIFY1117》需求完成财务与运营侧改造，把“流水”和“营收”彻底分开，并补齐导出与小票；11 月 18 日重构后台导航，把课程库提升为独立页面，并建立角色能力矩阵——菜单可见性、页面可达性与操作权限统一由服务端下发的能力清单决定；同日再补一批会员自助能力，姓名与生日开放自助维护，换手机号需原号与新号双验证，后台获客来源统一为下拉选项；同日再补一批教室总览的浏览体验：表格顶部增加左右滚动按键与按排课着色的教室色块，教室列宽压缩，一屏可见更多教室，横向滚动时左侧时间轴保持可见；同日再收一遍会员档案的头部：姓名中英文并排一行，个人信息改为一行铺满，备注直接显示在头部，整体压低高度，把下面的会员卡与记录表空间让出来；同日再推出全屏大屏排课表，所有教室一次铺开、日期与实时时钟居中、浏览器一并全屏隐藏工具栏，左右键换日期、Esc 退出、Ctrl+P 直接打印，排课块高度覆盖所在时间段；同日再把经营概览改为“今日安排”，教室占用一并列出，“完整课表”直接打开教室大屏。同日再把教室总览的日期选择并入左上角（两侧加上一日/下一日箭头），全屏按钮移到右上角按钮区，中间那一行整行移除，表格行高压缩到 44px，同屏可见的时段明显增多。同日再给全屏排课表加了深色模式，标题栏右上角一键切换，晚上投屏不刺眼。</p>
-        <p class="hero-note">共 14 项 1117 需求全部落地 · 19 项角色能力 · 后台接口总数 151 个 · 21 个交付批次</p>
+        <p class="hero-note">共 14 项 1117 需求全部落地 · 19 项角色能力 · 后台接口总数 153 个 · 23 个交付批次</p>
       </section>
 
       <section id="overview">
         <div class="stats">
-          <div class="stat"><small>REQUIREMENTS</small><strong>14 + 12</strong><span>《MODIFY1117》14 条 + 《MODIFY1125》12 条需求已落地并逐条对照</span></div>
+          <div class="stat"><small>REQUIREMENTS</small><strong>14 + 12 + 8</strong><span>《MODIFY1117》14 条 + 《MODIFY1125》12 条 + 《MODIFY1128》8 条需求已落地并逐条对照</span></div>
           <div class="stat"><small>CAPABILITIES</small><strong>19</strong><span>角色能力项，覆盖 5 种员工角色</span></div>
-          <div class="stat"><small>ENDPOINTS</small><strong>151</strong><span>后台接口总数，11-26 新增 11 个（会员通知 4、Outlook 导入 1、会员指南 1、历史导入 2、会员精简名单 1、清除数据 2）</span></div>
+          <div class="stat"><small>ENDPOINTS</small><strong>153</strong><span>后台接口总数，11-28 新增 2 个（教练排序 1、卡课产品排序 1）</span></div>
           <div class="stat"><small>FIXES</small><strong>14</strong><span>数据一致性、并发、权限与显示对齐缺陷修复</span></div>
+        </div>
+        <div class="batch">
+          <small>BATCH 23 · 2026-11-28</small>
+          <h2>签到留在弹窗内、教练可自定义顺序、列表到处能检索</h2>
+          <p>按《MODIFY1128》的 8 条修改逐条落地：团课「预约名单」签到消课、取消签到、取消与爽约之后不再跳回外层页面，弹窗留在原地并在顶部提示结果，前台可以接着给下一位会员签到；健康评估也能正常消课——权益匹配改为按「类别集合」判断，卡类别选成团课或私教也认，扣不动时直接列出会员现有卡与被拒原因；排课时选择教练支持边输入边筛；教练新增「排序编号」，主打教练排最前，表头可点击排序，也能一键前移 / 后移，检索与排序同时推广到课程、卡课产品、预约名单、会员通知与财务流水等列表。教室总览的教室中英文名上下两行同时显示；「预约教室」中用不到的「Outlook 会议」选项已删除（日历导入本身保留）；会员档案的「团课预约记录 / 私教预约记录 / 消费记录」改用与「体测 / Assessment」一致的白色卡片；购卡界面的卡课产品按团课、私教评估与年卡分组显示，可自己排序也能输入检索。</p>
         </div>
         <div class="batch">
           <small>BATCH 22 · 2026-11-26</small>
@@ -207,6 +214,114 @@
           <h2>1117 需求：财务、报表与运营效率</h2>
           <p>核心是把“现金实收”和“确认营收”拆成两件事：私教按消课确认营收、年卡按天均摊、团课购卡即确认；购卡与手动入账都提供“入流水 / 入营收 / 营收每日均摊”三个可选项。同时补齐教室总览次日导出、财务与课程报表导出、品牌账单小票（14.5cm × 7.5cm），并统一课程与卡课产品的中文类目。</p>
         </div>
+      </section>
+
+      <section id="batch-1128" class="section">
+        <span class="section-kicker">BATCH 23</span>
+        <h2>2026-11-28 · 签到不关窗、教练可排序与列表检索</h2>
+        <p class="section-intro">《MODIFY1128》共 8 条修改全部落地：前台签到不再跳回外层页面，健康评估也能消课，教练可以自己排顺序并支持检索，其余名单页也一并补上检索与排序，教室名中英文并排，会员档案记录改白底，购卡产品可排序可检索。</p>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">R1</span><h3>团课签到消课留在弹窗内</h3><span class="change-tag">已完成</span></div>
+          <ul>
+            <li>「预约名单」弹窗里点「签到消课」后不再跳回外层页面：弹窗留在原地，顶部提示「某某：签到消课成功」，名单就地刷新为「已签到并消课」，前台可以接着给下一位会员签到。</li>
+            <li>「取消签到」「取消」「爽约」同样留在弹窗内完成，成功与失败都用提示条说明原因，不必关掉弹窗再看结果。</li>
+            <li>扣课失败时提示条直接给出可执行信息，例如「会员无可用卡、体验券或对应权益不足……会员现有卡：10 节 1:1 私教（卡类别「私教」不适用于本节课）」。</li>
+          </ul>
+          <figure>
+            <img src="changelog-images/89-roster-stays-in-modal.png" alt="团课预约名单弹窗签到后留在原地" loading="lazy">
+            <figcaption><b>图 89 · 签到后名单弹窗留在原地。</b>顶部提示签到成功，下一位会员仍可直接点「签到消课」。</figcaption>
+          </figure>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">R2</span><h3>健康评估也能消课</h3><span class="change-tag">已完成</span></div>
+          <ul>
+            <li>消课不再只看单一课种：改为按「类别集合」匹配权益——团课名健康评估优先用评估卡，健康评估课用私教卡或团课卡也认（卡产品类别选错不再扣不动）。</li>
+            <li>课程名里带「健康评估」「体测」「assessment」会自动按评估课处理；未填有效期起止日期的卡不再被当成已过期。</li>
+            <li>每次消课会记录用的是哪张卡、哪种权益，撤销签到时原样退回，不会退错。</li>
+            <li>实在扣不动时，报错里会列出会员现有卡与被拒原因（类别不适用 / 剩余次数不足 / 已到期 / 停卡冻结中等）。</li>
+          </ul>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">R3</span><h3>排课选教练可以检索</h3><span class="change-tag">已完成</span></div>
+          <ul>
+            <li>新建 / 编辑排课时，「教练」输入框可以边输入边筛：输入姓名、擅长课程或手机号都能过滤到人。</li>
+            <li>教练数量多时不用再从长列表里翻找，几十位教练一敲名字就出来。</li>
+          </ul>
+          <figure>
+            <img src="changelog-images/90-teacher-search.png" alt="排课弹窗中检索教练" loading="lazy">
+            <figcaption><b>图 90 · 排课时检索教练。</b>输入「王」，下拉只剩匹配的教练。</figcaption>
+          </figure>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">R4</span><h3>教练列表可自定义顺序</h3><span class="change-tag">已完成</span></div>
+          <ul>
+            <li>教练档案新增「排序编号」：编号小的排前面，主打教练放最上面；新建教练时自动接在队尾。</li>
+            <li>列表视图的「名称 / 排序编号 / 擅长课程」表头可点击排序；卡片视图与列表视图都提供「前移 / 后移」按钮，调整后立即保存。</li>
+            <li>会员端展示的引导者顺序与后台一致。</li>
+          </ul>
+          <figure>
+            <img src="changelog-images/91-teachers-sortable-list.png" alt="教练列表视图可点击表头排序" loading="lazy">
+            <figcaption><b>图 91 · 教练列表（列表视图）。</b>表头可点击排序，序号列与前移 / 后移按钮在右侧。</figcaption>
+          </figure>
+          <figure>
+            <img src="changelog-images/92-teachers-sortable-cards.png" alt="教练卡片视图显示排序编号" loading="lazy">
+            <figcaption><b>图 92 · 教练卡片视图。</b>每张卡片显示排序编号，也能直接前移 / 后移。</figcaption>
+          </figure>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">R5</span><h3>检索与排序推广到其他列表</h3><span class="change-tag">已完成</span></div>
+          <ul>
+            <li>课程库、卡课产品、预约名单、会员通知与财务流水都支持按关键词检索，并可点击表头排序。</li>
+            <li>卡课产品按「团课 / 私教与评估 / 年卡与组合套餐 / 工作坊」分组显示，售价、有效期、总次数与排序编号都能排序。</li>
+            <li>检索框留空即显示全部，改关键词后结果条数同步更新。</li>
+          </ul>
+          <figure>
+            <img src="changelog-images/93-products-sortable.png" alt="卡课产品列表支持检索与排序" loading="lazy">
+            <figcaption><b>图 93 · 卡课产品列表。</b>左侧可按类别筛选与检索，表头可排序，行末有前移 / 后移。</figcaption>
+          </figure>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">R6</span><h3>教室名中英文上下并排</h3><span class="change-tag">已完成</span></div>
+          <ul>
+            <li>教室总览的每一列教室头改为上下两行：中文名在上、英文名在下；只填中文的教室只显示中文，只填英文的只显示英文。</li>
+            <li>窄屏下的紧凑教室列表同样上下两行显示，不再中英文挤在一行。</li>
+          </ul>
+          <figure>
+            <img src="changelog-images/94-room-bilingual-name.png" alt="教室总览教室名中英文上下显示" loading="lazy">
+            <figcaption><b>图 94 · 教室总览。</b>教室中文名在上、英文名在下，一眼看清是哪个房间。</figcaption>
+          </figure>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">R7</span><h3>删掉用不到的「Outlook 会议」选项</h3><span class="change-tag">已完成</span></div>
+          <ul>
+            <li>「预约教室」里的使用类别不再提供「Outlook 会议」，该选项在本系统用不到。</li>
+            <li>Outlook 会议室日历的导入功能保留：从 Outlook 导入的既有安排仍按原样显示，不影响历史数据。</li>
+          </ul>
+        </article>
+
+        <article class="change">
+          <div class="change-head"><span class="change-id">R8</span><h3>会员档案记录改白底，购卡产品可排序可检索</h3><span class="change-tag">已完成</span></div>
+          <ul>
+            <li>会员档案的「团课预约记录」「私教预约记录」「消费记录」统一改成与「体测 / Assessment」一样的白色卡片，和上面的会员卡区域区分开来。</li>
+            <li>购卡 / 购课弹窗的「卡课产品」改为可检索选择器：输入名称即可过滤，并按团课、私教与评估、年卡与组合套餐分组显示。</li>
+            <li>卡课产品支持自己排序，团课产品放一起、私教评估放一起、年卡放一起，前台按店里的习惯排列。</li>
+          </ul>
+          <figure>
+            <img src="changelog-images/95-member-records-white.png" alt="会员档案团课预约记录白色卡片" loading="lazy">
+            <figcaption><b>图 95 · 会员档案。</b>「团课预约记录」与「体测 / Assessment」一样是白色卡片。</figcaption>
+          </figure>
+          <figure>
+            <img src="changelog-images/96-product-picker-search.png" alt="购卡弹窗中的卡课产品检索" loading="lazy">
+            <figcaption><b>图 96 · 购卡界面。</b>输入「年」即可筛出年卡与组合套餐，按类别分组显示。</figcaption>
+          </figure>
+        </article>
       </section>
 
       <section id="batch-1126e" class="section">

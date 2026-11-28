@@ -11,6 +11,8 @@ from .utils import valid_date
 REVENUE_MODES = {"none", "immediate", "amortized"}
 SYSTEM_REVENUE_MODES = {"auto", "immediate", "amortized"}
 CATEGORY_ORDER = {"group": 0, "private": 1, "annual": 2, "workshop": 3, "training": 4, "enterprise": 5, "misc": 6}
+# 卡课产品的归拢顺序：团课产品、私教评估产品、年卡与组合套餐、工作坊与培训课。
+PRODUCT_GROUP_ORDER = {"group": 0, "private": 1, "assessment": 1, "annual": 2, "package": 2, "workshop": 3, "training": 4, "enterprise": 5}
 
 
 def normalized_category(value: str) -> str:

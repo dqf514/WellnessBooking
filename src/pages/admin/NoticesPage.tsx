@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { Field, Notice, PageHeader } from "@/components/AdminUI";
+import { SortableTh, useTableSort } from "@/components/SortableTable";
 import { Badge, Empty, Icon, Modal, ResponsiveTable, Spinner } from "@/components/UI";
 import { useLanguage } from "@/context/LanguageContext";
 import { apiFetch, downloadFile } from "@/lib/api";
@@ -21,6 +22,7 @@ export function NoticesPage() {
   const [message, setMessage] = useState("");
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [keyword, setKeyword] = useState("");
   const [form, setForm] = useState({ title: "", content: "", send_on: today(), scope: "all" });
   const [picked, setPicked] = useState<number[]>([]);
   const load = useCallback(async () => {
@@ -57,11 +59,26 @@ export function NoticesPage() {
     finally { setBusy(false); }
   }
   const matched = members.filter((member) => !query || member.name.includes(query) || member.phone.includes(query)).slice(0, 60);
+  // 通知列表支持按标题或正文检索，并可点击表头排序。
+  const visibleItems = useMemo(() => {
+    const term = keyword.trim().toLocaleLowerCase();
+    if (!term) return items;
+    return items.filter((row) => `${row.title} ${row.content} ${row.scope_label}`.toLocaleLowerCase().includes(term));
+  }, [items, keyword]);
+  const noticeSortValues = useMemo(() => ({
+    title: (row: NoticeRow) => row.title,
+    scope: (row: NoticeRow) => row.scope_label,
+    date: (row: NoticeRow) => row.send_on,
+    status: (row: NoticeRow) => STATUS_LABELS[row.status] ?? row.status,
+    result: (row: NoticeRow) => row.sent_count,
+  }), []);
+  const noticeSort = useTableSort(visibleItems, "date", noticeSortValues);
 
   return <div>
     <PageHeader eyebrow="MEMBER COMMUNICATION" title={local("会员通知", "Member notices")} description={local("群发短信给会员：可以预约发送日期，到点后系统自动发出，也可以立即发送。", "Broadcast SMS to members: schedule a date and the system sends it automatically, or send it right away.")} actions={<><button className="button button-outline" type="button" onClick={() => void downloadFile("/api/public/member-guide.pdf", "音昱 Wellness 会员手机端操作指南.pdf")}><Icon name="download" size={17}/>{local("下载会员操作指南", "Member guide PDF")}</button><button className="button button-primary" type="button" onClick={openCreate}><Icon name="plus" size={17}/>{local("新建通知", "New notice")}</button></>}/>
     {error && <Notice error message={error}/>} {message && <Notice message={message}/>}
-    {loading ? <Spinner/> : <section className="panel table-panel"><ResponsiveTable><table className="data-table"><thead><tr><th>{local("通知标题", "Title")}</th><th>{local("通知范围", "Scope")}</th><th>{local("发送日期", "Send date")}</th><th>{local("状态", "Status")}</th><th>{local("发送结果", "Result")}</th><th>{local("操作", "Actions")}</th></tr></thead><tbody>{items.map((row) => <tr key={row.id}><td><strong>{row.title}</strong><small>{row.content}</small></td><td>{row.scope_label}{row.scope === "selected" && <small>{local(`${row.member_ids.length} 位会员`, `${row.member_ids.length} members`)}</small>}</td><td>{row.send_on}<small>{row.status === "sent" ? local(`已于 ${row.sent_at} 发出`, `Sent at ${row.sent_at}`) : row.created_by}</small></td><td><Badge tone={row.status === "sent" ? "green" : row.status === "cancelled" ? "neutral" : "amber"}>{STATUS_LABELS[row.status] ?? row.status}</Badge></td><td>{row.status === "sent" ? local(`成功 ${row.sent_count} · 失败 ${row.failed_count}`, `${row.sent_count} sent · ${row.failed_count} failed`) : "—"}</td><td><div className="table-actions">{row.status === "scheduled" && <><button className="button button-small button-outline" type="button" disabled={busy} onClick={() => void sendNow(row)}>{local("立即发送", "Send now")}</button><button className="text-button danger" type="button" disabled={busy} onClick={() => void cancelNotice(row)}>{local("取消", "Cancel")}</button></>}</div></td></tr>)}</tbody></table></ResponsiveTable>{items.length === 0 && <Empty>{local("还没有群发通知，点击右上角新建。", "No notices yet. Create one to get started.")}</Empty>}</section>}
+    {!loading && <section className="filter-panel"><Field label={local("搜索", "Search")}><input value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder={local("通知标题或正文", "Notice title or message")}/></Field><span className="filter-summary">{local(`${visibleItems.length} 条通知`, `${visibleItems.length} notices`)}</span></section>}
+    {loading ? <Spinner/> : <section className="panel table-panel"><ResponsiveTable><table className="data-table"><thead><tr><SortableTh column="title" label={local("通知标题", "Title")} sort={noticeSort}/><SortableTh column="scope" label={local("通知范围", "Scope")} sort={noticeSort}/><SortableTh column="date" label={local("发送日期", "Send date")} sort={noticeSort}/><SortableTh column="status" label={local("状态", "Status")} sort={noticeSort}/><SortableTh column="result" label={local("发送结果", "Result")} sort={noticeSort}/><th>{local("操作", "Actions")}</th></tr></thead><tbody>{noticeSort.sorted.map((row) => <tr key={row.id}><td><strong>{row.title}</strong><small>{row.content}</small></td><td>{row.scope_label}{row.scope === "selected" && <small>{local(`${row.member_ids.length} 位会员`, `${row.member_ids.length} members`)}</small>}</td><td>{row.send_on}<small>{row.status === "sent" ? local(`已于 ${row.sent_at} 发出`, `Sent at ${row.sent_at}`) : row.created_by}</small></td><td><Badge tone={row.status === "sent" ? "green" : row.status === "cancelled" ? "neutral" : "amber"}>{STATUS_LABELS[row.status] ?? row.status}</Badge></td><td>{row.status === "sent" ? local(`成功 ${row.sent_count} · 失败 ${row.failed_count}`, `${row.sent_count} sent · ${row.failed_count} failed`) : "—"}</td><td><div className="table-actions">{row.status === "scheduled" && <><button className="button button-small button-outline" type="button" disabled={busy} onClick={() => void sendNow(row)}>{local("立即发送", "Send now")}</button><button className="text-button danger" type="button" disabled={busy} onClick={() => void cancelNotice(row)}>{local("取消", "Cancel")}</button></>}</div></td></tr>)}</tbody></table></ResponsiveTable>{visibleItems.length === 0 && <Empty>{items.length === 0 ? local("还没有群发通知，点击右上角新建。", "No notices yet. Create one to get started.") : local("没有匹配的通知", "No matching notices")}</Empty>}</section>}
     {open && <Modal wide title={local("新建群发通知", "New notice")} onClose={() => setOpen(false)}><form className="form-grid two-columns" onSubmit={save}>{error && <div className="span-two"><Notice error message={error}/></div>}<div className="span-two"><Field label={local("通知标题", "Title")}><input required value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })}/></Field></div><div className="span-two"><Field label={local("通知内容（短信正文）", "Message")} hint={local("建议控制在 70 字以内；签名会自动加在前面。", "Keep it under 70 characters; the venue signature is added automatically.")}><textarea required rows={4} value={form.content} onChange={(event) => setForm({ ...form, content: event.target.value })}/></Field></div><div className="span-two"><button className="button button-outline" type="button" onClick={fillSwitchTemplate}>{local("填入「系统切换」通知模板", "Use the system-switch template")}</button></div><Field label={local("发送日期", "Send date")} hint={local("到当天凌晨由计划任务自动群发。", "The scheduler sends it automatically on that date.")}><input required type="date" value={form.send_on} onChange={(event) => setForm({ ...form, send_on: event.target.value })}/></Field><Field label={local("通知范围", "Scope")}><select value={form.scope} onChange={(event) => setForm({ ...form, scope: event.target.value })}>{SCOPES.map((scope) => <option key={scope.value} value={scope.value}>{local(scope.zh, scope.en)}</option>)}</select></Field>{form.scope === "selected" && <div className="span-two"><Field label={local("选择会员（可多选）", "Select members")}><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={local("按姓名或手机号筛选", "Filter by name or mobile")}/></Field><div className="notice-member-picker">{matched.map((member) => <label key={member.id}><input type="checkbox" checked={picked.includes(member.id)} onChange={(event) => setPicked((previous) => event.target.checked ? [...previous, member.id] : previous.filter((item) => item !== member.id))}/>{member.name} · {member.phone}</label>)}</div></div>}<button className="button button-primary button-full span-two" disabled={busy || (form.scope === "selected" && !picked.length)} type="submit">{busy ? local("保存中…", "Saving…") : local("保存并预约发送", "Schedule notice")}</button></form></Modal>}
   </div>;
 }

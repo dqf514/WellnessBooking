@@ -1,14 +1,38 @@
 // 系统版本与更新日志：后台“系统设置 → 更新日志”展示，按日期为分界列出主要内容。
 export const APP_VERSION = "1.1.0";
-export const APP_RELEASE_DATE = "2026-11-26";
+export const APP_RELEASE_DATE = "2026-11-28";
 export const API_VERSION = "v1.0.0";
-export const API_ENDPOINT_COUNT = 151;
+export const API_ENDPOINT_COUNT = 153;
 
 export interface ChangelogText { zh: string; en: string }
 export interface ChangelogGroup { title: ChangelogText; points: ChangelogText[] }
 export interface ChangelogRelease { date: string; version: string; title: ChangelogText; summary: ChangelogText; groups: ChangelogGroup[] }
 
 export const changelogReleases: ChangelogRelease[] = [
+  {
+    date: "2026-11-28",
+    version: APP_VERSION,
+    title: { zh: "签到留在弹窗内，教练可自己排序，名单到处能检索", en: "Check-in stays in the roster, instructors can be ordered, lists are searchable" },
+    summary: { zh: "团课签到消课后不再跳回外层页面，弹窗留在原地并提示结果；健康评估也能消课，权益改为按类别集合匹配，扣不动时列出会员现有卡与原因；排课选教练可检索，教练新增排序编号并支持表头排序与前移后移，同样的检索与排序补到其他名单页；教室名中英文上下并排、会员档案记录改白底、购卡产品可排序可检索。", en: "Checking in a member no longer leaves the group roster: the dialog stays open and reports the result. Health assessments can now consume a benefit — matching moved from a single course type to a set of categories, and failures list the member’s cards and the reason. Instructors can be searched when scheduling and now carry a sort order, with clickable column sorting and move up / move down; the same search and sorting reached the other list pages. Room names show Chinese above English, member-profile records use white cards, and products in the purchase dialog can be reordered and searched." },
+    groups: [
+      { title: { zh: "签到与消课", en: "Check-in and consumption" }, points: [
+        { zh: "团课“预约名单”里签到消课、取消签到、取消与爽约都在弹窗内完成，顶部提示结果，可接着给下一位会员签到", en: "Checking in, undoing a check-in, cancelling or marking a no-show all happen inside the roster dialog, which stays open and reports the result" },
+        { zh: "健康评估也能消课：卡产品类别选成团课或私教也认，团课名健康评估优先用评估卡", en: "Health assessments can now consume a benefit, even when the card product is filed under group classes or private training" },
+        { zh: "扣不动课时会列出会员现有卡与被拒原因（类别不适用 / 次数不足 / 已到期 / 停卡冻结）", en: "When nothing can be consumed the message lists the member’s cards and why each was rejected" },
+      ] },
+      { title: { zh: "教练与名单排序", en: "Instructors and list ordering" }, points: [
+        { zh: "排课时选择教练可以边输入边筛，姓名、擅长课程、手机号都能过滤", en: "The instructor picker filters as you type — by name, specialty or phone number" },
+        { zh: "教练档案新增“排序编号”，编号小的排前面；表头可点击排序，也能一键前移 / 后移", en: "Instructor profiles carry a sort order, smaller numbers first; column headers sort, and rows can be moved up or down" },
+        { zh: "课程库、卡课产品、预约名单、会员通知与财务流水同样支持检索与表头排序", en: "Courses, products, session rosters, member notices and finance ledger all gained search and clickable column sorting" },
+      ] },
+      { title: { zh: "界面细节", en: "Interface details" }, points: [
+        { zh: "教室总览里教室的中英文名上下两行显示，只填中文就只显示中文", en: "Room names show the Chinese name above the English one in the room overview" },
+        { zh: "“预约教室”里用不到的“Outlook 会议”选项已删除，日历导入功能保留", en: "The unused “Outlook meeting” option is gone from room reservations; calendar import is untouched" },
+        { zh: "会员档案的团课预约、私教预约与消费记录改用与“体测 / Assessment”一致的白色卡片", en: "Group bookings, private bookings and transactions in the member profile now use the same white cards as Assessment" },
+        { zh: "购卡界面的卡课产品可自己排序，也能输入名称直接检索，并按类别分组显示", en: "Products in the purchase dialog can be reordered, searched by name and shown grouped by category" },
+      ] },
+    ],
+  },
   {
     date: "2026-11-26",
     version: APP_VERSION,

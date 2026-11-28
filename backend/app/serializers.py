@@ -15,7 +15,7 @@ def member_dict(row: Member, include_cards: bool = False) -> dict:
 
 
 def teacher_dict(row: Teacher) -> dict:
-    return {"id": row.id, "user_id": row.user_id, "name": row.name, "name_en": row.name_en, "phone": row.phone, "gender": row.gender, "specialties": row.specialties, "specialties_en": row.specialties_en, "bio": row.bio, "bio_en": row.bio_en, "image_url": row.image_url, "visible": row.visible, "active": row.active}
+    return {"id": row.id, "user_id": row.user_id, "name": row.name, "name_en": row.name_en, "phone": row.phone, "gender": row.gender, "specialties": row.specialties, "specialties_en": row.specialties_en, "bio": row.bio, "bio_en": row.bio_en, "image_url": row.image_url, "visible": row.visible, "active": row.active, "sort_order": row.sort_order or 0}
 
 
 def room_dict(row: Room) -> dict:
@@ -27,7 +27,7 @@ def course_dict(row: Course) -> dict:
 
 
 def product_dict(row: CardProduct) -> dict:
-    return {"id": row.id, "name": row.name, "name_en": row.name_en, "category": row.category, "price": row.price, "original_price": row.original_price, "validity_days": row.validity_days, "total_sessions": row.total_sessions, "benefits": json_loads(row.benefits_json, []), "description": row.description, "description_en": row.description_en, "online_sale": row.online_sale, "active": row.active}
+    return {"id": row.id, "name": row.name, "name_en": row.name_en, "category": row.category, "price": row.price, "original_price": row.original_price, "validity_days": row.validity_days, "total_sessions": row.total_sessions, "benefits": json_loads(row.benefits_json, []), "description": row.description, "description_en": row.description_en, "online_sale": row.online_sale, "active": row.active, "sort_order": row.sort_order or 0}
 
 
 def card_dict(row: MemberCard) -> dict:

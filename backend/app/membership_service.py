@@ -70,5 +70,8 @@ def due_reminders(db: Session, member: Member) -> list[str]:
     return alerts
 
 
-def find_available_voucher(db: Session, member: Member, course_type: str, on_date: str) -> ExperienceVoucher | None:
-    return db.query(ExperienceVoucher).filter(ExperienceVoucher.member_id == member.id, ExperienceVoucher.status == "active", ExperienceVoucher.course_type.in_([course_type, "all"]), ExperienceVoucher.expires_on >= on_date, ExperienceVoucher.remaining_sessions > 0, ExperienceVoucher.deleted_at.is_(None)).order_by(ExperienceVoucher.expires_on, ExperienceVoucher.id).first()
+def find_available_voucher(db: Session, member: Member, course_types: list[str] | str, on_date: str) -> ExperienceVoucher | None:
+    """查找可用体验券：course_types 可传多个类别（健康评估等课程会带上备用类别）。"""
+    values = [course_types] if isinstance(course_types, str) else list(course_types)
+    values = list(dict.fromkeys([*values, "all"]))
+    return db.query(ExperienceVoucher).filter(ExperienceVoucher.member_id == member.id, ExperienceVoucher.status == "active", ExperienceVoucher.course_type.in_(values), ExperienceVoucher.expires_on >= on_date, ExperienceVoucher.remaining_sessions > 0, ExperienceVoucher.deleted_at.is_(None)).order_by(ExperienceVoucher.expires_on, ExperienceVoucher.id).first()

@@ -9,7 +9,7 @@ from ..card_service import issue_card
 from ..database import get_db
 from ..deps import require_cards_write, require_catalog_view, require_dashboard, require_members_view, require_members_write, require_records_write, require_revenue
 from ..export_service import member_card_sort_key, member_card_stats
-from ..finance_service import category_matches_any, recognized_revenue
+from ..finance_service import PRODUCT_GROUP_ORDER, category_matches_any, recognized_revenue
 from ..log_util import audit
 from ..membership_service import MEMBER_SOURCE_OPTIONS, due_reminders, normalize_member_source, reminder_dict, voucher_dict
 from ..models import Booking, CardProduct, ClassSession, Course, ExperienceVoucher, Member, MemberCard, MemberCardShare, MemberRecord, MemberReminder, Room, Teacher, Transaction, User
@@ -67,8 +67,8 @@ def meta(db: Session = Depends(get_db), user: User = Depends(require_catalog_vie
     return {
         "courses": [course_dict(row) for row in db.query(Course).filter(Course.deleted_at.is_(None)).order_by(Course.course_type, Course.id).all()],
         "rooms": [room_dict(row) for row in db.query(Room).filter(Room.deleted_at.is_(None)).order_by(Room.floor, Room.sort_order, Room.id).all()],
-        "teachers": [teacher_dict(row) for row in db.query(Teacher).filter(Teacher.deleted_at.is_(None)).order_by(Teacher.id).all()],
-        "products": [product_dict(row) for row in db.query(CardProduct).filter(CardProduct.deleted_at.is_(None)).order_by(CardProduct.id).all()] if has_capability(role, "products.view") else [],
+        "teachers": [teacher_dict(row) for row in db.query(Teacher).filter(Teacher.deleted_at.is_(None)).order_by(Teacher.sort_order, Teacher.id).all()],
+        "products": [product_dict(row) for row in sorted(db.query(CardProduct).filter(CardProduct.deleted_at.is_(None)).all(), key=lambda item: (PRODUCT_GROUP_ORDER.get(item.category, 99), item.sort_order or 0, item.id))] if has_capability(role, "products.view") else [],
         "users": [user_dict(row) for row in db.query(User).filter(User.deleted_at.is_(None)).order_by(User.id).all()] if has_capability(role, "settings.view") or has_capability(role, "members.write") else [],
         "member_sources": MEMBER_SOURCE_OPTIONS,
     }

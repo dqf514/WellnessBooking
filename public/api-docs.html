@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#173f35">
-  <meta name="description" content="音昱 Wellness 完整 API 对接文档，覆盖 151 个接口、权限、字段、业务规则与示例。">
+  <meta name="description" content="音昱 Wellness 完整 API 对接文档，覆盖 153 个接口、权限、字段、业务规则与示例。">
   <meta name="generator" content="docs/build_api_docs.py">
   <link id="api-favicon" rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Crect width='36' height='36' rx='18' fill='%23173f35'/%3E%3Cpath d='M28 6C15 7 8 13 8 23c7 1 15-2 20-17ZM8 29c3-8 8-12 16-17' fill='none' stroke='%23e9efe7' stroke-width='1.5'/%3E%3C/svg%3E">
   <title>API 对接文档 · 音昱 Wellness</title>
@@ -33,7 +33,7 @@
     <aside class="sidebar" aria-label="API 文档目录">
       <label class="search-label"><span>搜索接口、字段或业务规则</span><input class="search-input" id="api-search" type="search" placeholder="例如：签到、退款、bookings" autocomplete="off"><span class="search-hint">按 / 快速搜索，Esc 清空</span></label>
       <p class="search-results" id="search-results" aria-live="polite"></p>
-      <p class="toc-title">API REFERENCE · 151 ENDPOINTS</p>
+      <p class="toc-title">API REFERENCE · 153 ENDPOINTS</p>
       <nav><ul class="toc-list"><li><a href="#1-接入基础">1. 接入基础</a></li>
 <li><a href="#2-通用数据结构">2. 通用数据结构</a></li>
 <li><a href="#3-健康检查与员工认证-9">3. 健康检查与员工认证（9）</a></li>
@@ -41,8 +41,8 @@
 <li><a href="#5-经营概览与基础元数据-2">5. 经营概览与基础元数据（2）</a></li>
 <li><a href="#6-会员档案-会员卡-权益与爽约-23">6. 会员档案、会员卡、权益与爽约（23）</a></li>
 <li><a href="#7-会员合同与评估文件-7">7. 会员合同与评估文件（7）</a></li>
-<li><a href="#8-排课-预约-教室与目录-30">8. 排课、预约、教室与目录（30）</a></li>
-<li><a href="#9-产品-财务与报表-15">9. 产品、财务与报表（15）</a></li>
+<li><a href="#8-排课-预约-教室与目录-31">8. 排课、预约、教室与目录（31）</a></li>
+<li><a href="#9-产品-财务与报表-16">9. 产品、财务与报表（16）</a></li>
 <li><a href="#10-场馆-品牌与账号-9">10. 场馆、品牌与账号（9）</a></li>
 <li><a href="#11-短信与审计日志-5">11. 短信与审计日志（5）</a></li>
 <li><a href="#12-api-key-管理与调用日志-6">12. API Key 管理与调用日志（6）</a></li>
@@ -62,8 +62,8 @@
 <option value="5-经营概览与基础元数据-2">5. 经营概览与基础元数据（2）</option>
 <option value="6-会员档案-会员卡-权益与爽约-23">6. 会员档案、会员卡、权益与爽约（23）</option>
 <option value="7-会员合同与评估文件-7">7. 会员合同与评估文件（7）</option>
-<option value="8-排课-预约-教室与目录-30">8. 排课、预约、教室与目录（30）</option>
-<option value="9-产品-财务与报表-15">9. 产品、财务与报表（15）</option>
+<option value="8-排课-预约-教室与目录-31">8. 排课、预约、教室与目录（31）</option>
+<option value="9-产品-财务与报表-16">9. 产品、财务与报表（16）</option>
 <option value="10-场馆-品牌与账号-9">10. 场馆、品牌与账号（9）</option>
 <option value="11-短信与审计日志-5">11. 短信与审计日志（5）</option>
 <option value="12-api-key-管理与调用日志-6">12. API Key 管理与调用日志（6）</option>
@@ -209,12 +209,12 @@
 </table></div>
 <h3 id="2-3-course-teacher-room">2.3 Course、Teacher、Room<a class="anchor" href="#2-3-course-teacher-room" aria-label="链接到此节">#</a></h3>
 <p><strong>Course</strong>：<code>id</code>、<code>course_type</code>、<code>name</code>、<code>name_en</code>、<code>description</code>、<code>description_en</code>、<code>duration_minutes</code>、<code>price</code>、<code>color</code>、<code>image_url</code>、<code>active</code>。</p>
-<p><strong>Teacher</strong>：<code>id</code>、<code>user_id</code>、<code>name</code>、<code>name_en</code>、<code>phone</code>、<code>gender</code>、<code>specialties</code>、<code>specialties_en</code>、<code>bio</code>、<code>bio_en</code>、<code>image_url</code>、<code>visible</code>、<code>active</code>。</p>
+<p><strong>Teacher</strong>：<code>id</code>、<code>user_id</code>、<code>name</code>、<code>name_en</code>、<code>phone</code>、<code>gender</code>、<code>specialties</code>、<code>specialties_en</code>、<code>bio</code>、<code>bio_en</code>、<code>image_url</code>、<code>visible</code>、<code>active</code>、<code>sort_order</code>。</p>
 <p><code>user_id</code> 为关联的员工账号（角色为 <code>teacher</code>），用于让教练用自己的账号登录系统；未关联时为 <code>null</code>。同一员工账号只能关联一位教练。</p>
 <p><strong>Room</strong>：<code>id</code>、<code>name</code>、<code>name_en</code>、<code>capacity</code>、<code>floor</code>、<code>sort_order</code>、<code>color</code>、<code>active</code>。</p>
 <p>课程类型现有值为 <code>group</code>（团课）、<code>private</code>（私教）、<code>assessment</code>（评估）、<code>workshop</code>（工作坊）、<code>training</code>（培训）。<code>visible=false</code> 的教练不在会员端教练列表出现；<code>active=false</code> 的基础资料不可用于新排课。</p>
 <h3 id="2-4-cardproduct-与-membercard">2.4 CardProduct 与 MemberCard<a class="anchor" href="#2-4-cardproduct-与-membercard" aria-label="链接到此节">#</a></h3>
-<p><strong>CardProduct</strong>：<code>id</code>、<code>name</code>、<code>name_en</code>、<code>category</code>、<code>price</code>、<code>original_price</code>、<code>validity_days</code>、<code>total_sessions</code>、<code>benefits</code>、<code>description</code>、<code>description_en</code>、<code>online_sale</code>、<code>active</code>。</p>
+<p><strong>CardProduct</strong>：<code>id</code>、<code>name</code>、<code>name_en</code>、<code>category</code>、<code>price</code>、<code>original_price</code>、<code>validity_days</code>、<code>total_sessions</code>、<code>benefits</code>、<code>description</code>、<code>description_en</code>、<code>online_sale</code>、<code>active</code>、<code>sort_order</code>。</p>
 <p><strong>MemberCard</strong>：</p>
 <div class="table-wrap"><table>
 <thead><tr><th>字段</th><th>类型</th><th>含义</th></tr></thead>
@@ -252,7 +252,7 @@
 <tr><td><code>bookings</code></td><td>Booking[]</td><td>仅后台 <code>detailed=true</code> 或写排课时返回</td></tr>
 </tbody>
 </table></div>
-<p><strong>Booking</strong>：<code>id</code>、<code>session_id</code>、<code>member_id</code>、<code>member</code>、<code>member_card_id</code>、<code>experience_voucher_id</code>、<code>card_name</code>、<code>consumption_amount</code>、<code>status</code>、<code>source</code>、<code>booked_at</code>、<code>cancelled_at</code>、<code>cancelled_by</code>、<code>checked_in_at</code>、<code>completed_at</code>、<code>consumed</code>、<code>notes</code>；除嵌套在排课详情中时，还包含完整 <code>session</code>。使用体验券消课时 <code>card_name</code> 为“免费体验券”；<code>consumption_amount</code> 是“卡实购价 ÷ 总次数”的建议消课营收，无可用卡次数时为 0。</p>
+<p><strong>Booking</strong>：<code>id</code>、<code>session_id</code>、<code>member_id</code>、<code>member</code>、<code>member_card_id</code>、<code>experience_voucher_id</code>、<code>card_name</code>、<code>consumption_amount</code>、<code>status</code>、<code>source</code>、<code>booked_at</code>、<code>cancelled_at</code>、<code>cancelled_by</code>、<code>checked_in_at</code>、<code>completed_at</code>、<code>consumed</code>、<code>consumed_type</code>、<code>notes</code>；除嵌套在排课详情中时，还包含完整 <code>session</code>。使用体验券消课时 <code>card_name</code> 为“免费体验券”；<code>consumption_amount</code> 是“卡实购价 ÷ 总次数”的建议消课营收，无可用卡次数时为 0。<code>consumed_type</code> 记录本次核销的权益类型：<code>card</code>（扣卡的总次数）、<code>benefit:&lt;类别&gt;</code>（扣组合套餐里的分项权益，如 <code>benefit:assessment</code>）、<code>voucher</code>（体验券），撤销签到时按该字段原样返还。</p>
 <p>预约状态为 <code>booked</code>（待上课）、<code>checked_in</code>（历史已签到状态）、<code>completed</code>（已签到消课）、<code>cancelled</code>（已取消）、<code>no_show</code>（爽约）。来源为 <code>public</code> 或 <code>admin</code>。新签到直接写入 <code>completed</code>；<code>consumed=true</code> 表示已经扣除一次卡或体验券权益，重复完成不会再次扣减。</p>
 <h3 id="2-6-transaction-财务流水">2.6 Transaction 财务流水<a class="anchor" href="#2-6-transaction-财务流水" aria-label="链接到此节">#</a></h3>
 <div class="table-wrap"><table>
@@ -612,7 +612,7 @@
 <h4 id="get-api-admin-documents-document-id-view"><span class="method method-get">GET</span><a href="#get-api-admin-documents-document-id-view" class="route">/api/admin/documents/{document_id}/view</a></h4>
 <ul><li><strong>权限</strong>：只读；<strong>响应</strong>：原始文件流，<code>Content-Disposition: inline</code>。</li><li>用于浏览器直接预览 PDF 和图片；Office、CSV 等格式是否可直接显示由浏览器决定。鉴权方式与下载接口相同。</li></ul>
 </section>
-<h2 id="8-排课-预约-教室与目录-30">8. 排课、预约、教室与目录（30）<a class="anchor" href="#8-排课-预约-教室与目录-30" aria-label="链接到此节">#</a></h2>
+<h2 id="8-排课-预约-教室与目录-31">8. 排课、预约、教室与目录（31）<a class="anchor" href="#8-排课-预约-教室与目录-31" aria-label="链接到此节">#</a></h2>
 <h3 id="8-1-查询后台排课">8.1 查询后台排课<a class="anchor" href="#8-1-查询后台排课" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/sessions">
 <h4 id="get-api-admin-sessions"><span class="method method-get">GET</span><a href="#get-api-admin-sessions" class="route">/api/admin/sessions</a></h4>
@@ -658,6 +658,7 @@
 </tbody>
 </table></div>
 <p>卡选择按到期日、ID 升序，需活动、已生效、未过期、未冻结且权益适用；优先使用有效卡，无可用卡时才选择有效体验券。扣次与返还均使用版本号做并发校验。</p>
+<p>权益适用范围按“课程类别”判定，而不是单一课程类型：健康评估类课程（课程名或产品名包含「健康评估」「体测」或 <code>assessment</code>）可核销对应产品，名称为健康评估的产品即使归在团课类别也能用于评估课；课程名带健康评估的团课会优先匹配评估类产品。卡未设置有效期时不再按过期处理。找不到可用权益时返回 <code>400</code>，并列出会员现有卡及不适用的原因。</p>
 </section>
 <h3 id="8-8-教室某日总览">8.8 教室某日总览<a class="anchor" href="#8-8-教室某日总览" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/rooms/overview">
@@ -702,7 +703,7 @@
 <h3 id="8-16-新建教练">8.16 新建教练<a class="anchor" href="#8-16-新建教练" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/teachers">
 <h4 id="post-api-admin-teachers"><span class="method method-post">POST</span><a href="#post-api-admin-teachers" class="route">/api/admin/teachers</a></h4>
-<ul><li><strong>权限</strong>：管理员；<strong>Body</strong>：<code>user_id</code>、<code>name</code>、<code>name_en</code>、<code>phone</code>、<code>gender</code>、<code>specialties</code>、<code>specialties_en</code>、<code>bio</code>、<code>bio_en</code>、<code>image_url</code>、<code>visible</code>、<code>active</code>。</li><li><code>user_id</code> 可为空表示不关联；传入时必须是存在、已启用且角色为 <code>teacher</code> 的员工账号，且未被其他教练占用，否则返回 <code>400</code> / <code>409</code>。</li><li><strong>响应</strong>：Teacher。</li></ul>
+<ul><li><strong>权限</strong>：管理员；<strong>Body</strong>：<code>user_id</code>、<code>name</code>、<code>name_en</code>、<code>phone</code>、<code>gender</code>、<code>specialties</code>、<code>specialties_en</code>、<code>bio</code>、<code>bio_en</code>、<code>image_url</code>、<code>visible</code>、<code>active</code>、<code>sort_order</code>。</li><li><code>user_id</code> 可为空表示不关联；传入时必须是存在、已启用且角色为 <code>teacher</code> 的员工账号，且未被其他教练占用，否则返回 <code>400</code> / <code>409</code>。</li><li><code>sort_order</code> 为排序编号，数字小的排在前面（主打教练可设为 <code>0</code>）；省略时按当前教练数量生成。</li><li><strong>响应</strong>：Teacher。</li></ul>
 </section>
 <h3 id="8-17-修改教练">8.17 修改教练<a class="anchor" href="#8-17-修改教练" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="patch /api/admin/teachers/{teacher_id}">
@@ -793,16 +794,23 @@
 <h4 id="post-api-admin-room-reservations-import-ics"><span class="method method-post">POST</span><a href="#post-api-admin-room-reservations-import-ics" class="route">/api/admin/room-reservations/import-ics</a></h4>
 <ul><li><strong>权限</strong>：需 <code>bookings.write</code>。</li><li><strong>Body</strong>：<code>ics</code>（string，必填，ICS 文本内容）、<code>room_id</code>（integer，可选；为 0 或缺省时按日程 <code>LOCATION</code> 自动匹配教室）。</li><li><strong>响应</strong>：<code>{ ok, created, skipped, total }</code>，<code>skipped</code> 为跳过原因数组（如「已经导入过」「与课程冲突」「未指定教室」）。</li><li>解析 Outlook 导出的 <code>.ics</code>：支持 <code>DTSTART;TZID=Asia/Shanghai</code>、UTC（<code>Z</code>）、全天事件与 <code>RRULE:FREQ=WEEKLY</code> 每周重复。</li><li>每条日程按 <code>UID</code> 去重，重复导入不会产生重复占用；导入的占用 <code>usage_type</code> 与 <code>source</code> 均为 <code>outlook</code>，在教室总览里以「Outlook 会议」标注。</li><li>与已有课程或占用冲突的日程会跳过，不覆盖已有排课。</li></ul>
 </section>
-<h2 id="9-产品-财务与报表-15">9. 产品、财务与报表（15）<a class="anchor" href="#9-产品-财务与报表-15" aria-label="链接到此节">#</a></h2>
+<h3 id="8-31-教练自定义排序">8.31 教练自定义排序<a class="anchor" href="#8-31-教练自定义排序" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="post /api/admin/teachers/reorder">
+<h4 id="post-api-admin-teachers-reorder"><span class="method method-post">POST</span><a href="#post-api-admin-teachers-reorder" class="route">/api/admin/teachers/reorder</a></h4>
+<ul><li><strong>权限</strong>：管理员（<code>catalog.write</code>）。接收完整 <code>teacher_ids</code> 数组，按数组顺序重写 <code>sort_order</code>。</li></ul>
+</section>
+<div class="code-block"><button class="copy-code" type="button">复制</button><pre><code class="language-json">{ &quot;teacher_ids&quot;: [5, 1, 2, 3, 4] }</code></pre></div>
+<p>ID 必须覆盖当前全部教练且不能重复，否则返回 <code>400</code>「请提交完整的教练排序」。教练列表、后台元数据与会员端教练展示都按 <code>sort_order</code> 升序排列（数字小的在前）。</p>
+<h2 id="9-产品-财务与报表-16">9. 产品、财务与报表（16）<a class="anchor" href="#9-产品-财务与报表-16" aria-label="链接到此节">#</a></h2>
 <h3 id="9-1-产品列表">9.1 产品列表<a class="anchor" href="#9-1-产品列表" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/products">
 <h4 id="get-api-admin-products"><span class="method method-get">GET</span><a href="#get-api-admin-products" class="route">/api/admin/products</a></h4>
-<ul><li><strong>权限</strong>：只读（<code>products.view</code>；教练角色不可见）；<strong>响应</strong>：<code>{ items: CardProduct[] }</code>，包含停用产品。</li></ul>
+<ul><li><strong>权限</strong>：只读（<code>products.view</code>；教练角色不可见）；<strong>响应</strong>：<code>{ items: CardProduct[] }</code>，包含停用产品。</li><li>列表按类别归拢排序：团课产品 → 私教与评估产品 → 年卡与组合套餐 → 工作坊 / 培训课，同一类别内按 <code>sort_order</code> 升序、<code>id</code> 兜底。</li></ul>
 </section>
 <h3 id="9-2-新建产品">9.2 新建产品<a class="anchor" href="#9-2-新建产品" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="post /api/admin/products">
 <h4 id="post-api-admin-products"><span class="method method-post">POST</span><a href="#post-api-admin-products" class="route">/api/admin/products</a></h4>
-<ul><li><strong>权限</strong>：财务。</li><li><strong>Body</strong>：<code>name</code> 必填；<code>name_en</code>、<code>category</code>、<code>price</code>、<code>original_price</code>、<code>validity_days</code>、<code>total_sessions</code>、<code>benefits</code>、<code>description</code>、<code>description_en</code>、<code>online_sale</code>、<code>active</code> 可选。</li><li>价格不能为负，有效期至少 1 天；<strong>响应</strong>：CardProduct。</li></ul>
+<ul><li><strong>权限</strong>：财务。</li><li><strong>Body</strong>：<code>name</code> 必填；<code>name_en</code>、<code>category</code>、<code>price</code>、<code>original_price</code>、<code>validity_days</code>、<code>total_sessions</code>、<code>benefits</code>、<code>description</code>、<code>description_en</code>、<code>online_sale</code>、<code>active</code>、<code>sort_order</code> 可选。</li><li>价格不能为负，有效期至少 1 天；<strong>响应</strong>：CardProduct。</li><li><code>sort_order</code> 为同类产品内的排序编号，数字小的排在前面；省略时按当前产品数量生成。</li></ul>
 </section>
 <h3 id="9-3-修改产品">9.3 修改产品<a class="anchor" href="#9-3-修改产品" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="patch /api/admin/products/{product_id}">
@@ -869,6 +877,13 @@
 <h4 id="get-api-admin-reports-xlsx"><span class="method method-get">GET</span><a href="#get-api-admin-reports-xlsx" class="route">/api/admin/reports.xlsx</a></h4>
 <ul><li><strong>权限</strong>：报表（<code>reports.view</code>）；<strong>Query</strong>：<code>date_from</code>（默认本月 1 日）、<code>date_to</code>（默认今日），开始日期不能晚于结束日期。</li><li><strong>响应</strong>：多页签 Excel，包含「经营总览」「分类汇总」「课程统计」「教练统计」「教室使用率」五个页签，取代原经营分析 PDF。</li></ul>
 </section>
+<h3 id="9-16-卡课产品自定义排序">9.16 卡课产品自定义排序<a class="anchor" href="#9-16-卡课产品自定义排序" aria-label="链接到此节">#</a></h3>
+<section class="endpoint" data-search="post /api/admin/products/reorder">
+<h4 id="post-api-admin-products-reorder"><span class="method method-post">POST</span><a href="#post-api-admin-products-reorder" class="route">/api/admin/products/reorder</a></h4>
+<ul><li><strong>权限</strong>：<code>products.write</code>；接收完整 <code>product_ids</code> 数组，按数组顺序重写 <code>sort_order</code>。</li></ul>
+</section>
+<div class="code-block"><button class="copy-code" type="button">复制</button><pre><code class="language-json">{ &quot;product_ids&quot;: [5, 1, 2, 3, 4] }</code></pre></div>
+<p>ID 必须覆盖当前全部产品且不能重复，否则返回 <code>400</code>「请提交完整的产品排序」。列表仍先按类别归拢，同一类别内按 <code>sort_order</code> 升序排列。</p>
 <h2 id="10-场馆-品牌与账号-9">10. 场馆、品牌与账号（9）<a class="anchor" href="#10-场馆-品牌与账号-9" aria-label="链接到此节">#</a></h2>
 <h3 id="10-1-读取系统设置">10.1 读取系统设置<a class="anchor" href="#10-1-读取系统设置" aria-label="链接到此节">#</a></h3>
 <section class="endpoint" data-search="get /api/admin/settings">
@@ -1064,7 +1079,7 @@
 <p>流水、会员档案记录与附件、通知与提醒、教室预约、操作日志、短信发送与验证码记录、API Key 使用记录， 以及全部其他员工账号；上传目录（会员照片等附件）里的文件也会一并清空。</p>
 <ul><li><strong>会保留</strong>：系统设置（场馆名称、Logo、favicon、预约口径、登录安全开关）、短信通道设置、备份计划设置、</li></ul>
 <p>API 密钥，以及当前登录的这一位管理员账号（密码重置为 <code>Tpc@2026</code>）。</p>
-<ul><li>清除后系统不再自动写入演示数据，重启后端也不会再生成示例会员。</li><li>清除完成后会在操作日志里留下一条 <code>wipe_data</code> 记录，作为这次操作的唯一留痕。</li><li>清除<strong>不可撤销</strong>，执行前请先调用 13.7 的备份接口留一份数据库。</li></ul>
+<ul><li>清除后系统不再自动写入演示数据，重启后端也不会再生成示例会员。</li><li>清除完成后会在操作日志里留下一条 <code>wipe_data</code> 记录，作为这次操作的唯一留痕。</li><li>清除<strong>不可撤销</strong>，执行前请先调用 13.1 的备份接口留一份数据库。</li></ul>
 </section>
 <h2 id="14-典型业务调用顺序">14. 典型业务调用顺序<a class="anchor" href="#14-典型业务调用顺序" aria-label="链接到此节">#</a></h2>
 <h3 id="14-1-会员预约闭环">14.1 会员预约闭环<a class="anchor" href="#14-1-会员预约闭环" aria-label="链接到此节">#</a></h3>
@@ -1203,7 +1218,7 @@ const dashboard = await api(&quot;/api/admin/dashboard&quot;, {
 <h4 id="post-api-admin-notices-notice-id-cancel"><span class="method method-post">POST</span><a href="#post-api-admin-notices-notice-id-cancel" class="route">/api/admin/notices/{notice_id}/cancel</a></h4>
 <ul><li><strong>权限</strong>：需 <code>members.write</code>；<strong>Body</strong>：无。</li><li><strong>响应</strong>：<code>{ ok: true, notice }</code>，<code>status=cancelled</code>，不再发送。</li></ul>
 </section>
-      <footer class="docs-footer"><span>音昱 Wellness · API v1.0.0 · 151 个业务接口</span><span><a href="/help.html">系统操作指南</a> · <a href="/openapi.json">OpenAPI 3</a> · 文档源：<a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md">docs/API.md</a></span></footer>
+      <footer class="docs-footer"><span>音昱 Wellness · API v1.0.0 · 153 个业务接口</span><span><a href="/help.html">系统操作指南</a> · <a href="/openapi.json">OpenAPI 3</a> · 文档源：<a href="https://github.com/dqf514/WellnessBooking/blob/main/docs/API.md">docs/API.md</a></span></footer>
     </main>
   </div>
   <script>

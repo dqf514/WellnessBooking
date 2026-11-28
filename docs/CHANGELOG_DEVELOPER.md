@@ -1,6 +1,6 @@
 # 音昱 Wellness OS 更新日志（开发者版）
 
-**更新周期：** 2026-11-09 至 2026-11-26
+**更新周期：** 2026-11-09 至 2026-11-28
 **交付范围：** 会员端、员工及管理后台、后端服务、开放 API、短信与数据运维、帮助文档
 **提交规模：** 14 次 Git 提交
 **最终版本：** `2d110f8`
@@ -1140,3 +1140,44 @@
 - `public/help.html`「数据导入、备份与恢复」新增第 5 节「中英文名称分家」与第 6 节「一键清除全部数据（短信清除码）」。
 - `public/changelog-details.html` 追加 BATCH 21 / 22（3 张界面截图）、`docs/CHANGELOG_CLIENT.md` / `docs/CHANGELOG_DEVELOPER.md` / `src/lib/changelog.ts` 同步；`API_ENDPOINT_COUNT` 同步为 151。
 - `historicalData/`（含会员姓名、手机号、身份证号）与适配包产物均不入库，`.gitignore` 已覆盖。
+
+---
+
+## 三十五、MODIFY1128 需求批次：签到不关窗、健康评估消课与列表检索排序（2026-11-28）
+
+### 1. 团课签到留在弹窗内（`src/pages/admin/BookingsPage.tsx`）
+
+- `action()` 不再在成功后调用 `setSelected(null)`；`load()` 之后 `setSelected((current) => current ? sessionResult.items.find(...) ?? null : null)` 会把弹窗重新选中，因此「签到消课 / 取消签到 / 取消 / 爽约」都留在名单弹窗内完成。
+- 弹窗内新增 `rosterMessage` / `rosterError` 两个状态，渲染在 `.roster-feedback` 容器里（`Notice` 组件），成功与失败都给出中文提示；`.roster-feedback:empty` 时不占位。
+
+### 2. 权益匹配由「单一课种」改为「类别集合」（`backend/app/booking_service.py`）
+
+- 新增 `session_categories(course)` 与 `product_categories(product)`：根据课程 / 卡产品的类别与名称归出一组可用类别；`looks_like_assessment()` 依据「健康评估」「体测」「assessment」判定评估课，团课名健康评估优先用评估卡。
+- `find_available_card()` / `has_available_entitlement()` 按类别集合匹配，`_card_quantity_for()` 相应放宽。
+- 空有效期起止日期的卡不再按「已过期」处理（`_card_reject_reason`）。
+- 消课失败时的报错由固定文案改为 `_no_entitlement_hint()`：在「会员无可用卡、体验券或对应权益不足，请先购卡/续卡」后追加会员现有卡与被拒原因（最多 4 条）。
+- **新增列** `bookings.consumed_type`（`String(24)`，默认 `""`）：记录本次消课用的是 `card` / `benefit:<类别>` / `voucher`，`restore_consumption()` 据此原样退回，避免退错权益。`models.py` 与 `database.py` 的 `ensure_schema()` additions 两处都已补齐。
+
+### 3. 教练与卡课产品自定义排序
+
+- **新增列** `teachers.sort_order`、`card_products.sort_order`（`models.py` + `ensure_schema()` 的 additions 两处同步）。
+- 新增接口 `POST /api/admin/teachers/reorder`（`catalog:write`）与 `POST /api/admin/products/reorder`（`finance:write`）：请求体提交**完整**的 id 顺序列表，缺项返回「请提交完整的教练排序 / 产品排序」；沿用既有 `/api/admin/rooms/reorder` 的模式。
+- `admin_core.py` 的 `meta` 接口：`teachers` 按 `(sort_order, id)` 排序；`products` 按 `(PRODUCT_GROUP_ORDER[category], sort_order, id)` 排序（`finance_service.PRODUCT_GROUP_ORDER` 定义 group 0 / private 1 / assessment 1 / annual 2 / package 2 / workshop 3 …）。
+- `public.py` 的 bootstrap 引导者列表同步按 `(sort_order, id)` 排序。
+
+### 4. 前端检索与排序
+
+- 新增 `src/components/SortableTable.tsx`（`useTableSort` + `SortableTh`）、`src/components/SearchableTeacherSelect.tsx`、`src/components/SearchableProductSelect.tsx`。
+- `SessionEditor.tsx` 的「教练」字段换成可检索选择器；`BookingsPage.tsx`（课表）、`ProductsPage.tsx`、`CoursesPage.tsx`、`NoticesPage.tsx`、`FinancePage.tsx`、后台教练列表（`settings/CatalogSettings.tsx`）均接入关键词检索与表头排序；`MemberProfileDrawer.tsx` 的购卡弹窗换成可检索分组的产品选择器。
+
+### 5. 界面细节
+
+- `RoomsPage.tsx`：教室列头改为中英文上下两行（`.room-column > header .room-name-en`），窄屏紧凑列表同样上下两行（`.room-compact-names`）；使用类别下拉移除「Outlook 会议」选项（ICS 导入路径与 `usage_type="outlook"` 样式保留，导入的历史日程仍需该标签）。
+- `MemberProfileDrawer.tsx`：「团课预约记录 / 私教预约记录 / 消费记录」统一使用 `.member-resource-section` 白底卡片，与「体测 / Assessment」一致。
+
+### 6. 文档与验证
+
+- `docs/API.md`：Teacher / CardProduct 结构体补 `sort_order`，Booking 补 `consumed_type`；新增 §8.31 教练自定义排序、§9.16 卡课产品自定义排序；§8.7 补充评估课的类别匹配说明与新的 400 报错；接口总数 151 → 153。`python docs/build_api_docs.py` 重新生成 `public/api-docs.html`（18 章 / 153 个接口）。
+- `public/help.html` 同步：「签到后名单不会关闭」「健康评估也能消课」、排课步骤 2 的可检索教练字段、「教练可以自己排序」「教室名中英文上下两行显示」「使用类别不再有 Outlook 会议」「产品顺序可以自己定」与购卡弹窗的可检索分组产品选择器。
+- `public/changelog-details.html` 追加 BATCH 23（8 张界面截图，图 89–96）；`docs/CHANGELOG_CLIENT.md`、`docs/CHANGELOG_DEVELOPER.md`、`src/lib/changelog.ts`（`API_ENDPOINT_COUNT` 151 → 153、`APP_RELEASE_DATE` → 2026-11-28）同步。
+- 验证：`npm run build`（`tsc -b` + vite）通过；`.shot/test_entitlement.py` 验证评估课消课与撤销签到退卡（`consumed_type: card` → 撤销后 `consumed: False`）；`/api/admin/teachers/reorder` 与 `/api/admin/products/reorder` 实测返回 `{"ok": true}`。
