@@ -41,6 +41,7 @@ class Member(Base, TimestampMixin, SoftDeleteMixin):
     advisor_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     emergency_phone: Mapped[str] = mapped_column(String(32), default="")
     wechat: Mapped[str] = mapped_column(String(80), default="")
+    email: Mapped[str] = mapped_column(String(160), default="")
     photo_url: Mapped[str] = mapped_column(String(600), default="")
     notes: Mapped[str] = mapped_column(Text, default="")
     no_show_blocked_until: Mapped[str] = mapped_column(String(10), default="")

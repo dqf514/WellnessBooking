@@ -45,7 +45,7 @@ def ensure_schema():
     with engine.begin() as connection:
         additions = {
             "app_settings": {"logo_url": "VARCHAR(600) DEFAULT ''", "favicon_url": "VARCHAR(600) DEFAULT ''", "revenue_mode": "VARCHAR(20) DEFAULT 'auto'", "demo_login_enabled": "BOOLEAN DEFAULT 1", "captcha_enabled": "BOOLEAN DEFAULT 1", "mfa_enabled": "BOOLEAN DEFAULT 0", "demo_data_disabled": "BOOLEAN DEFAULT 0"},
-            "members": {"photo_url": "VARCHAR(600) DEFAULT ''", "external_id": "VARCHAR(64) DEFAULT ''", "legacy_category": "VARCHAR(80) DEFAULT ''", "legacy_customer_level": "VARCHAR(24) DEFAULT ''"},
+            "members": {"photo_url": "VARCHAR(600) DEFAULT ''", "email": "VARCHAR(160) DEFAULT ''", "external_id": "VARCHAR(64) DEFAULT ''", "legacy_category": "VARCHAR(80) DEFAULT ''", "legacy_customer_level": "VARCHAR(24) DEFAULT ''"},
             "teachers": {"external_id": "VARCHAR(64) DEFAULT ''", "legacy_position": "VARCHAR(120) DEFAULT ''", "legacy_teacher_type": "VARCHAR(40) DEFAULT ''", "sort_order": "INTEGER DEFAULT 0"},
             "courses": {"external_id": "VARCHAR(64) DEFAULT ''"},
             "class_sessions": {"reserved_count": "INTEGER DEFAULT 0", "external_id": "VARCHAR(64) DEFAULT ''"},

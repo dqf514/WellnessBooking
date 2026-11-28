@@ -9,7 +9,7 @@ def user_dict(row: User) -> dict:
 
 
 def member_dict(row: Member, include_cards: bool = False, cards_summary: bool = False) -> dict:
-    data = {"id": row.id, "name": row.name, "name_en": row.name_en, "phone": row.phone, "gender": row.gender, "id_number": row.id_number, "birth_date": row.birth_date, "source": row.source, "advisor_id": row.advisor_id, "advisor_name": row.advisor.full_name if row.advisor else "", "emergency_phone": row.emergency_phone, "wechat": row.wechat, "photo_url": row.photo_url, "notes": row.notes, "no_show_blocked_until": row.no_show_blocked_until, "active": row.active, "created_at": dt(row.created_at)}
+    data = {"id": row.id, "name": row.name, "name_en": row.name_en, "phone": row.phone, "gender": row.gender, "id_number": row.id_number, "birth_date": row.birth_date, "source": row.source, "advisor_id": row.advisor_id, "advisor_name": row.advisor.full_name if row.advisor else "", "emergency_phone": row.emergency_phone, "wechat": row.wechat, "email": row.email, "photo_url": row.photo_url, "notes": row.notes, "no_show_blocked_until": row.no_show_blocked_until, "active": row.active, "created_at": dt(row.created_at)}
     if include_cards:
         # 名单只显示卡片摘要，不带权益明细、共享名单与备注，体积小一个数量级。
         build = card_summary_dict if cards_summary else card_dict

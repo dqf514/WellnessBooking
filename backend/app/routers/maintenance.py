@@ -209,8 +209,8 @@ def wipe_execute(payload: dict = Body(...), db: Session = Depends(get_db), user:
 @router.get("/export/{kind}.csv")
 def export_csv(kind: str, db: Session = Depends(get_db), user: User = Depends(require_export_capability)):
     if kind == "members":
-        rows = [{"id": row.id, "name": row.name, "name_en": row.name_en, "phone": row.phone, "gender": row.gender, "birth_date": row.birth_date, "source": row.source, "wechat": row.wechat, "emergency_phone": row.emergency_phone, "notes": row.notes, "created_at": dt(row.created_at)} for row in db.query(Member).filter(Member.deleted_at.is_(None)).order_by(Member.id).all()]
-        fields = ["id", "name", "name_en", "phone", "gender", "birth_date", "source", "wechat", "emergency_phone", "notes", "created_at"]
+        rows = [{"id": row.id, "name": row.name, "name_en": row.name_en, "phone": row.phone, "gender": row.gender, "birth_date": row.birth_date, "source": row.source, "wechat": row.wechat, "email": row.email, "emergency_phone": row.emergency_phone, "notes": row.notes, "created_at": dt(row.created_at)} for row in db.query(Member).filter(Member.deleted_at.is_(None)).order_by(Member.id).all()]
+        fields = ["id", "name", "name_en", "phone", "gender", "birth_date", "source", "wechat", "email", "emergency_phone", "notes", "created_at"]
     elif kind == "bookings":
         rows = [{"id": row.id, "member": row.member.name, "phone": row.member.phone, "course": row.session.course.name, "teacher": row.session.teacher.name, "room": row.session.room.name, "date": row.session.session_date, "start_time": row.session.start_time, "end_time": row.session.end_time, "status": row.status, "source": row.source, "booked_at": dt(row.booked_at), "cancelled_at": dt(row.cancelled_at), "cancelled_by": row.cancelled_by} for row in db.query(Booking).filter(Booking.deleted_at.is_(None)).order_by(Booking.id).all()]
         fields = ["id", "member", "phone", "course", "teacher", "room", "date", "start_time", "end_time", "status", "source", "booked_at", "cancelled_at", "cancelled_by"]
@@ -226,7 +226,7 @@ def export_csv(kind: str, db: Session = Depends(get_db), user: User = Depends(re
 
 @router.get("/members-template.csv")
 def members_template(_: User = Depends(require_settings_write)):
-    return _csv("members-import-template.csv", ["name", "name_en", "phone", "gender", "birth_date", "source", "wechat", "emergency_phone", "notes"], [{"name": "张三", "name_en": "San Zhang", "phone": "13800000000", "gender": "女", "birth_date": "1990-01-01", "source": "朋友推荐", "wechat": "demo", "emergency_phone": "13900000000", "notes": "示例"}])
+    return _csv("members-import-template.csv", ["name", "name_en", "phone", "gender", "birth_date", "source", "wechat", "email", "emergency_phone", "notes"], [{"name": "张三", "name_en": "San Zhang", "phone": "13800000000", "gender": "女", "birth_date": "1990-01-01", "source": "朋友推荐", "wechat": "demo", "email": "zhangsan@example.com", "emergency_phone": "13900000000", "notes": "示例"}])
 
 
 @router.post("/members/import.csv")
@@ -241,7 +241,7 @@ def import_members(duplicate_strategy: str = Query("skip", pattern="^(skip|updat
     reader = csv.DictReader(io.StringIO(text))
     created, updated, skipped, errors = 0, 0, 0, []
     pending: dict[str, Member] = {}
-    allowed = {"name", "name_en", "phone", "gender", "birth_date", "source", "wechat", "emergency_phone", "notes"}
+    allowed = {"name", "name_en", "phone", "gender", "birth_date", "source", "wechat", "email", "emergency_phone", "notes"}
     for line, values in enumerate(reader, start=2):
         data = {key: str(values.get(key, "") or "").strip() for key in allowed}
         try:

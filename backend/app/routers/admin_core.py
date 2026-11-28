@@ -1,4 +1,5 @@
 import json
+import re
 from datetime import datetime
 
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
@@ -20,7 +21,17 @@ from ..upload_service import image_size, remove_upload, save_image
 from ..utils import add_days, as_bool, as_float, as_int, clean_payload, today, valid_benefits, valid_date, valid_phone
 
 router = APIRouter(prefix="/api/admin", tags=["admin-core"])
-MEMBER_FIELDS = {"name", "name_en", "phone", "gender", "id_number", "birth_date", "source", "advisor_id", "emergency_phone", "wechat", "notes", "active"}
+MEMBER_FIELDS = {"name", "name_en", "phone", "gender", "id_number", "birth_date", "source", "advisor_id", "emergency_phone", "wechat", "email", "notes", "active"}
+# 邮件地址只做基本格式校验，不做域名可达性检查。
+EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+def _clean_email(value) -> str:
+    """去掉首尾空格并校验邮件地址格式，格式不对时给出中文提示。"""
+    text = str(value or "").strip()
+    if text and not EMAIL_PATTERN.match(text):
+        raise HTTPException(400, "邮件地址格式不正确")
+    return text
 
 
 def _validated_advisor_id(db: Session, value) -> int:
@@ -168,6 +179,8 @@ def create_member(payload: dict = Body(...), db: Session = Depends(get_db), user
     data.update({"name": name, "phone": phone})
     if "source" in data:
         data["source"] = normalize_member_source(data["source"])
+    if "email" in data:
+        data["email"] = _clean_email(data["email"])
     if data.get("advisor_id"):
         data["advisor_id"] = _validated_advisor_id(db, data["advisor_id"])
     row = Member(**data)
@@ -266,6 +279,8 @@ def update_member(member_id: int, payload: dict = Body(...), db: Session = Depen
         data["advisor_id"] = _validated_advisor_id(db, data["advisor_id"]) if data["advisor_id"] else None
     if "source" in data:
         data["source"] = normalize_member_source(data["source"])
+    if "email" in data:
+        data["email"] = _clean_email(data["email"])
     for key, value in data.items():
         setattr(row, key, value)
     audit(db, user, "member", "update", "member", member_id, data)
